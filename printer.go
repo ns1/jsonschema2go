@@ -14,6 +14,10 @@ var (
 	structTmpl = template.Must(fileTmplWithFuncs("templates/struct.tmpl"))
 )
 
+type Import struct {
+	GoPath, Alias string
+}
+
 type Imports struct {
 	currentGoPath string
 	aliases       map[string]string
@@ -48,12 +52,19 @@ func newImports(currentGoPath string, importGoPaths []string) *Imports {
 	return &Imports{currentGoPath, aliases}
 }
 
+func (i *Imports) List() (imports []Import) {
+	for path, alias := range i.aliases {
+		imports = append(imports, Import{path, alias})
+	}
+	return
+}
+
 func (i *Imports) QualName(info TypeInfo) string {
 	if info.BuiltIn() || info.GoPath == i.currentGoPath {
 		return info.Name
 	}
 	qual := path.Base(info.GoPath)
-	if alias, ok := i.aliases[info.GoPath]; ok {
+	if alias := i.aliases[info.GoPath]; alias != "" {
 		qual = alias
 	}
 	return fmt.Sprintf("%s.%s", qual, info.Name)
@@ -68,7 +79,19 @@ type planner interface {
 	Deps() []TypeInfo
 }
 
-func PrintFile(ctx context.Context, w io.Writer, plans []planner) error {
+func PrintFile(ctx context.Context, w io.Writer, goPath string, plans []planner) error {
+	var imports *Imports
+	{
+		var depPaths []string
+		for _, p := range plans {
+			for _, d := range p.Deps() {
+				depPaths = append(depPaths, d.GoPath)
+			}
+		}
+		imports = newImports(goPath, depPaths)
+	}
+	_ = imports
+
 	return nil
 }
 
@@ -76,7 +99,14 @@ type structPlanContext struct {
 	*Imports
 	*StructPlan
 }
-
+type arrayPlanContext struct {
+	*Imports
+	*ArrayPlan
+}
+type enumPlanContext struct {
+	*Imports
+	*EnumPlan
+}
 func printStruct(_ context.Context, w io.Writer, plan *StructPlan) error {
 	return structTmpl.Execute(w, structPlanContext{new(Imports), plan})
 }

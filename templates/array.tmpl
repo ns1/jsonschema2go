@@ -1,0 +1,5 @@
+{{/* gotype: github.com/jwilner/jsonschema2go.arrayPlanContext */}}
+{{ if .Comment -}}
+// {{ .Comment }}
+{{ end -}}
+type {{ .Type.Name }} []{{ $.QualName .ItemType }}

@@ -78,3 +78,80 @@ type Bob struct {
 		})
 	}
 }
+
+func TestImports_List(t *testing.T) {
+	tests := []struct {
+		name          string
+		currentGoPath string
+		importGoPaths []string
+		wantImports   []Import
+	}{
+		{
+			"empty",
+			"github.com/jwilner/jsonschema2go",
+			[]string{},
+			nil,
+		},
+		{
+			"empty",
+			"github.com/jwilner/jsonschema2go",
+			[]string{
+				"github.com/jwilner/jsonschema2go/example",
+				"github.com/jwilner/jsonschema2go/foo/example",
+			},
+			[]Import{
+				{"github.com/jwilner/jsonschema2go/example", ""},
+				{"github.com/jwilner/jsonschema2go/foo/example", "example2"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.wantImports, newImports(tt.currentGoPath, tt.importGoPaths).List())
+		})
+	}
+}
+
+func TestImports_QualName(t *testing.T) {
+	tests := []struct {
+		name          string
+		currentGoPath string
+		importGoPaths []string
+		typeInfo      TypeInfo
+		want          string
+	}{
+		{
+			"builtin",
+			"github.com/jwilner/jsonschema2go",
+			[]string{"github.com/jwilner/jsonschema2go/example", "github.com/jwilner/jsonschema2go/foo/example"},
+			BuiltInInt,
+			"int",
+		},
+		{
+			"external",
+			"github.com/jwilner/jsonschema2go",
+			[]string{"github.com/jwilner/jsonschema2go/example", "github.com/jwilner/jsonschema2go/foo/example"},
+			TypeInfo{GoPath: "github.com/jwilner/jsonschema2go", Name: "Bob"},
+			"Bob",
+		},
+		{
+			"external",
+			"github.com/jwilner/jsonschema2go",
+			[]string{"github.com/jwilner/jsonschema2go/example", "github.com/jwilner/jsonschema2go/foo/example"},
+			TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/example", Name: "Bob"},
+			"example.Bob",
+		},
+		{
+			"external with alias",
+			"github.com/jwilner/jsonschema2go",
+			[]string{"github.com/jwilner/jsonschema2go/example", "github.com/jwilner/jsonschema2go/foo/example"},
+			TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/foo/example", Name: "Bob"},
+			"example2.Bob",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, newImports(tt.currentGoPath, tt.importGoPaths).QualName(tt.typeInfo))
+		})
+	}
+}
