@@ -1,2 +1,18 @@
-{{/* gotype: github.com/jwilner/jsonschema2go.structPlanContext */}}
+{{/* gotype: github.com/jwilner/jsonschema2go.Plans */}}
+package {{ .Imports.CurPackage }}
 
+{{ with .Imports.List -}}
+import (
+{{ range . -}}
+    {{ if .Alias -}}{{ .Alias }} {{ end -}}"{{ .GoPath }}"
+{{ end -}}
+)
+{{ end -}}
+
+{{ range .Structs -}}
+{{ template "struct.tmpl" . }}
+{{ end -}}
+
+{{ range .Arrays -}}
+{{ template "array.tmpl" . }}
+{{ end -}}

@@ -12,6 +12,7 @@ import (
 
 var (
 	structTmpl = template.Must(fileTmplWithFuncs("templates/struct.tmpl"))
+	valueTmpl  = template.Must(template.New("values.tmpl").ParseGlob("templates/*.tmpl"))
 )
 
 type Import struct {
@@ -52,6 +53,10 @@ func newImports(currentGoPath string, importGoPaths []string) *Imports {
 	return &Imports{currentGoPath, aliases}
 }
 
+func (i *Imports) CurPackage() string {
+	return path.Base(i.currentGoPath)
+}
+
 func (i *Imports) List() (imports []Import) {
 	for path, alias := range i.aliases {
 		imports = append(imports, Import{path, alias})
@@ -74,12 +79,7 @@ func fileTmplWithFuncs(fName string) (*template.Template, error) {
 	return template.New(filepath.Base(fName)).ParseFiles(fName)
 }
 
-type planner interface {
-	Type() TypeInfo
-	Deps() []TypeInfo
-}
-
-func PrintFile(ctx context.Context, w io.Writer, goPath string, plans []planner) error {
+func PrintFile(ctx context.Context, w io.Writer, goPath string, plans []Plan) error {
 	var imports *Imports
 	{
 		var depPaths []string
@@ -90,23 +90,62 @@ func PrintFile(ctx context.Context, w io.Writer, goPath string, plans []planner)
 		}
 		imports = newImports(goPath, depPaths)
 	}
-	_ = imports
 
-	return nil
+	return valueTmpl.Execute(w, &Plans{imports, plans})
+}
+
+type Plans struct {
+	Imports *Imports
+	plans   []Plan
+}
+
+func (ps *Plans) Structs() (structs []structPlanContext) {
+	for _, p := range ps.plans {
+		if s, ok := p.(*StructPlan); ok {
+			structs = append(structs, structPlanContext{ps.Imports, s})
+		}
+	}
+	sort.Slice(structs, func(i, j int) bool {
+		return structs[i].Type().Name < structs[j].Type().Name
+	})
+	return
+}
+
+func (ps *Plans) Arrays() (arrays []arrayPlanContext) {
+	for _, p := range ps.plans {
+		if a, ok := p.(*ArrayPlan); ok {
+			arrays = append(arrays, arrayPlanContext{ps.Imports, a})
+		}
+	}
+	sort.Slice(arrays, func(i, j int) bool {
+		return arrays[i].Type().Name < arrays[j].Type().Name
+	})
+	return
+}
+
+func (ps *Plans) Enums() (enums []enumPlanContext) {
+	for _, p := range ps.plans {
+		if e, ok := p.(*EnumPlan); ok {
+			enums = append(enums, enumPlanContext{ps.Imports, e})
+		}
+	}
+	sort.Slice(enums, func(i, j int) bool {
+		return enums[i].Type().Name < enums[j].Type().Name
+	})
+	return
 }
 
 type structPlanContext struct {
 	*Imports
 	*StructPlan
 }
+
 type arrayPlanContext struct {
 	*Imports
 	*ArrayPlan
 }
+
 type enumPlanContext struct {
 	*Imports
 	*EnumPlan
-}
-func printStruct(_ context.Context, w io.Writer, plan *StructPlan) error {
-	return structTmpl.Execute(w, structPlanContext{new(Imports), plan})
 }
