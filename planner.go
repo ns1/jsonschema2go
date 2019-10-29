@@ -88,7 +88,7 @@ func (a *ArrayPlan) Type() TypeInfo {
 }
 
 func (a *ArrayPlan) Deps() []TypeInfo {
-	return []TypeInfo{a.ItemType}
+	return []TypeInfo{a.ItemType, {Name: "Marshal", GoPath: "encoding/json"}}
 }
 
 type EnumPlan struct {

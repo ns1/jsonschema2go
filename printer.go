@@ -61,6 +61,9 @@ func (i *Imports) List() (imports []Import) {
 	for path, alias := range i.aliases {
 		imports = append(imports, Import{path, alias})
 	}
+	sort.Slice(imports, func(i, j int) bool {
+		return imports[i].GoPath < imports[j].GoPath
+	})
 	return
 }
 

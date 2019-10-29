@@ -162,8 +162,9 @@ type Bob struct {
 						{
 							Names: []string{"Other"},
 							Type: TypeInfo{
-								GoPath: "github.com/jwilner/jsonschema2go/blah",
-								Name:   "OtherType",
+								GoPath:  "github.com/jwilner/jsonschema2go/blah",
+								Name:    "OtherType",
+								Pointer: true,
 							},
 							Tag: `json="other,omitempty"`,
 						},
@@ -192,7 +193,7 @@ import (
 // Bob does lots of cool things
 type Bob struct {
 	Count 		int 				` + "`" + `json="count,omitempty"` + "`" + `  
-	Other 		blah.OtherType 		` + "`" + `json="other,omitempty"` + "`" + `  
+	Other 		*blah.OtherType 	` + "`" + `json="other,omitempty"` + "`" + `  
 	OtherOther 	blah2.AnotherType 	` + "`" + `json="another,omitempty"` + "`" + `  
 }`,
 		},
@@ -267,6 +268,53 @@ type Bob struct {
 type OtherType struct {
 	Count int ` + "`" + `json="count,omitempty"` + "`" + `  
 }`,
+		},
+		{
+			name:   "array with struct",
+			goPath: "github.com/jwilner/jsonschema2go",
+			plans: []Plan{
+				&ArrayPlan{
+					typeInfo: TypeInfo{
+						Name: "Bob",
+					},
+					Comment: "Bob does lots of cool things",
+					ItemType: TypeInfo{
+						GoPath: "github.com/jwilner/jsonschema2go",
+						Name:   "OtherType",
+					},
+				},
+				&StructPlan{
+					Comment: "OtherType does lots of cool things",
+					Fields: []StructField{
+						{Type: BuiltInInt, Names: []string{"Count"}, Tag: `json="count,omitempty"`},
+					},
+					typeInfo: TypeInfo{
+						Name: "OtherType",
+					},
+				},
+			},
+			wantW: `
+package jsonschema2go
+
+import (
+	"encoding/json"
+)
+
+// OtherType does lots of cool things
+type OtherType struct {
+	Count int ` + "`" + `json="count,omitempty"` + "`" + `  
+}
+
+// Bob does lots of cool things
+type Bob []OtherType
+
+func (m Bob) MarshalJSON() ([]byte, error) {
+	if m == nil {
+		return []byte(` + "`[]`" + `), nil
+	}
+	return json.Marshal([]OtherType(m))
+}
+`,
 		},
 	}
 	for _, tt := range tests {

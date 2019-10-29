@@ -3,3 +3,10 @@
 // {{ .Comment }}
 {{ end -}}
 type {{ .Type.Name }} []{{ $.QualName .ItemType }}
+
+func (m {{ .Type.Name }}) MarshalJSON() ([]byte, error) {
+    if m == nil {
+        return []byte(`[]`), nil
+    }
+    return json.Marshal([]{{ $.QualName .ItemType }}(m))
+}
