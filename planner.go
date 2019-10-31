@@ -6,6 +6,7 @@ import (
 	"path"
 	"sort"
 	"strings"
+	"unicode"
 )
 
 type TypeInfo struct {
@@ -199,9 +200,9 @@ func deriveStructFields(schema *Schema) (fields []StructField, infos []SchemeTyp
 			fields,
 			StructField{
 				Comment: fieldSchema.Annotations.GetString("description"),
-				Names:   []string{exportedCamelCase(name)},
+				Names:   []string{jsonPropertyToExportedName(name)},
 				Type:    fType,
-				Tag:     fmt.Sprintf(`json="%s,omitempty"`, name),
+				Tag:     fmt.Sprintf(`json:"%s,omitempty"`, name),
 			},
 		)
 		if !fType.BuiltIn() {
@@ -223,18 +224,21 @@ func deriveTypeInfo(s *Schema) (TypeInfo, error) {
 		return BuiltInNull, nil
 	case Number:
 		return BuiltInFloat, nil
+	case String:
+		return BuiltInString, nil
 	}
 
-	var l TypeInfo
-	{
-		parts := strings.SplitN(s.Annotations.GetString("x-go-import-path"), "#", 2)
-		switch len(parts) {
-		case 2:
-			l.Name = parts[1]
-			fallthrough
-		case 1:
-			l.GoPath = parts[0]
-		}
+	return getGoPathInfo(s)
+}
+
+func getGoPathInfo(s *Schema) (l TypeInfo, _ error) {
+	parts := strings.SplitN(s.Annotations.GetString("x-go-import-path"), "#", 2)
+	switch len(parts) {
+	case 2:
+		l.Name = parts[1]
+		fallthrough
+	case 1:
+		l.GoPath = parts[0]
 	}
 
 	if l.GoPath == "" {
@@ -244,8 +248,7 @@ func deriveTypeInfo(s *Schema) (TypeInfo, error) {
 		return l, fmt.Errorf("no name: %w", errAnonymous)
 	}
 	l.FileName = "values.gen.go"
-
-	return l, nil
+	return
 }
 
 func exportedCamelCase(s string) string {
@@ -319,6 +322,12 @@ func planEnum(tInfo TypeInfo, schema *Schema) (_ Plan, deps []SchemeTypeInfo, _ 
 	if len(schema.Enum) == 0 {
 		return nil, nil, errPlanContinue
 	}
+
+	var err error
+	if tInfo, err = getGoPathInfo(schema); err != nil {
+		return nil, nil, err
+	}
+
 	e := &EnumPlan{typeInfo: tInfo}
 	e.Comment = schema.Annotations.GetString("description")
 	switch schema.ChooseType() {
@@ -331,4 +340,60 @@ func planEnum(tInfo TypeInfo, schema *Schema) (_ Plan, deps []SchemeTypeInfo, _ 
 	}
 	e.Members = append(e.Members, schema.Enum...)
 	return e, nil, nil
+}
+
+var knownInitialisms = map[string]bool{
+	"id":   true,
+	"http": true,
+}
+
+func jsonPropertyToExportedName(name string) string {
+	if strings.ToUpper(name) == name {
+		return exportedIdentifier([][]rune{[]rune(strings.ToLower(name))})
+	}
+
+	var (
+		current []rune
+		parts   [][]rune
+	)
+	// split words
+	for _, r := range []rune(name) {
+		if r == '-' || r == '_' || unicode.IsSpace(r) {
+			// exclusive word boundary
+			if len(current) != 0 {
+				parts = append(parts, current)
+				current = nil
+			}
+			continue
+		}
+		if unicode.IsUpper(r) {
+			// inclusive word boundary
+			if len(current) != 0 {
+				parts = append(parts, current)
+			}
+			current = []rune{unicode.ToLower(r)}
+			continue
+		}
+
+		current = append(current, r)
+	}
+
+	if len(current) > 0 {
+		parts = append(parts, current)
+	}
+
+	return exportedIdentifier(parts)
+}
+
+func exportedIdentifier(parts [][]rune) string {
+	var words []string
+	for _, rs := range parts {
+		if word := string(rs); knownInitialisms[word] {
+			words = append(words, strings.ToUpper(word))
+			continue
+		}
+		rs[0] = unicode.ToUpper(rs[0])
+		words = append(words, string(rs))
+	}
+	return strings.Join(words, "")
 }

@@ -96,6 +96,7 @@ type ItemsFields struct {
 
 func (i *ItemsFields) UnmarshalJSON(data []byte) error {
 	if peekToken(data) == json.Delim('{') {
+		i.Items = new(Schema)
 		return json.Unmarshal(data, i.Items)
 	}
 	return json.Unmarshal(data, i.TupleFields)
@@ -249,9 +250,11 @@ func (c *CachingLoader) Load(ctx context.Context, s string) (*Schema, error) {
 		_ = r.Close()
 	}()
 
-	if err := json.NewDecoder(r).Decode(schema); err != nil {
+	var sch Schema
+	if err := json.NewDecoder(r).Decode(&sch); err != nil {
 		return nil, fmt.Errorf("unable to decode %q: %w", u.Path, err)
 	}
+	schema = &sch
 
 	return schema, nil
 }

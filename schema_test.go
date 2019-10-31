@@ -241,6 +241,11 @@ func TestSchema_UnmarshalJSON(t *testing.T) {
 			want: Schema{Type: &TypeField{String}},
 		},
 		{
+			name: "simple",
+			data: `{"type": "array", "items": {"type": "string"}}`,
+			want: Schema{Type: &TypeField{Array}, Items: &ItemsFields{Items: &Schema{Type: &TypeField{String}}}},
+		},
+		{
 			name: "annos",
 			data: `{"type": "string", "i-am-an-annotation": "hi"}`,
 			want: Schema{Type: &TypeField{String}, Annotations: map[string]interface{}{"i-am-an-annotation": "hi"}},

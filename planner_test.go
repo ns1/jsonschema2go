@@ -34,9 +34,9 @@ func TestSchemaToPlan(t *testing.T) {
 					Comment: "i am bob",
 					Fields: []StructField{
 						{
-							Names: []string{"count"},
+							Names: []string{"Count"},
 							Type:  BuiltInInt,
-							Tag:   `json="count,omitempty"`,
+							Tag:   `json:"count,omitempty"`,
 						},
 					},
 				},
@@ -72,13 +72,13 @@ func TestSchemaToPlan(t *testing.T) {
 					Comment: "i am bob",
 					Fields: []StructField{
 						{
-							Names: []string{"nested"},
+							Names: []string{"Nested"},
 							Type: TypeInfo{
 								GoPath:   "github.com/jwilner/jsonschema2go/example",
 								Name:     "NestedType",
 								FileName: "values.gen.go",
 							},
-							Tag: `json="nested,omitempty"`,
+							Tag: `json:"nested,omitempty"`,
 						},
 					},
 				},
@@ -90,9 +90,9 @@ func TestSchemaToPlan(t *testing.T) {
 					},
 					Fields: []StructField{
 						{
-							Names: []string{"count"},
+							Names: []string{"Count"},
 							Type:  BuiltInInt,
-							Tag:   `json="count,omitempty"`,
+							Tag:   `json:"count,omitempty"`,
 						},
 					},
 				},
@@ -132,9 +132,9 @@ func TestSchemaToPlan(t *testing.T) {
 					},
 					Fields: []StructField{
 						{
-							Names: []string{"id"},
+							Names: []string{"ID"},
 							Type:  BuiltInInt,
-							Tag:   `json="id,omitempty"`,
+							Tag:   `json:"id,omitempty"`,
 						},
 						{
 							Type: TypeInfo{
@@ -154,9 +154,9 @@ func TestSchemaToPlan(t *testing.T) {
 					Comment: "i am bob",
 					Fields: []StructField{
 						{
-							Names: []string{"count"},
+							Names: []string{"Count"},
 							Type:  BuiltInInt,
-							Tag:   `json="count,omitempty"`,
+							Tag:   `json:"count,omitempty"`,
 						},
 					},
 				},
@@ -216,9 +216,9 @@ func TestSchemaToPlan(t *testing.T) {
 					},
 					Fields: []StructField{
 						{
-							Names: []string{"bob"},
+							Names: []string{"Bob"},
 							Type:  BuiltInIntPointer,
-							Tag:   `json="bob,omitempty"`,
+							Tag:   `json:"bob,omitempty"`,
 						},
 					},
 				},
@@ -233,6 +233,52 @@ func TestSchemaToPlan(t *testing.T) {
 				return
 			}
 			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func Test_jsonPropertyToExportedName(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "snake case",
+			input: "hi_how_are_you",
+			want:  "HiHowAreYou",
+		},
+		{
+			name:  "dashed snake case",
+			input: "hi-how-are-you",
+			want:  "HiHowAreYou",
+		},
+		{
+			name:  "spaces",
+			input: "hi how are you",
+			want:  "HiHowAreYou",
+		},
+		{
+			name:  "camel case",
+			input: "hiHowAreYou",
+			want:  "HiHowAreYou",
+		},
+		{
+			name:  "all lower",
+			input: "hello",
+			want:  "Hello",
+		},
+		{
+			name:  "weird initialism in json",
+			input: "HTTP",
+			want:  "HTTP",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := jsonPropertyToExportedName(tt.input); got != tt.want {
+				t.Errorf("jsonPropertyToExportedName() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }

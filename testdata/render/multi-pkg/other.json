@@ -1,0 +1,9 @@
+{
+  "x-go-import-path": "example.com/v1/foobar#Blob",
+  "type": "object",
+  "properties": {
+    "count": {
+      "type": "integer"
+    }
+  }
+}

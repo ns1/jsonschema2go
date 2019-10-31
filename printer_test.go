@@ -100,7 +100,7 @@ func TestPrintFile(t *testing.T) {
 				&StructPlan{
 					Comment: "Bob does lots of cool things",
 					Fields: []StructField{
-						{Names: []string{"Count"}, Type: BuiltInInt, Tag: `json="count,omitempty"`},
+						{Names: []string{"Count"}, Type: BuiltInInt, Tag: `json:"count,omitempty"`},
 					},
 					typeInfo: TypeInfo{
 						Name: "Bob",
@@ -113,7 +113,7 @@ package jsonschema2go
 
 // Bob does lots of cool things
 type Bob struct {
-	Count int ` + "`" + `json="count,omitempty"` + "`" + `  
+	Count int ` + "`" + `json:"count,omitempty"` + "`" + `
 }`,
 		},
 		{
@@ -123,14 +123,14 @@ type Bob struct {
 				&StructPlan{
 					Comment: "Bob does lots of cool things",
 					Fields: []StructField{
-						{Names: []string{"Count"}, Type: BuiltInInt, Tag: `json="count,omitempty"`},
+						{Names: []string{"Count"}, Type: BuiltInInt, Tag: `json:"count,omitempty"`},
 						{
 							Names: []string{"Other"},
 							Type: TypeInfo{
 								GoPath: "github.com/jwilner/jsonschema2go/blah",
 								Name:   "OtherType",
 							},
-							Tag: `json="other,omitempty"`,
+							Tag: `json:"other,omitempty"`,
 						},
 					},
 					typeInfo: TypeInfo{
@@ -147,8 +147,8 @@ import (
 
 // Bob does lots of cool things
 type Bob struct {
-	Count int 				` + "`" + `json="count,omitempty"` + "`" + `  
-	Other blah.OtherType 	` + "`" + `json="other,omitempty"` + "`" + `  
+	Count int 				` + "`" + `json:"count,omitempty"` + "`" + `
+	Other blah.OtherType 	` + "`" + `json:"other,omitempty"` + "`" + `
 }`,
 		},
 		{
@@ -158,7 +158,7 @@ type Bob struct {
 				&StructPlan{
 					Comment: "Bob does lots of cool things",
 					Fields: []StructField{
-						{Names: []string{"Count"}, Type: BuiltInInt, Tag: `json="count,omitempty"`},
+						{Names: []string{"Count"}, Type: BuiltInInt, Tag: `json:"count,omitempty"`},
 						{
 							Names: []string{"Other"},
 							Type: TypeInfo{
@@ -166,7 +166,7 @@ type Bob struct {
 								Name:    "OtherType",
 								Pointer: true,
 							},
-							Tag: `json="other,omitempty"`,
+							Tag: `json:"other,omitempty"`,
 						},
 						{
 							Names: []string{"OtherOther"},
@@ -174,7 +174,7 @@ type Bob struct {
 								GoPath: "github.com/jwilner/jsonschema2go/bob/blah",
 								Name:   "AnotherType",
 							},
-							Tag: `json="another,omitempty"`,
+							Tag: `json:"another,omitempty"`,
 						},
 					},
 					typeInfo: TypeInfo{
@@ -192,9 +192,9 @@ import (
 
 // Bob does lots of cool things
 type Bob struct {
-	Count 		int 				` + "`" + `json="count,omitempty"` + "`" + `  
-	Other 		*blah.OtherType 	` + "`" + `json="other,omitempty"` + "`" + `  
-	OtherOther 	blah2.AnotherType 	` + "`" + `json="another,omitempty"` + "`" + `  
+	Count 		int 				` + "`" + `json:"count,omitempty"` + "`" + `
+	Other 		*blah.OtherType 	` + "`" + `json:"other,omitempty"` + "`" + `
+	OtherOther 	blah2.AnotherType 	` + "`" + `json:"another,omitempty"` + "`" + `
 }`,
 		},
 		{
@@ -249,7 +249,7 @@ type Bob struct {
 				&StructPlan{
 					Comment: "OtherType does lots of cool things",
 					Fields: []StructField{
-						{Type: BuiltInInt, Names: []string{"Count"}, Tag: `json="count,omitempty"`},
+						{Type: BuiltInInt, Names: []string{"Count"}, Tag: `json:"count,omitempty"`},
 					},
 					typeInfo: TypeInfo{
 						Name: "OtherType",
@@ -266,7 +266,7 @@ type Bob struct {
 
 // OtherType does lots of cool things
 type OtherType struct {
-	Count int ` + "`" + `json="count,omitempty"` + "`" + `  
+	Count int ` + "`" + `json:"count,omitempty"` + "`" + `
 }`,
 		},
 		{
@@ -286,7 +286,7 @@ type OtherType struct {
 				&StructPlan{
 					Comment: "OtherType does lots of cool things",
 					Fields: []StructField{
-						{Type: BuiltInInt, Names: []string{"Count"}, Tag: `json="count,omitempty"`},
+						{Type: BuiltInInt, Names: []string{"Count"}, Tag: `json:"count,omitempty"`},
 					},
 					typeInfo: TypeInfo{
 						Name: "OtherType",
@@ -302,7 +302,7 @@ import (
 
 // OtherType does lots of cool things
 type OtherType struct {
-	Count int ` + "`" + `json="count,omitempty"` + "`" + `  
+	Count int ` + "`" + `json:"count,omitempty"` + "`" + `
 }
 
 // Bob does lots of cool things

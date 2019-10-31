@@ -1,0 +1,17 @@
+{
+  "x-go-import-path": "example.com/v1/foo#Bar",
+  "description": "Bar gives you some dumb info",
+  "allOf": [
+    {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "$ref": "other.json"
+    }
+  ]
+}

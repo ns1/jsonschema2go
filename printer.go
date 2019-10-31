@@ -1,8 +1,10 @@
 package jsonschema2go
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"go/format"
 	"io"
 	"path"
 	"path/filepath"
@@ -94,7 +96,17 @@ func PrintFile(ctx context.Context, w io.Writer, goPath string, plans []Plan) er
 		imports = newImports(goPath, depPaths)
 	}
 
-	return valueTmpl.Execute(w, &Plans{imports, plans})
+	var buf bytes.Buffer
+	if err := valueTmpl.Execute(&buf, &Plans{imports, plans}); err != nil {
+		return fmt.Errorf("unable to execute tmpl: %w", err)
+	}
+	formatted, err := format.Source(buf.Bytes())
+	if err != nil {
+		return fmt.Errorf("unable to format: %w", err)
+	}
+
+	_, err = w.Write(formatted)
+	return err
 }
 
 type Plans struct {

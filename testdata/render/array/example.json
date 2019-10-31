@@ -1,0 +1,17 @@
+{
+  "x-go-import-path": "example.com/v1/foo#Bar",
+  "description": "Bar gives you some dumb info",
+  "type": "object",
+  "properties": {
+    "name": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}
