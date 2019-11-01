@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path"
 	"sort"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -97,7 +98,23 @@ type EnumPlan struct {
 
 	Comment  string
 	BaseType TypeInfo
-	Members  []interface{}
+	Members  []EnumMember
+}
+
+type EnumMember struct {
+	Name  string
+	Field interface{}
+}
+
+func (e *EnumPlan) Literal(val interface{}) string {
+	switch t := val.(type) {
+	case bool:
+		return strconv.FormatBool(t)
+	case string:
+		return fmt.Sprintf("%q", t)
+	default:
+		return fmt.Sprintf("%d", t)
+	}
 }
 
 func (e *EnumPlan) Type() TypeInfo {
@@ -232,7 +249,7 @@ func deriveTypeInfo(s *Schema) (TypeInfo, error) {
 }
 
 func getGoPathInfo(s *Schema) (l TypeInfo, _ error) {
-	parts := strings.SplitN(s.Annotations.GetString("x-go-import-path"), "#", 2)
+	parts := strings.SplitN(s.Annotations.GetString("x-gopath"), "#", 2)
 	switch len(parts) {
 	case 2:
 		l.Name = parts[1]
@@ -338,7 +355,11 @@ func planEnum(tInfo TypeInfo, schema *Schema) (_ Plan, deps []SchemeTypeInfo, _ 
 	case Number:
 		e.BaseType = BuiltInFloat
 	}
-	e.Members = append(e.Members, schema.Enum...)
+	for _, m := range schema.Enum {
+		name := jsonPropertyToExportedName(fmt.Sprintf("%s", m))
+		e.Members = append(e.Members, EnumMember{Name: name, Field: m})
+	}
+	fmt.Println(e.Members)
 	return e, nil, nil
 }
 

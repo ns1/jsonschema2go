@@ -16,3 +16,7 @@ import (
 {{ range .Arrays -}}
 {{ template "array.tmpl" . }}
 {{ end -}}
+
+{{ range .Enums }}
+{{ template "enum.tmpl" . }}
+{{ end -}}

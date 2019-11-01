@@ -1,0 +1,11 @@
+{{/* gotype: github.com/jwilner/jsonschema2go.enumPlanContext */}}
+{{ if .Comment -}}
+// {{ .Comment }}
+{{ end -}}
+type {{ .Type.Name }} {{ $.QualName .BaseType }}
+
+const (
+{{ range .Members -}}
+    {{ $.Type.Name }}{{ .Name }} {{ $.Type.Name }}= {{ $.Literal .Field }}
+{{ end }}
+)

@@ -21,7 +21,7 @@ func TestSchemaToPlan(t *testing.T) {
 				},
 				Annotations: map[string]interface{}{
 					"description":      "i am bob",
-					"x-go-import-path": "github.com/jwilner/jsonschema2go/example#Awesome",
+					"x-gopath": "github.com/jwilner/jsonschema2go/example#Awesome",
 				},
 			},
 			want: []Plan{
@@ -49,7 +49,7 @@ func TestSchemaToPlan(t *testing.T) {
 				Properties: map[string]*Schema{
 					"nested": {
 						Annotations: map[string]interface{}{
-							"x-go-import-path": "github.com/jwilner/jsonschema2go/example#NestedType",
+							"x-gopath": "github.com/jwilner/jsonschema2go/example#NestedType",
 						},
 						Type: &TypeField{Object},
 						Properties: map[string]*Schema{
@@ -59,7 +59,7 @@ func TestSchemaToPlan(t *testing.T) {
 				},
 				Annotations: map[string]interface{}{
 					"description":      "i am bob",
-					"x-go-import-path": "github.com/jwilner/jsonschema2go/example#Awesome",
+					"x-gopath": "github.com/jwilner/jsonschema2go/example#Awesome",
 				},
 			},
 			want: []Plan{
@@ -102,7 +102,7 @@ func TestSchemaToPlan(t *testing.T) {
 			name: "composed anonymous struct",
 			schema: &Schema{
 				Annotations: map[string]interface{}{
-					"x-go-import-path": "github.com/jwilner/jsonschema2go/example#AwesomeWithID",
+					"x-gopath": "github.com/jwilner/jsonschema2go/example#AwesomeWithID",
 				},
 				AllOf: []*Schema{
 					{
@@ -118,7 +118,7 @@ func TestSchemaToPlan(t *testing.T) {
 						},
 						Annotations: map[string]interface{}{
 							"description":      "i am bob",
-							"x-go-import-path": "github.com/jwilner/jsonschema2go/example#Awesome",
+							"x-gopath": "github.com/jwilner/jsonschema2go/example#Awesome",
 						},
 					},
 				},
@@ -166,13 +166,13 @@ func TestSchemaToPlan(t *testing.T) {
 			name: "enum",
 			schema: &Schema{
 				Annotations: map[string]interface{}{
-					"x-go-import-path": "github.com/jwilner/jsonschema2go/example#Letter",
+					"x-gopath": "github.com/jwilner/jsonschema2go/example#Letter",
 				},
 				Type: &TypeField{String},
 				Enum: []interface{}{
-					"A",
-					"B",
-					"C",
+					"a",
+					"b",
+					"c",
 				},
 			},
 			want: []Plan{
@@ -183,10 +183,10 @@ func TestSchemaToPlan(t *testing.T) {
 						FileName: "values.gen.go",
 					},
 					BaseType: BuiltInString,
-					Members: []interface{}{
-						"A",
-						"B",
-						"C",
+					Members: []EnumMember{
+						{"A", "a"},
+						{"B", "b"},
+						{"C", "c"},
 					},
 				},
 			},
@@ -195,7 +195,7 @@ func TestSchemaToPlan(t *testing.T) {
 			name: "nullable built in",
 			schema: &Schema{
 				Annotations: map[string]interface{}{
-					"x-go-import-path": "github.com/jwilner/jsonschema2go/example#Awesome",
+					"x-gopath": "github.com/jwilner/jsonschema2go/example#Awesome",
 				},
 				Type: &TypeField{Object},
 				Properties: map[string]*Schema{

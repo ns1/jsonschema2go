@@ -1,5 +1,5 @@
 {
-  "x-go-import-path": "example.com/v1/foo#Barz",
+  "x-gopath": "example.com/v1/foo#Barz",
   "description": "Barz gives you lots of dumb info",
   "type": "array",
   "items": {

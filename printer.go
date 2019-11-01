@@ -102,6 +102,7 @@ func PrintFile(ctx context.Context, w io.Writer, goPath string, plans []Plan) er
 	}
 	formatted, err := format.Source(buf.Bytes())
 	if err != nil {
+		fmt.Println("Error:", string(formatted))
 		return fmt.Errorf("unable to format: %w", err)
 	}
 
