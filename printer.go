@@ -84,12 +84,20 @@ func fileTmplWithFuncs(fName string) (*template.Template, error) {
 	return template.New(filepath.Base(fName)).ParseFiles(fName)
 }
 
-func PrintFile(ctx context.Context, w io.Writer, goPath string, plans []Plan) error {
+func newPrinter() *Printer {
+	return new(Printer)
+}
+
+type Printer struct {
+
+}
+
+func (p *Printer) Print(ctx context.Context, w io.Writer, goPath string, plans []Plan) error {
 	var imports *Imports
 	{
 		var depPaths []string
-		for _, p := range plans {
-			for _, d := range p.Deps() {
+		for _, pl := range plans {
+			for _, d := range pl.Deps() {
 				depPaths = append(depPaths, d.GoPath)
 			}
 		}

@@ -11,13 +11,14 @@ import (
 
 func Render(ctx context.Context, loader Loader, fileNames []string, prefixes [][2]string) error {
 	seen := make(map[TypeInfo]bool)
-	grouped := make(map[[2]string][]Plan)
+	grouped := make(map[string][]Plan)
+	r := newResolver(loader)
 	for _, fileName := range fileNames {
-		schema, err := Resolve(ctx, loader, fileName)
+		schema, err := r.Resolve(ctx, fileName)
 		if err != nil {
 			return fmt.Errorf("unable to resolve schema from %q: %w", fileName, err)
 		}
-		newPlans, err := SchemaToPlan(schema)
+		newPlans, err := NewPlanner().Plan(schema)
 		if err != nil {
 			return fmt.Errorf("unable to create plans from schema %q: %w ", fileName, err)
 		}
@@ -26,8 +27,7 @@ func Render(ctx context.Context, loader Loader, fileNames []string, prefixes [][
 			if typ := plan.Type(); !seen[typ] {
 				seen[typ] = true
 
-				key := [...]string{typ.GoPath, typ.FileName}
-				grouped[key] = append(grouped[key], plan)
+				grouped[typ.GoPath] = append(grouped[typ.GoPath], plan)
 			}
 		}
 	}
@@ -37,7 +37,7 @@ func Render(ctx context.Context, loader Loader, fileNames []string, prefixes [][
 	})
 
 	for k, group := range grouped {
-		path := mapPath(k[0], prefixes)
+		path := mapPath(k, prefixes)
 		if path == "" {
 			return fmt.Errorf("unable to map go path: %q", k[0])
 		}
@@ -45,13 +45,13 @@ func Render(ctx context.Context, loader Loader, fileNames []string, prefixes [][
 			if err := os.MkdirAll(path, 0755); err != nil {
 				return fmt.Errorf("unable to dir %q: %w", path, err)
 			}
-			f, err := os.Create(filepath.Join(path, k[1]))
+			f, err := os.Create(filepath.Join(path, "values.gen.go"))
 			if err != nil {
 				return fmt.Errorf("unable to open: %w", err)
 			}
 			defer f.Close()
 
-			if err := PrintFile(ctx, f, k[0], group); err != nil {
+			if err := newPrinter().Print(ctx, f, k, group); err != nil {
 				return fmt.Errorf("unable to print: %w", err)
 			}
 			return nil

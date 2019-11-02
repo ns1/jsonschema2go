@@ -27,7 +27,6 @@ func TestSchemaToPlan(t *testing.T) {
 			want: []Plan{
 				&StructPlan{
 					typeInfo: TypeInfo{
-						FileName: "values.gen.go",
 						GoPath:   "github.com/jwilner/jsonschema2go/example",
 						Name:     "Awesome",
 					},
@@ -65,7 +64,6 @@ func TestSchemaToPlan(t *testing.T) {
 			want: []Plan{
 				&StructPlan{
 					typeInfo: TypeInfo{
-						FileName: "values.gen.go",
 						GoPath:   "github.com/jwilner/jsonschema2go/example",
 						Name:     "Awesome",
 					},
@@ -76,7 +74,6 @@ func TestSchemaToPlan(t *testing.T) {
 							Type: TypeInfo{
 								GoPath:   "github.com/jwilner/jsonschema2go/example",
 								Name:     "NestedType",
-								FileName: "values.gen.go",
 							},
 							Tag: `json:"nested,omitempty"`,
 						},
@@ -84,7 +81,6 @@ func TestSchemaToPlan(t *testing.T) {
 				},
 				&StructPlan{
 					typeInfo: TypeInfo{
-						FileName: "values.gen.go",
 						GoPath:   "github.com/jwilner/jsonschema2go/example",
 						Name:     "NestedType",
 					},
@@ -126,7 +122,6 @@ func TestSchemaToPlan(t *testing.T) {
 			want: []Plan{
 				&StructPlan{
 					typeInfo: TypeInfo{
-						FileName: "values.gen.go",
 						GoPath:   "github.com/jwilner/jsonschema2go/example",
 						Name:     "AwesomeWithID",
 					},
@@ -138,7 +133,6 @@ func TestSchemaToPlan(t *testing.T) {
 						},
 						{
 							Type: TypeInfo{
-								FileName: "values.gen.go",
 								GoPath:   "github.com/jwilner/jsonschema2go/example",
 								Name:     "Awesome",
 							},
@@ -147,7 +141,6 @@ func TestSchemaToPlan(t *testing.T) {
 				},
 				&StructPlan{
 					typeInfo: TypeInfo{
-						FileName: "values.gen.go",
 						GoPath:   "github.com/jwilner/jsonschema2go/example",
 						Name:     "Awesome",
 					},
@@ -180,7 +173,6 @@ func TestSchemaToPlan(t *testing.T) {
 					typeInfo: TypeInfo{
 						GoPath:   "github.com/jwilner/jsonschema2go/example",
 						Name:     "Letter",
-						FileName: "values.gen.go",
 					},
 					BaseType: BuiltInString,
 					Members: []EnumMember{
@@ -210,7 +202,6 @@ func TestSchemaToPlan(t *testing.T) {
 			want: []Plan{
 				&StructPlan{
 					typeInfo: TypeInfo{
-						FileName: "values.gen.go",
 						GoPath:   "github.com/jwilner/jsonschema2go/example",
 						Name:     "Awesome",
 					},
@@ -227,7 +218,7 @@ func TestSchemaToPlan(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := SchemaToPlan(tt.schema)
+			got, err := NewPlanner().Plan(tt.schema)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SchemaToPlan() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -77,7 +77,7 @@ func TestLoad(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			found, err := Resolve(context.Background(), mockLoader(tt.schemas), tt.path)
+			found, err := newResolver(mockLoader(tt.schemas)).Resolve(context.Background(), tt.path)
 			{
 				var errS string
 				if err != nil {

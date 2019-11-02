@@ -263,8 +263,16 @@ type Loader interface {
 	Load(ctx context.Context, s string) (*Schema, error)
 }
 
-func Resolve(ctx context.Context, loader Loader, u string) (*Schema, error) {
-	root, err := loader.Load(ctx, u)
+func newResolver(l Loader) *Resolver {
+	return &Resolver{l: l}
+}
+
+type Resolver struct {
+	l Loader
+}
+
+func (r *Resolver) Resolve(ctx context.Context, u string) (*Schema, error) {
+	root, err := r.l.Load(ctx, u)
 	if err != nil {
 		return nil, fmt.Errorf("unable to load %v: %w", u, err)
 	}
@@ -305,7 +313,7 @@ func Resolve(ctx context.Context, loader Loader, u string) (*Schema, error) {
 			if u, err = resolve(*schema.Ref); err != nil {
 				return nil, err
 			}
-			s, err := loader.Load(ctx, u)
+			s, err := r.l.Load(ctx, u)
 			if err != nil {
 				return nil, fmt.Errorf("loading schema at %v failed: %v", u, err)
 			}
