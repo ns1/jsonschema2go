@@ -20,15 +20,15 @@ func TestSchemaToPlan(t *testing.T) {
 					"count": {Type: &TypeField{Integer}},
 				},
 				Annotations: map[string]interface{}{
-					"description":      "i am bob",
-					"x-gopath": "github.com/jwilner/jsonschema2go/example#Awesome",
+					"description": "i am bob",
+					"x-gopath":    "github.com/jwilner/jsonschema2go/example#Awesome",
 				},
 			},
 			want: []Plan{
 				&StructPlan{
 					typeInfo: TypeInfo{
-						GoPath:   "github.com/jwilner/jsonschema2go/example",
-						Name:     "Awesome",
+						GoPath: "github.com/jwilner/jsonschema2go/example",
+						Name:   "Awesome",
 					},
 					Comment: "i am bob",
 					Fields: []StructField{
@@ -57,23 +57,23 @@ func TestSchemaToPlan(t *testing.T) {
 					},
 				},
 				Annotations: map[string]interface{}{
-					"description":      "i am bob",
-					"x-gopath": "github.com/jwilner/jsonschema2go/example#Awesome",
+					"description": "i am bob",
+					"x-gopath":    "github.com/jwilner/jsonschema2go/example#Awesome",
 				},
 			},
 			want: []Plan{
 				&StructPlan{
 					typeInfo: TypeInfo{
-						GoPath:   "github.com/jwilner/jsonschema2go/example",
-						Name:     "Awesome",
+						GoPath: "github.com/jwilner/jsonschema2go/example",
+						Name:   "Awesome",
 					},
 					Comment: "i am bob",
 					Fields: []StructField{
 						{
 							Names: []string{"Nested"},
 							Type: TypeInfo{
-								GoPath:   "github.com/jwilner/jsonschema2go/example",
-								Name:     "NestedType",
+								GoPath: "github.com/jwilner/jsonschema2go/example",
+								Name:   "NestedType",
 							},
 							Tag: `json:"nested,omitempty"`,
 						},
@@ -81,8 +81,8 @@ func TestSchemaToPlan(t *testing.T) {
 				},
 				&StructPlan{
 					typeInfo: TypeInfo{
-						GoPath:   "github.com/jwilner/jsonschema2go/example",
-						Name:     "NestedType",
+						GoPath: "github.com/jwilner/jsonschema2go/example",
+						Name:   "NestedType",
 					},
 					Fields: []StructField{
 						{
@@ -113,8 +113,8 @@ func TestSchemaToPlan(t *testing.T) {
 							"count": {Type: &TypeField{Integer}},
 						},
 						Annotations: map[string]interface{}{
-							"description":      "i am bob",
-							"x-gopath": "github.com/jwilner/jsonschema2go/example#Awesome",
+							"description": "i am bob",
+							"x-gopath":    "github.com/jwilner/jsonschema2go/example#Awesome",
 						},
 					},
 				},
@@ -122,8 +122,8 @@ func TestSchemaToPlan(t *testing.T) {
 			want: []Plan{
 				&StructPlan{
 					typeInfo: TypeInfo{
-						GoPath:   "github.com/jwilner/jsonschema2go/example",
-						Name:     "AwesomeWithID",
+						GoPath: "github.com/jwilner/jsonschema2go/example",
+						Name:   "AwesomeWithID",
 					},
 					Fields: []StructField{
 						{
@@ -133,16 +133,16 @@ func TestSchemaToPlan(t *testing.T) {
 						},
 						{
 							Type: TypeInfo{
-								GoPath:   "github.com/jwilner/jsonschema2go/example",
-								Name:     "Awesome",
+								GoPath: "github.com/jwilner/jsonschema2go/example",
+								Name:   "Awesome",
 							},
 						},
 					},
 				},
 				&StructPlan{
 					typeInfo: TypeInfo{
-						GoPath:   "github.com/jwilner/jsonschema2go/example",
-						Name:     "Awesome",
+						GoPath: "github.com/jwilner/jsonschema2go/example",
+						Name:   "Awesome",
 					},
 					Comment: "i am bob",
 					Fields: []StructField{
@@ -171,8 +171,8 @@ func TestSchemaToPlan(t *testing.T) {
 			want: []Plan{
 				&EnumPlan{
 					typeInfo: TypeInfo{
-						GoPath:   "github.com/jwilner/jsonschema2go/example",
-						Name:     "Letter",
+						GoPath: "github.com/jwilner/jsonschema2go/example",
+						Name:   "Letter",
 					},
 					BaseType: BuiltInString,
 					Members: []EnumMember{
@@ -202,8 +202,8 @@ func TestSchemaToPlan(t *testing.T) {
 			want: []Plan{
 				&StructPlan{
 					typeInfo: TypeInfo{
-						GoPath:   "github.com/jwilner/jsonschema2go/example",
-						Name:     "Awesome",
+						GoPath: "github.com/jwilner/jsonschema2go/example",
+						Name:   "Awesome",
 					},
 					Fields: []StructField{
 						{

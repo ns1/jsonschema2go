@@ -89,7 +89,6 @@ func newPrinter() *Printer {
 }
 
 type Printer struct {
-
 }
 
 func (p *Printer) Print(ctx context.Context, w io.Writer, goPath string, plans []Plan) error {
