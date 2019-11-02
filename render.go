@@ -9,16 +9,29 @@ import (
 	"strings"
 )
 
-func Render(ctx context.Context, loader Loader, fileNames []string, prefixes [][2]string) error {
+func NewRenderer() *Renderer {
+	return &Renderer{
+		resolver: newResolver(NewCachingLoader()),
+		planner:  newPlanner(),
+		printer:  newPrinter(),
+	}
+}
+
+type Renderer struct {
+	resolver *Resolver
+	planner  *Planners
+	printer  *Printer
+}
+
+func (r *Renderer) Render(ctx context.Context, fileNames []string, prefixes [][2]string) error {
 	seen := make(map[TypeInfo]bool)
 	grouped := make(map[string][]Plan)
-	r := newResolver(loader)
 	for _, fileName := range fileNames {
-		schema, err := r.Resolve(ctx, fileName)
+		schema, err := r.resolver.Resolve(ctx, fileName)
 		if err != nil {
 			return fmt.Errorf("unable to resolve schema from %q: %w", fileName, err)
 		}
-		newPlans, err := NewPlanner().Plan(schema)
+		newPlans, err := r.planner.Plan(schema)
 		if err != nil {
 			return fmt.Errorf("unable to create plans from schema %q: %w ", fileName, err)
 		}
@@ -41,17 +54,17 @@ func Render(ctx context.Context, loader Loader, fileNames []string, prefixes [][
 		if path == "" {
 			return fmt.Errorf("unable to map go path: %q", k[0])
 		}
+		if err := os.MkdirAll(path, 0755); err != nil {
+			return fmt.Errorf("unable to dir %q: %w", path, err)
+		}
 		if err := func() error {
-			if err := os.MkdirAll(path, 0755); err != nil {
-				return fmt.Errorf("unable to dir %q: %w", path, err)
-			}
 			f, err := os.Create(filepath.Join(path, "values.gen.go"))
 			if err != nil {
 				return fmt.Errorf("unable to open: %w", err)
 			}
 			defer f.Close()
 
-			if err := newPrinter().Print(ctx, f, k, group); err != nil {
+			if err := r.printer.Print(ctx, f, k, group); err != nil {
 				return fmt.Errorf("unable to print: %w", err)
 			}
 			return nil

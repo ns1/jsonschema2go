@@ -116,7 +116,7 @@ func (e *EnumPlan) Deps() []TypeInfo {
 	return []TypeInfo{e.BaseType}
 }
 
-func NewPlanner() *Planners {
+func newPlanner() *Planners {
 	return &Planners{
 		planners: []Planner{
 			plannerFunc(planAllOfObject),

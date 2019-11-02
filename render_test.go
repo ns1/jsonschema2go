@@ -85,9 +85,8 @@ func TestRender(t *testing.T) {
 			r.NoError(err)
 			defer os.RemoveAll(dirName)
 
-			r.NoError(
-				Render(context.Background(), NewCachingLoader(), schemas, [][2]string{{"example.com/v1", dirName}}),
-			)
+			renderer := NewRenderer()
+			r.NoError(renderer.Render(context.Background(), schemas, [][2]string{{"example.com/v1", dirName}}))
 			results, err := listAllFiles(dirName, ".gen.go")
 			r.NoError(err)
 			wantedByName := keyedBySuffix(wantDir, wanted)
