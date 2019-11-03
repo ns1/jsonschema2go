@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sync"
 )
 
 type HTTPDoer interface {
@@ -16,26 +17,106 @@ type HTTPDoer interface {
 
 var _ HTTPDoer = http.DefaultClient
 
-func newCachingLoader() *CachingLoader {
-	return &CachingLoader{make(map[string]*Schema), http.DefaultClient}
+type schemaResult struct {
+	schema *Schema
+	error  error
 }
 
-type CachingLoader struct {
-	cache  map[string]*Schema
-	client HTTPDoer
+type schemaRequest struct {
+	url string
+	c   chan<- schemaResult
 }
 
-func (c *CachingLoader) Load(ctx context.Context, u *url.URL) (*Schema, error) {
-	// cache check
-	schema, ok := c.cache[u.String()]
-	if ok {
-		return schema, nil
+type cachingLoader struct {
+	requests chan schemaRequest
+	client   HTTPDoer
+}
+
+func newLoader() *cachingLoader {
+	return &cachingLoader{
+		requests: make(chan schemaRequest),
+		client:   http.DefaultClient,
 	}
-	defer func() {
-		if schema != nil {
-			c.cache[u.String()] = schema
+}
+
+func (c *cachingLoader) Run(ctx context.Context) error {
+	type uriSchemaResult struct {
+		schemaResult
+		url string
+	}
+
+	respond := func(wg *sync.WaitGroup, res schemaResult, c chan<- schemaResult) {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			select {
+			case c <- res:
+			case <-ctx.Done():
+				close(c) // signal we're outta here to downstream
+				return
+			}
+		}()
+	}
+
+	fetch := func(wg *sync.WaitGroup, result chan<- uriSchemaResult, u string) {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			res := c.fetch(ctx, u)
+			select {
+			case result <- uriSchemaResult{res, u}:
+			case <-ctx.Done():
+			}
+		}()
+	}
+
+	var (
+		wg         = new(sync.WaitGroup)
+		activeReqs = make(map[string][]chan<- schemaResult)
+		fetches    = make(chan uriSchemaResult)
+		cache      = make(map[string]*Schema)
+	)
+
+	for {
+		select {
+		case <-ctx.Done():
+			wg.Wait()
+			return ctx.Err()
+
+		case req := <-c.requests:
+			if schema, ok := cache[req.url]; ok {
+				respond(wg, schemaResult{schema, nil}, req.c)
+				continue
+			}
+
+			activeReqs[req.url] = append(activeReqs[req.url], req.c)
+
+			if len(activeReqs[req.url]) == 1 { // this is the first req, so start a fetch
+				fetch(wg, fetches, req.url)
+				continue
+			}
+
+		case fet := <-fetches:
+			reqs := activeReqs[fet.url]
+			delete(activeReqs, fet.url)
+
+			for _, r := range reqs {
+				respond(wg, fet.schemaResult, r)
+			}
+
+			// we won't cache errors
+			if fet.error == nil && fet.schema != nil {
+				cache[fet.url] = fet.schema
+			}
 		}
-	}()
+	}
+}
+
+func (c *cachingLoader) fetch(ctx context.Context, rawURL string) schemaResult {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return schemaResult{nil, err}
+	}
 
 	// open IO
 	var r io.ReadCloser
@@ -43,20 +124,20 @@ func (c *CachingLoader) Load(ctx context.Context, u *url.URL) (*Schema, error) {
 	case "file":
 		var err error
 		if r, err = os.Open(u.Path); err != nil {
-			return nil, fmt.Errorf("unable to open %q: %w", u.Path, err)
+			return schemaResult{nil, fmt.Errorf("unable to open %q: %w", u.Path, err)}
 		}
 	case "http", "https":
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
 		if err != nil {
-			return nil, fmt.Errorf("unable to create request for %q: %w", u, err)
+			return schemaResult{nil, fmt.Errorf("unable to create request for %q: %w", u, err)}
 		}
 		resp, err := c.client.Do(req)
 		if err != nil {
-			return nil, fmt.Errorf("failed requesting %q: %w", u, err)
+			return schemaResult{nil, fmt.Errorf("failed requesting %q: %w", u, err)}
 		}
 		r = resp.Body
 	default:
-		return nil, fmt.Errorf("unsupported scheme: %v", u.Scheme)
+		return schemaResult{nil, fmt.Errorf("unsupported scheme: %v", u.Scheme)}
 	}
 	defer func() {
 		_ = r.Close()
@@ -64,10 +145,25 @@ func (c *CachingLoader) Load(ctx context.Context, u *url.URL) (*Schema, error) {
 
 	var sch Schema
 	if err := json.NewDecoder(r).Decode(&sch); err != nil {
-		return nil, fmt.Errorf("unable to decode %q: %w", u.Path, err)
+		return schemaResult{nil, fmt.Errorf("unable to decode %q: %w", u.Path, err)}
 	}
-	schema = &sch
-	schema.curLoc = u
 
-	return schema, nil
+	schema := &sch
+	schema.curLoc = u
+	return schemaResult{schema, nil}
+}
+
+func (c *cachingLoader) Load(ctx context.Context, u *url.URL) (*Schema, error) {
+	req := make(chan schemaResult)
+	select {
+	case c.requests <- schemaRequest{u.String(), req}:
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+	select {
+	case res := <-req:
+		return res.schema, res.error
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 }

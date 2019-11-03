@@ -14,12 +14,12 @@ import (
 
 func Test_mapPath(t *testing.T) {
 	tests := []struct {
-		name           string
-		path           string
-		sortedPrefixes [][2]string
-		want           string
+		name     string
+		path     string
+		prefixes [][2]string
+		want     string
 	}{
-		{"empty", "blah", nil, ""},
+		{"empty", "blah", nil, "blah"},
 		{"one", "github.com/jsonschema2go/foo/bar", [][2]string{{"github.com/jsonschema2go", "code"}}, "code/foo/bar"},
 		{
 			"greater",
@@ -42,7 +42,7 @@ func Test_mapPath(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := mapPath(tt.path, tt.sortedPrefixes); got != tt.want {
+			if got := pathMapper(tt.prefixes)(tt.path); got != tt.want {
 				t.Errorf("mapPath() = %v, want %v", got, tt.want)
 			}
 		})
