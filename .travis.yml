@@ -6,9 +6,6 @@ install:
   - go get -u golang.org/x/lint/golint
   - go get github.com/mattn/goveralls
 
-before_script:
-  - make check
-
 script:
   - make test-cover
 
