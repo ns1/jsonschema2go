@@ -12,16 +12,16 @@ import (
 
 func NewRenderer() *Renderer {
 	return &Renderer{
-		resolver: newResolver(NewCachingLoader()),
-		planner:  newPlanner(),
-		printer:  newPrinter(),
+		loader:  newCachingLoader(),
+		planner: newPlanner(),
+		printer: newPrinter(),
 	}
 }
 
 type Renderer struct {
-	resolver *Resolver
-	planner  *Planners
-	printer  *Printer
+	loader  Loader
+	planner *Planners
+	printer *Printer
 }
 
 func (r *Renderer) Render(ctx context.Context, fileNames []string, prefixes [][2]string) error {
@@ -33,12 +33,12 @@ func (r *Renderer) Render(ctx context.Context, fileNames []string, prefixes [][2
 			return err
 		}
 
-		schema, err := r.resolver.l.Load(ctx, u)
+		schema, err := r.loader.Load(ctx, u)
 		if err != nil {
 			return fmt.Errorf("unable to resolve schema from %q: %w", fileName, err)
 		}
 
-		newPlans, err := r.planner.Plan(context.Background(), schema, r.resolver.l)
+		newPlans, err := r.planner.Plan(context.Background(), schema, r.loader)
 		if err != nil {
 			return fmt.Errorf("unable to create plans from schema %q: %w ", fileName, err)
 		}

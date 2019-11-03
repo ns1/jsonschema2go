@@ -16,7 +16,7 @@ type HTTPDoer interface {
 
 var _ HTTPDoer = http.DefaultClient
 
-func NewCachingLoader() *CachingLoader {
+func newCachingLoader() *CachingLoader {
 	return &CachingLoader{make(map[string]*Schema), http.DefaultClient}
 }
 

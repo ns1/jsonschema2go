@@ -260,14 +260,6 @@ type Loader interface {
 	Load(ctx context.Context, u *url.URL) (*Schema, error)
 }
 
-func newResolver(l Loader) *Resolver {
-	return &Resolver{l: l}
-}
-
-type Resolver struct {
-	l Loader
-}
-
 func getJSONFieldNames(val interface{}) (fields []string) {
 	t := reflect.TypeOf(val)
 	for i := 0; i < t.NumField(); i++ {
