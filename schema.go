@@ -5,10 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
-	"os"
 	"reflect"
 	"strings"
 )
@@ -78,7 +75,7 @@ func peekToken(data []byte) json.Token {
 
 type BoolOrSchema struct {
 	Bool   *bool
-	Schema *Schema
+	Schema *RefOrSchema
 }
 
 func (a *BoolOrSchema) UnmarshalJSON(data []byte) error {
@@ -86,17 +83,18 @@ func (a *BoolOrSchema) UnmarshalJSON(data []byte) error {
 		a.Bool = &b
 		return nil
 	}
+	a.Schema = new(RefOrSchema)
 	return json.Unmarshal(data, a.Schema)
 }
 
 type ItemsFields struct {
-	Items       *Schema
-	TupleFields []*Schema
+	Items       *RefOrSchema
+	TupleFields []*RefOrSchema
 }
 
 func (i *ItemsFields) UnmarshalJSON(data []byte) error {
 	if peekToken(data) == json.Delim('{') {
-		i.Items = new(Schema)
+		i.Items = new(RefOrSchema)
 		return json.Unmarshal(data, i.Items)
 	}
 	return json.Unmarshal(data, i.TupleFields)
@@ -107,6 +105,40 @@ type TagMap map[string]interface{}
 func (t TagMap) GetString(k string) string {
 	s, _ := t[k].(string)
 	return s
+}
+
+type RefOrSchema struct {
+	ref    *string
+	schema *Schema
+	curLoc *url.URL
+}
+
+func (r *RefOrSchema) UnmarshalJSON(b []byte) error {
+	var ref struct {
+		Ref string `json:"$ref"`
+	}
+	if err := json.Unmarshal(b, &ref); err != nil {
+		return err
+	}
+	if ref.Ref != "" {
+		r.ref = &ref.Ref
+		return nil
+	}
+	r.schema = new(Schema)
+	return json.Unmarshal(b, r.schema)
+}
+
+func (r *RefOrSchema) Resolve(ctx context.Context, referer *Schema, loader Loader) (*Schema, error) {
+	if r.ref == nil {
+		return r.schema, nil
+	}
+
+	parsed2, err := url.Parse(*r.ref)
+	if err != nil {
+		return nil, err
+	}
+
+	return loader.Load(ctx, referer.curLoc.ResolveReference(parsed2))
 }
 
 type Schema struct {
@@ -137,14 +169,14 @@ type Schema struct {
 	UniqueItems     bool          `json:"uniqueItems,omitempty"`
 
 	// object qualifiers
-	MaxProperties        *uint64            `json:"maxProperties,omitempty"`
-	MinProperties        uint64             `json:"minProperties,omitempty"`
-	Required             []string           `json:"required,omitempty"`
-	AdditionalProperties *BoolOrSchema      `json:"additionalProperties,omitempty"`
-	Definitions          map[string]*Schema `json:"definitions,omitempty"`
-	Properties           map[string]*Schema `json:"properties,omitempty"`
-	PatternProperties    map[string]*Schema `json:"patternProperties,omitempty"`
-	Dependencies         map[string]*Schema `json:"dependencies,omitempty"`
+	MaxProperties        *uint64                 `json:"maxProperties,omitempty"`
+	MinProperties        uint64                  `json:"minProperties,omitempty"`
+	Required             []string                `json:"required,omitempty"`
+	AdditionalProperties *BoolOrSchema           `json:"additionalProperties,omitempty"`
+	Definitions          map[string]*RefOrSchema `json:"definitions,omitempty"`
+	Properties           map[string]*RefOrSchema `json:"properties,omitempty"`
+	PatternProperties    map[string]*RefOrSchema `json:"patternProperties,omitempty"`
+	Dependencies         map[string]*RefOrSchema `json:"dependencies,omitempty"`
 
 	// extra special
 	Enum   []interface{} `json:"enum,omitempty"`
@@ -152,13 +184,16 @@ type Schema struct {
 	Format string        `json:"format,omitempty"`
 
 	// polymorphic support
-	AllOf []*Schema `json:"allOf,omitempty"`
-	AnyOf []*Schema `json:"anyOf,omitempty"`
-	OneOf []*Schema `json:"oneOf,omitempty"`
-	Not   *Schema   `json:"not,omitempty"`
+	AllOf []*RefOrSchema `json:"allOf,omitempty"`
+	AnyOf []*RefOrSchema `json:"anyOf,omitempty"`
+	OneOf []*RefOrSchema `json:"oneOf,omitempty"`
+	Not   *RefOrSchema   `json:"not,omitempty"`
 
 	// user extensible
 	Annotations TagMap `json:"-"`
+
+	// curLoc -- internal bookkeeping, the resource from which this schema was loaded
+	curLoc *url.URL `json:"-"`
 }
 
 func (s *Schema) ChooseType() (t SimpleType) {
@@ -194,73 +229,35 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type HTTPDoer interface {
-	Do(r *http.Request) (*http.Response, error)
+func (s *Schema) Meta() SchemaMeta {
+	return SchemaMeta{
+		ID:          s.ID,
+		BestType:    s.ChooseType(),
+		Annotations: s.Annotations,
+	}
 }
 
-var _ HTTPDoer = http.DefaultClient
+func (s *Schema) Resolve(ctx context.Context, src *Schema, loader Loader) (*Schema, error) {
+	if s.Ref == nil {
+		return s, nil
+	}
 
-func NewCachingLoader() *CachingLoader {
-	return &CachingLoader{make(map[string]*Schema), http.DefaultClient}
-}
-
-type CachingLoader struct {
-	cache  map[string]*Schema
-	client HTTPDoer
-}
-
-func (c *CachingLoader) Load(ctx context.Context, s string) (*Schema, error) {
-	u, err := url.Parse(s)
+	parsed2, err := url.Parse(*s.Ref)
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse %q: %w", s, err)
+		return nil, err
 	}
 
-	// cache check
-	schema, ok := c.cache[u.String()]
-	if ok {
-		return schema, nil
-	}
-	defer func() {
-		if schema != nil {
-			c.cache[u.String()] = schema
-		}
-	}()
+	return loader.Load(ctx, src.curLoc.ResolveReference(parsed2))
+}
 
-	// open IO
-	var r io.ReadCloser
-	switch u.Scheme {
-	case "file":
-		if r, err = os.Open(u.Path); err != nil {
-			return nil, fmt.Errorf("unable to open %q: %w", u.Path, err)
-		}
-	case "http", "https":
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
-		if err != nil {
-			return nil, fmt.Errorf("unable to create request for %q: %w", u, err)
-		}
-		resp, err := c.client.Do(req)
-		if err != nil {
-			return nil, fmt.Errorf("failed requesting %q: %w", u, err)
-		}
-		r = resp.Body
-	default:
-		return nil, fmt.Errorf("unsupported scheme: %v", u.Scheme)
-	}
-	defer func() {
-		_ = r.Close()
-	}()
-
-	var sch Schema
-	if err := json.NewDecoder(r).Decode(&sch); err != nil {
-		return nil, fmt.Errorf("unable to decode %q: %w", u.Path, err)
-	}
-	schema = &sch
-
-	return schema, nil
+type SchemaMeta struct {
+	ID          string
+	BestType    SimpleType
+	Annotations TagMap
 }
 
 type Loader interface {
-	Load(ctx context.Context, s string) (*Schema, error)
+	Load(ctx context.Context, u *url.URL) (*Schema, error)
 }
 
 func newResolver(l Loader) *Resolver {
@@ -269,101 +266,6 @@ func newResolver(l Loader) *Resolver {
 
 type Resolver struct {
 	l Loader
-}
-
-func (r *Resolver) Resolve(ctx context.Context, u string) (*Schema, error) {
-	root, err := r.l.Load(ctx, u)
-	if err != nil {
-		return nil, fmt.Errorf("unable to load %v: %w", u, err)
-	}
-
-	type SchemaPath struct {
-		URL    string
-		Schema *Schema
-	}
-
-	var stack []SchemaPath
-
-	push := func(s *Schema, components ...interface{}) {
-		stack = append(stack, SchemaPath{u, s})
-	}
-	pop := func() *Schema {
-		schemaURL := stack[len(stack)-1]
-		stack = stack[:len(stack)-1]
-		u = schemaURL.URL
-		return schemaURL.Schema
-	}
-	resolve := func(u2 string) (string, error) {
-		parsed, err := url.Parse(u)
-		if err != nil {
-			return "", err
-		}
-
-		parsed2, err := url.Parse(u2)
-		if err != nil {
-			return "", err
-		}
-		return parsed.ResolveReference(parsed2).String(), nil
-	}
-	push(root)
-	for len(stack) > 0 {
-		schema := pop()
-
-		if schema.Ref != nil {
-			if u, err = resolve(*schema.Ref); err != nil {
-				return nil, err
-			}
-			s, err := r.l.Load(ctx, u)
-			if err != nil {
-				return nil, fmt.Errorf("loading schema at %v failed: %v", u, err)
-			}
-			*schema = *s
-		}
-		if schema.AdditionalItems != nil && schema.AdditionalItems.Schema != nil {
-			push(schema.AdditionalItems.Schema, "additionalItems")
-		}
-		if schema.Items != nil {
-			if schema.Items.Items != nil {
-				push(schema.Items.Items, "items")
-			}
-			for i, s := range schema.Items.TupleFields {
-				push(s, "items", i)
-			}
-		}
-		if schema.AdditionalProperties != nil && schema.AdditionalProperties.Schema != nil {
-			push(schema.AdditionalProperties.Schema, "additionalProperties")
-		}
-		for _, m := range []struct {
-			Key     string
-			Schemas map[string]*Schema
-		}{
-			{"definitions", schema.Definitions},
-			{"properties", schema.Properties},
-			{"patternProperties", schema.PatternProperties},
-			{"definitions", schema.Definitions},
-		} {
-			for k, s := range m.Schemas {
-				push(s, m.Key, k)
-			}
-		}
-		for _, m := range []struct {
-			Key     string
-			Schemas []*Schema
-		}{
-			{"allOf", schema.AllOf},
-			{"anyOf", schema.AnyOf},
-			{"oneOf", schema.OneOf},
-		} {
-			for i, s := range m.Schemas {
-				push(s, m.Key, i)
-			}
-		}
-		if schema.Not != nil {
-			push(schema.Not, "not")
-		}
-	}
-
-	return root, nil
 }
 
 func getJSONFieldNames(val interface{}) (fields []string) {

@@ -8,104 +8,15 @@ import (
 	"testing"
 )
 
-func TestLoad(t *testing.T) {
-	strPtr := func(s string) *string {
-		return &s
-	}
-
-	for _, tt := range []struct {
-		name    string
-		schemas map[string]*Schema
-		path    string
-		want    *Schema
-		wantErr string
-	}{
-		{
-			name: "simple",
-			schemas: map[string]*Schema{
-				"/hi.json": {Type: &TypeField{String}},
-			},
-			path: "file:/hi.json",
-			want: &Schema{Type: &TypeField{String}},
-		},
-		{
-			name: "resolution",
-			schemas: map[string]*Schema{
-				"/bob/parent.json": {
-					Type: &TypeField{String},
-					Properties: map[string]*Schema{
-						"bob": {Not: &Schema{Ref: strPtr("../child.json")}},
-					},
-				},
-				"/child.json": {Type: &TypeField{Integer}},
-			},
-			path: "file:/bob/parent.json",
-			want: &Schema{
-				Type: &TypeField{String},
-				Properties: map[string]*Schema{
-					"bob": {Not: &Schema{Type: &TypeField{Integer}}},
-				},
-			},
-		},
-		{
-			name: "deeper",
-			schemas: map[string]*Schema{
-				"/bob/parent.json": {
-					Type: &TypeField{String},
-					Properties: map[string]*Schema{
-						"bob": {Not: &Schema{Ref: strPtr("../child.json")}},
-					},
-					AdditionalProperties: &BoolOrSchema{
-						Schema: &Schema{
-							Ref: strPtr("foo/bar.json"),
-						},
-					},
-				},
-				"/child.json":       {Type: &TypeField{Integer}},
-				"/bob/foo/bar.json": {Type: &TypeField{Object}},
-			},
-			path: "file:/bob/parent.json",
-			want: &Schema{
-				Type: &TypeField{String},
-				Properties: map[string]*Schema{
-					"bob": {Not: &Schema{Type: &TypeField{Integer}}},
-				},
-				AdditionalProperties: &BoolOrSchema{
-					Schema: &Schema{Type: &TypeField{Object}},
-				},
-			},
-		},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			found, err := newResolver(mockLoader(tt.schemas)).Resolve(context.Background(), tt.path)
-			{
-				var errS string
-				if err != nil {
-					errS = err.Error()
-				}
-				if (tt.wantErr == "") != (errS == "") {
-					t.Fatalf("wanted err %q but got %q", tt.wantErr, errS)
-				}
-			}
-
-			require.Equal(t, tt.want, found)
-		})
-	}
-}
-
 type mockLoader map[string]*Schema
 
-func (m mockLoader) Load(ctx context.Context, s string) (*Schema, error) {
-	u, err := url.Parse(s)
-	if err != nil {
-		return nil, err
-	}
+func (m mockLoader) Load(ctx context.Context, u *url.URL) (*Schema, error) {
 	if u.Scheme != "file" || u.Host != "" {
-		return nil, fmt.Errorf("expected \"file\" scheme and no host but got %q and %q: %q", u.Scheme, u.Host, s)
+		return nil, fmt.Errorf("expected \"file\" scheme and no host but got %q and %q: %q", u.Scheme, u.Host, u)
 	}
 	v, ok := m[u.Path]
 	if !ok {
-		return nil, fmt.Errorf("%q not found", s)
+		return nil, fmt.Errorf("%q not found", u)
 	}
 	return v, nil
 }
@@ -243,7 +154,7 @@ func TestSchema_UnmarshalJSON(t *testing.T) {
 		{
 			name: "simple",
 			data: `{"type": "array", "items": {"type": "string"}}`,
-			want: Schema{Type: &TypeField{Array}, Items: &ItemsFields{Items: &Schema{Type: &TypeField{String}}}},
+			want: Schema{Type: &TypeField{Array}, Items: &ItemsFields{Items: schema(Schema{Type: &TypeField{String}})}},
 		},
 		{
 			name: "annos",
@@ -253,17 +164,19 @@ func TestSchema_UnmarshalJSON(t *testing.T) {
 		{
 			name: "recursive",
 			data: `{"not": {"$ref": "https://somewhereelse"}}`,
-			want: Schema{Not: &Schema{Ref: strPtr("https://somewhereelse")}},
+			want: Schema{Not: ref("https://somewhereelse")},
 		},
 		{
 			name: "allOf",
 			data: `{"allOf": [{"$ref": "https://somewhereelse"}]}`,
-			want: Schema{AllOf: []*Schema{{Ref: strPtr("https://somewhereelse")}}},
+			want: Schema{AllOf: []*RefOrSchema{ref("https://somewhereelse")}},
 		},
 		{
 			name: "additionalProperties bool",
 			data: `{"allOf": [{"additionalProperties": true}]}`,
-			want: Schema{AllOf: []*Schema{{AdditionalProperties: &BoolOrSchema{Bool: boolPtr(true)}}}},
+			want: Schema{AllOf: []*RefOrSchema{
+				schema(Schema{AdditionalProperties: &BoolOrSchema{Bool: boolPtr(true)}}),
+			}},
 		},
 	}
 	for _, tt := range tests {
@@ -275,4 +188,12 @@ func TestSchema_UnmarshalJSON(t *testing.T) {
 			require.Equal(t, tt.want, r)
 		})
 	}
+}
+
+func schema(s Schema) *RefOrSchema {
+	return &RefOrSchema{schema: &s}
+}
+
+func ref(s string) *RefOrSchema {
+	return &RefOrSchema{ref: &s}
 }

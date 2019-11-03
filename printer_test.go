@@ -53,7 +53,7 @@ func TestImports_QualName(t *testing.T) {
 			"builtin",
 			"github.com/jwilner/jsonschema2go",
 			[]string{"github.com/jwilner/jsonschema2go/example", "github.com/jwilner/jsonschema2go/foo/example"},
-			BuiltInInt,
+			TypeInfo{Name: "int"},
 			"int",
 		},
 		{
@@ -100,7 +100,7 @@ func TestPrintFile(t *testing.T) {
 				&StructPlan{
 					Comment: "Bob does lots of cool things",
 					Fields: []StructField{
-						{Names: []string{"Count"}, Type: BuiltInInt, Tag: `json:"count,omitempty"`},
+						{Names: []string{"Count"}, Type: TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
 					},
 					typeInfo: TypeInfo{
 						Name: "Bob",
@@ -123,7 +123,7 @@ type Bob struct {
 				&StructPlan{
 					Comment: "Bob does lots of cool things",
 					Fields: []StructField{
-						{Names: []string{"Count"}, Type: BuiltInInt, Tag: `json:"count,omitempty"`},
+						{Names: []string{"Count"}, Type: TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
 						{
 							Names: []string{"Other"},
 							Type: TypeInfo{
@@ -158,7 +158,7 @@ type Bob struct {
 				&StructPlan{
 					Comment: "Bob does lots of cool things",
 					Fields: []StructField{
-						{Names: []string{"Count"}, Type: BuiltInInt, Tag: `json:"count,omitempty"`},
+						{Names: []string{"Count"}, Type: TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
 						{
 							Names: []string{"Other"},
 							Type: TypeInfo{
@@ -249,7 +249,7 @@ type Bob struct {
 				&StructPlan{
 					Comment: "OtherType does lots of cool things",
 					Fields: []StructField{
-						{Type: BuiltInInt, Names: []string{"Count"}, Tag: `json:"count,omitempty"`},
+						{Type: TypeInfo{Name: "int"}, Names: []string{"Count"}, Tag: `json:"count,omitempty"`},
 					},
 					typeInfo: TypeInfo{
 						Name: "OtherType",
@@ -286,7 +286,7 @@ type OtherType struct {
 				&StructPlan{
 					Comment: "OtherType does lots of cool things",
 					Fields: []StructField{
-						{Type: BuiltInInt, Names: []string{"Count"}, Tag: `json:"count,omitempty"`},
+						{Type: TypeInfo{Name: "int"}, Names: []string{"Count"}, Tag: `json:"count,omitempty"`},
 					},
 					typeInfo: TypeInfo{
 						Name: "OtherType",

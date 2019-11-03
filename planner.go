@@ -1,6 +1,7 @@
 package jsonschema2go
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sort"
@@ -19,25 +20,17 @@ func (t TypeInfo) BuiltIn() bool {
 	return t.GoPath == ""
 }
 
-var (
-	BuiltInBool          = TypeInfo{Name: "bool"}
-	BuiltInBoolPointer   = TypeInfo{Name: "bool", Pointer: true}
-	BuiltInInt           = TypeInfo{Name: "int"}
-	BuiltInIntPointer    = TypeInfo{Name: "int", Pointer: true}
-	BuiltInFloat         = TypeInfo{Name: "float64"}
-	BuiltInFloatPointer  = TypeInfo{Name: "float64", Pointer: true}
-	BuiltInNull          = TypeInfo{Name: "null"}
-	BuiltInString        = TypeInfo{Name: "string"}
-	BuiltInStringPointer = TypeInfo{Name: "string", Pointer: true}
+func (t TypeInfo) Unknown() bool {
+	return t == TypeInfo{}
+}
 
-	primitives = map[SimpleType]TypeInfo{
-		Boolean: BuiltInBool,
-		Integer: BuiltInInt,
-		Number:  BuiltInFloat,
-		Null:    BuiltInNull,
-		String:  BuiltInString,
-	}
-)
+var primitives = map[SimpleType]string{
+	Boolean: "bool",
+	Integer: "int",
+	Number:  "float",
+	Null:    "interface{}",
+	String:  "string",
+}
 
 type StructField struct {
 	Comment string
@@ -132,27 +125,27 @@ type Planners struct {
 }
 
 type Planner interface {
-	Plan(schema *Schema) (Plan, []*Schema)
+	Plan(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, []*Schema)
 }
 
-type plannerFunc func(schema *Schema) (Plan, []*Schema)
+type plannerFunc func(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, []*Schema)
 
-func (p plannerFunc) Plan(schema *Schema) (Plan, []*Schema) {
-	return p(schema)
+func (p plannerFunc) Plan(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, []*Schema) {
+	return p(ctx, helper, schema)
 }
 
-func (p *Planners) Plan(s *Schema) ([]Plan, error) {
+func (p *Planners) Plan(ctx context.Context, s *Schema, loader Loader) ([]Plan, error) {
 	var (
-		plans []Plan
-		stack = []*Schema{s}
+		plans  []Plan
+		stack  = []*Schema{s}
+		helper = &PlanningHelper{loader}
 	)
 
-	// dfs
 	for len(stack) > 0 {
 		schema := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
 
-		plan, deps, err := p.derivePlan(schema)
+		plan, deps, err := p.derivePlan(ctx, helper, schema)
 		if err != nil {
 			return nil, err
 		}
@@ -162,9 +155,9 @@ func (p *Planners) Plan(s *Schema) ([]Plan, error) {
 	return plans, nil
 }
 
-func (p *Planners) derivePlan(schema *Schema) (Plan, []*Schema, error) {
+func (p *Planners) derivePlan(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, []*Schema, error) {
 	for _, p := range p.planners {
-		pl, deps := p.Plan(schema)
+		pl, deps := p.Plan(ctx, helper, schema)
 		if pl == nil {
 			continue
 		}
@@ -174,7 +167,11 @@ func (p *Planners) derivePlan(schema *Schema) (Plan, []*Schema, error) {
 	return nil, nil, errors.New("unable to plan")
 }
 
-func deriveStructFields(schema *Schema) (fields []StructField, deps []*Schema, ok bool) {
+func deriveStructFields(
+	ctx context.Context,
+	helper *PlanningHelper,
+	schema *Schema,
+) (fields []StructField, deps []*Schema, ok bool) {
 	ok = true
 
 	var properties []string
@@ -184,25 +181,37 @@ func deriveStructFields(schema *Schema) (fields []StructField, deps []*Schema, o
 	sort.Strings(properties)
 
 	for _, name := range properties {
-		fieldSchema := schema.Properties[name]
-		fType, ok := deriveTypeInfo(fieldSchema)
-		if !ok &&
-			len(fieldSchema.OneOf) == 2 &&
-			(fieldSchema.OneOf[0].ChooseType() == Null || fieldSchema.OneOf[1].ChooseType() == Null) {
-			// this is a nillable field
-			valueSchema := fieldSchema.OneOf[0]
-			if valueSchema.ChooseType() == Null {
-				valueSchema = fieldSchema.OneOf[1]
-			}
-			fieldSchema = valueSchema
-
-			if fType, ok = deriveTypeInfo(fieldSchema); !ok {
-				return nil, nil, false
-			}
-			fType.Pointer = true
-		} else if !ok {
+		fieldSchema, err := schema.Properties[name].Resolve(ctx, schema, helper)
+		if err != nil {
 			return nil, nil, false
 		}
+
+		fType := helper.TypeInfo(fieldSchema.Meta())
+		if fType.Unknown() && len(fieldSchema.OneOf) == 2 {
+			oneOfA, err := fieldSchema.OneOf[0].Resolve(ctx, fieldSchema, helper)
+			if err != nil {
+				return nil, nil, false
+			}
+			oneOfB, err := fieldSchema.OneOf[1].Resolve(ctx, fieldSchema, helper)
+			if err != nil {
+				return nil, nil, false
+			}
+			if oneOfA.ChooseType() == Null || oneOfB.ChooseType() == Null {
+				// this is a nillable field
+				valueSchema := oneOfA
+				if valueSchema.ChooseType() == Null {
+					valueSchema = oneOfB
+				}
+				if fType = helper.TypeInfo(valueSchema.Meta()); fType.Unknown() {
+					return nil, nil, false
+				}
+				fType.Pointer = true
+			}
+		}
+		if fType.Unknown() {
+			return nil, nil, false
+		}
+
 		fields = append(
 			fields,
 			StructField{
@@ -219,46 +228,56 @@ func deriveStructFields(schema *Schema) (fields []StructField, deps []*Schema, o
 	return
 }
 
-func deriveTypeInfo(s *Schema) (TypeInfo, bool) {
-	switch s.ChooseType() {
-	case Boolean:
-		return BuiltInBool, true
-	case Integer:
-		return BuiltInInt, true
-	case Null:
-		return BuiltInNull, true
-	case Number:
-		return BuiltInFloat, true
-	case String:
-		return BuiltInString, true
-	}
-	return getGoPathInfo(s)
+type PlanningHelper struct {
+	Loader
 }
 
-func getGoPathInfo(s *Schema) (TypeInfo, bool) {
+func (p *PlanningHelper) TypeInfo(s SchemaMeta) TypeInfo {
 	parts := strings.SplitN(s.Annotations.GetString("x-gopath"), "#", 2)
-	if len(parts) != 2 {
-		return TypeInfo{}, false
+	if len(parts) == 2 {
+		return TypeInfo{GoPath: parts[0], Name: parts[1]}
 	}
-	return TypeInfo{GoPath: parts[0], Name: parts[1]}, true
+	return TypeInfo{Name: p.Primitive(s.BestType)}
 }
 
-func planAllOfObject(schema *Schema) (_ Plan, deps []*Schema) {
-	if len(schema.AllOf) == 0 || schema.AllOf[0].ChooseType() != Object {
+func (p *PlanningHelper) Primitive(s SimpleType) string {
+	return primitives[s]
+}
+
+func planAllOfObject(ctx context.Context, helper *PlanningHelper, schema *Schema) (_ Plan, deps []*Schema) {
+	if len(schema.AllOf) == 0 {
 		return nil, nil
 	}
-	tInfo, ok := deriveTypeInfo(schema)
-	if !ok {
+	var (
+		resolved []*Schema
+		foundObj bool
+	)
+
+	for _, s := range schema.AllOf {
+		r, err := s.Resolve(ctx, schema, helper)
+		if err != nil {
+			return nil, nil
+		}
+		resolved = append(resolved, r)
+		if !foundObj && r.ChooseType() == Object {
+			foundObj = true
+		}
+	}
+	if !foundObj {
+		return nil, nil
+	}
+	tInfo := helper.TypeInfo(schema.Meta())
+	if tInfo.Unknown() {
 		return nil, nil
 	}
 	s := &StructPlan{typeInfo: tInfo}
 	s.Comment = schema.Annotations.GetString("description")
 
-	for _, subSchema := range schema.AllOf {
-		tInfo, ok := deriveTypeInfo(subSchema)
-		if !ok {
+	for _, subSchema := range resolved {
+		tInfo := helper.TypeInfo(subSchema.Meta())
+		if tInfo.Unknown() {
 			// this is an anonymous struct; add all of its inner fields to parent
-			fields, infos, ok := deriveStructFields(subSchema)
+			fields, infos, ok := deriveStructFields(ctx, helper, subSchema)
 			if !ok {
 				return nil, nil
 			}
@@ -273,17 +292,17 @@ func planAllOfObject(schema *Schema) (_ Plan, deps []*Schema) {
 	return s, deps
 }
 
-func planSimpleObject(schema *Schema) (_ Plan, deps []*Schema) {
+func planSimpleObject(ctx context.Context, helper *PlanningHelper, schema *Schema) (_ Plan, deps []*Schema) {
 	if schema.ChooseType() != Object {
 		return nil, nil
 	}
-	tInfo, ok := deriveTypeInfo(schema)
-	if !ok {
+	tInfo := helper.TypeInfo(schema.Meta())
+	if tInfo.Unknown() {
 		return nil, nil
 	}
 	s := &StructPlan{typeInfo: tInfo}
 	s.Comment = schema.Annotations.GetString("description")
-	fields, infos, ok := deriveStructFields(schema)
+	fields, infos, ok := deriveStructFields(ctx, helper, schema)
 	if !ok {
 		return nil, nil
 	}
@@ -292,48 +311,43 @@ func planSimpleObject(schema *Schema) (_ Plan, deps []*Schema) {
 	return s, deps
 }
 
-func planSimpleArray(schema *Schema) (_ Plan, deps []*Schema) {
-	if schema.ChooseType() != Array {
+func planSimpleArray(ctx context.Context, helper *PlanningHelper, schema *Schema) (_ Plan, deps []*Schema) {
+	if schema.ChooseType() != Array || schema.Items == nil || schema.Items.Items == nil {
 		return nil, nil
 	}
-	tInfo, ok := deriveTypeInfo(schema)
-	if !ok {
+	tInfo := helper.TypeInfo(schema.Meta())
+	if tInfo.Unknown() {
 		return nil, nil
 	}
-	if schema.Items != nil && schema.Items.Items != nil {
-		a := &ArrayPlan{typeInfo: tInfo}
-		a.Comment = schema.Annotations.GetString("description")
-		if a.ItemType, ok = deriveTypeInfo(schema.Items.Items); !ok {
-			return nil, nil
-		}
-		if !a.ItemType.BuiltIn() {
-			deps = append(deps, schema.Items.Items)
-		}
-		return a, deps
+
+	itemSchema, err := schema.Items.Items.Resolve(ctx, schema, helper)
+	if err != nil {
+		return nil, nil
 	}
-	return nil, nil
+	a := &ArrayPlan{typeInfo: tInfo}
+	a.Comment = schema.Annotations.GetString("description")
+	if a.ItemType = helper.TypeInfo(itemSchema.Meta()); a.ItemType.Unknown() {
+		return nil, nil
+	}
+	if !a.ItemType.BuiltIn() {
+		deps = append(deps, itemSchema)
+	}
+	return a, deps
 }
 
-func planEnum(schema *Schema) (_ Plan, _ []*Schema) {
+func planEnum(ctx context.Context, helper *PlanningHelper, schema *Schema) (_ Plan, _ []*Schema) {
 	if len(schema.Enum) == 0 {
 		return nil, nil
 	}
 
-	tInfo, ok := getGoPathInfo(schema)
-	if !ok {
+	tInfo := helper.TypeInfo(schema.Meta())
+	if tInfo.Unknown() {
 		return nil, nil
 	}
 
 	e := &EnumPlan{typeInfo: tInfo}
 	e.Comment = schema.Annotations.GetString("description")
-	switch schema.ChooseType() {
-	case String:
-		e.BaseType = BuiltInString
-	case Integer:
-		e.BaseType = BuiltInInt
-	case Number:
-		e.BaseType = BuiltInFloat
-	}
+	e.BaseType = TypeInfo{Name: helper.Primitive(schema.ChooseType())}
 	for _, m := range schema.Enum {
 		name := jsonPropertyToExportedName(fmt.Sprintf("%s", m))
 		e.Members = append(e.Members, EnumMember{Name: name, Field: m})

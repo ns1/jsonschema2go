@@ -1,6 +1,7 @@
 package jsonschema2go
 
 import (
+	"context"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -16,8 +17,8 @@ func TestSchemaToPlan(t *testing.T) {
 			name: "simple",
 			schema: &Schema{
 				Type: &TypeField{Object},
-				Properties: map[string]*Schema{
-					"count": {Type: &TypeField{Integer}},
+				Properties: map[string]*RefOrSchema{
+					"count": schema(Schema{Type: &TypeField{Integer}}),
 				},
 				Annotations: map[string]interface{}{
 					"description": "i am bob",
@@ -34,7 +35,7 @@ func TestSchemaToPlan(t *testing.T) {
 					Fields: []StructField{
 						{
 							Names: []string{"Count"},
-							Type:  BuiltInInt,
+							Type:  TypeInfo{Name: "int"},
 							Tag:   `json:"count,omitempty"`,
 						},
 					},
@@ -45,16 +46,16 @@ func TestSchemaToPlan(t *testing.T) {
 			name: "nested struct",
 			schema: &Schema{
 				Type: &TypeField{Object},
-				Properties: map[string]*Schema{
-					"nested": {
+				Properties: map[string]*RefOrSchema{
+					"nested": schema(Schema{
 						Annotations: map[string]interface{}{
 							"x-gopath": "github.com/jwilner/jsonschema2go/example#NestedType",
 						},
 						Type: &TypeField{Object},
-						Properties: map[string]*Schema{
-							"count": {Type: &TypeField{Integer}},
+						Properties: map[string]*RefOrSchema{
+							"count": schema(Schema{Type: &TypeField{Integer}}),
 						},
-					},
+					}),
 				},
 				Annotations: map[string]interface{}{
 					"description": "i am bob",
@@ -87,7 +88,7 @@ func TestSchemaToPlan(t *testing.T) {
 					Fields: []StructField{
 						{
 							Names: []string{"Count"},
-							Type:  BuiltInInt,
+							Type:  TypeInfo{Name: "int"},
 							Tag:   `json:"count,omitempty"`,
 						},
 					},
@@ -100,23 +101,27 @@ func TestSchemaToPlan(t *testing.T) {
 				Annotations: map[string]interface{}{
 					"x-gopath": "github.com/jwilner/jsonschema2go/example#AwesomeWithID",
 				},
-				AllOf: []*Schema{
-					{
-						Type: &TypeField{Object},
-						Properties: map[string]*Schema{
-							"id": {Type: &TypeField{Integer}},
+				AllOf: []*RefOrSchema{
+					schema(
+						Schema{
+							Type: &TypeField{Object},
+							Properties: map[string]*RefOrSchema{
+								"id": schema(Schema{Type: &TypeField{Integer}}),
+							},
 						},
-					},
-					{
-						Type: &TypeField{Object},
-						Properties: map[string]*Schema{
-							"count": {Type: &TypeField{Integer}},
+					),
+					schema(
+						Schema{
+							Type: &TypeField{Object},
+							Properties: map[string]*RefOrSchema{
+								"count": schema(Schema{Type: &TypeField{Integer}}),
+							},
+							Annotations: map[string]interface{}{
+								"description": "i am bob",
+								"x-gopath":    "github.com/jwilner/jsonschema2go/example#Awesome",
+							},
 						},
-						Annotations: map[string]interface{}{
-							"description": "i am bob",
-							"x-gopath":    "github.com/jwilner/jsonschema2go/example#Awesome",
-						},
-					},
+					),
 				},
 			},
 			want: []Plan{
@@ -128,7 +133,7 @@ func TestSchemaToPlan(t *testing.T) {
 					Fields: []StructField{
 						{
 							Names: []string{"ID"},
-							Type:  BuiltInInt,
+							Type:  TypeInfo{Name: "int"},
 							Tag:   `json:"id,omitempty"`,
 						},
 						{
@@ -148,7 +153,7 @@ func TestSchemaToPlan(t *testing.T) {
 					Fields: []StructField{
 						{
 							Names: []string{"Count"},
-							Type:  BuiltInInt,
+							Type:  TypeInfo{Name: "int"},
 							Tag:   `json:"count,omitempty"`,
 						},
 					},
@@ -174,7 +179,7 @@ func TestSchemaToPlan(t *testing.T) {
 						GoPath: "github.com/jwilner/jsonschema2go/example",
 						Name:   "Letter",
 					},
-					BaseType: BuiltInString,
+					BaseType: TypeInfo{Name: "string"},
 					Members: []EnumMember{
 						{"A", "a"},
 						{"B", "b"},
@@ -190,13 +195,13 @@ func TestSchemaToPlan(t *testing.T) {
 					"x-gopath": "github.com/jwilner/jsonschema2go/example#Awesome",
 				},
 				Type: &TypeField{Object},
-				Properties: map[string]*Schema{
-					"bob": {
-						OneOf: []*Schema{
-							{Type: &TypeField{Null}},
-							{Type: &TypeField{Integer}},
+				Properties: map[string]*RefOrSchema{
+					"bob": schema(Schema{
+						OneOf: []*RefOrSchema{
+							schema(Schema{Type: &TypeField{Null}}),
+							schema(Schema{Type: &TypeField{Integer}}),
 						},
-					},
+					}),
 				},
 			},
 			want: []Plan{
@@ -208,7 +213,7 @@ func TestSchemaToPlan(t *testing.T) {
 					Fields: []StructField{
 						{
 							Names: []string{"Bob"},
-							Type:  BuiltInIntPointer,
+							Type:  TypeInfo{Name: "int", Pointer: true},
 							Tag:   `json:"bob,omitempty"`,
 						},
 					},
@@ -218,7 +223,7 @@ func TestSchemaToPlan(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newPlanner().Plan(tt.schema)
+			got, err := newPlanner().Plan(context.Background(), tt.schema, mockLoader{})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SchemaToPlan() error = %v, wantErr %v", err, tt.wantErr)
 				return

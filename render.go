@@ -3,6 +3,7 @@ package jsonschema2go
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -27,11 +28,17 @@ func (r *Renderer) Render(ctx context.Context, fileNames []string, prefixes [][2
 	seen := make(map[TypeInfo]bool)
 	grouped := make(map[string][]Plan)
 	for _, fileName := range fileNames {
-		schema, err := r.resolver.Resolve(ctx, fileName)
+		u, err := url.Parse(fileName)
+		if err != nil {
+			return err
+		}
+
+		schema, err := r.resolver.l.Load(ctx, u)
 		if err != nil {
 			return fmt.Errorf("unable to resolve schema from %q: %w", fileName, err)
 		}
-		newPlans, err := r.planner.Plan(schema)
+
+		newPlans, err := r.planner.Plan(context.Background(), schema, r.resolver.l)
 		if err != nil {
 			return fmt.Errorf("unable to create plans from schema %q: %w ", fileName, err)
 		}
