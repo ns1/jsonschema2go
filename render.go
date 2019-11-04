@@ -13,16 +13,10 @@ import (
 )
 
 func NewRenderer() *Renderer {
-	return &Renderer{
-		crawler: newCrawler(),
-		printer: newPrinter(),
-	}
+	return &Renderer{}
 }
 
-type Renderer struct {
-	crawler *Crawler
-	printer *Printer
-}
+type Renderer struct{}
 
 func (r *Renderer) Render(ctx context.Context, fileNames []string, prefixes [][2]string) error {
 	var childRoutines sync.WaitGroup
@@ -48,87 +42,94 @@ func (r *Renderer) Render(ctx context.Context, fileNames []string, prefixes [][2
 	}
 
 	// load all initial schemas concurrently
+	loaded := loadInitial(ctx, &childRoutines, fileNames, loader, sendErr)
+	results := newCrawler().Plan(ctx, loader, loaded)
+	grouped, err := group(ctx, results, errs)
+	if err != nil {
+		return err
+	}
+
+	return print(ctx, &childRoutines, newPrinter(), grouped, prefixes)
+}
+
+func loadInitial(
+	ctx context.Context,
+	childRoutines *sync.WaitGroup,
+	fileNames []string,
+	loader Loader,
+	sendErr func(error),
+) <-chan *Schema {
 	loaded := make(chan *Schema)
-	{
-		sent := int64(0) // int64 used to track completion of tasks
-		for _, fileName := range fileNames {
-			childRoutines.Add(1)
-			go func(fileName string) {
-				defer childRoutines.Done()
 
-				u, err := url.Parse(fileName)
-				if err != nil {
-					sendErr(err)
-					return
-				}
+	sent := int64(0) // int64 used to track completion of tasks
+	for _, fileName := range fileNames {
 
-				schema, err := loader.Load(ctx, u)
-				if err != nil {
-					sendErr(fmt.Errorf("unable to resolve schema from %q: %w", fileName, err))
-					return
+		childRoutines.Add(1)
+		go func(fileName string) {
+			defer childRoutines.Done()
+
+			u, err := url.Parse(fileName)
+			if err != nil {
+				sendErr(err)
+				return
+			}
+
+			schema, err := loader.Load(ctx, u)
+			if err != nil {
+				sendErr(fmt.Errorf("unable to resolve schema from %q: %w", fileName, err))
+				return
+			}
+			select {
+			case <-ctx.Done():
+			case loaded <- schema:
+				if atomic.AddInt64(&sent, 1) == int64(len(fileNames)) {
+					close(loaded)
 				}
-				select {
-				case <-ctx.Done():
-				case loaded <- schema:
-					if atomic.AddInt64(&sent, 1) == int64(len(fileNames)) {
-						close(loaded)
-					}
-				}
-			}(fileName)
-		}
+			}
+		}(fileName)
 	}
 
-	results := r.crawler.Plan(ctx, loader, loaded)
+	return loaded
+}
 
-	// group together results
-	grouped := make(map[string][]Plan)
-outer:
-	for {
-		select {
-		case err := <-errs:
-			return err
-		case result, ok := <-results:
-			if !ok {
-				break outer
-			}
-			if result.Err != nil {
-				return result.Err
-			}
-			plan := result.Plan
-			goPath := plan.Type().GoPath
-			grouped[goPath] = append(grouped[goPath], plan)
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-	}
-
+func print(
+	ctx context.Context,
+	childRoutines *sync.WaitGroup,
+	printer *Printer,
+	grouped map[string][]Plan,
+	prefixes [][2]string,
+) error {
 	mapper := pathMapper(prefixes)
 	done := make(chan struct{})
+	errs := make(chan error, 1)
 	for k, group := range grouped {
 		childRoutines.Add(1)
 		go func(k string, group []Plan) {
 			defer childRoutines.Done()
-
-			path := mapper(k)
-			if path == "" {
-				sendErr(fmt.Errorf("unable to map go path: %q", k[0]))
-			}
-			if err := os.MkdirAll(path, 0755); err != nil {
-				sendErr(fmt.Errorf("unable to create dir %q: %w", path, err))
-			}
 			if err := func() error {
+				path := mapper(k)
+				if path == "" {
+					return fmt.Errorf("unable to map go path: %q", k[0])
+				}
+				if err := os.MkdirAll(path, 0755); err != nil {
+					return fmt.Errorf("unable to create dir %q: %w", path, err)
+				}
+
 				f, err := os.Create(filepath.Join(path, "values.gen.go"))
 				if err != nil {
 					return fmt.Errorf("unable to open: %w", err)
 				}
 				defer f.Close()
 
-				if err := r.printer.Print(ctx, f, k, group); err != nil {
+				if err := printer.Print(ctx, f, k, group); err != nil {
 					return fmt.Errorf("unable to print: %w", err)
 				}
 				return nil
 			}(); err != nil {
-				sendErr(err)
+				select {
+				case errs <- err:
+				default:
+				}
 				return
 			}
 
@@ -148,8 +149,30 @@ outer:
 		case <-done:
 		}
 	}
-
 	return nil
+}
+
+func group(ctx context.Context, results <-chan CrawlResult, errC <-chan error) (map[string][]Plan, error) {
+	// group together results
+	grouped := make(map[string][]Plan)
+	for {
+		select {
+		case err := <-errC:
+			return nil, err
+		case result, ok := <-results:
+			if !ok {
+				return grouped, nil
+			}
+			if result.Err != nil {
+				return nil, result.Err
+			}
+			plan := result.Plan
+			goPath := plan.Type().GoPath
+			grouped[goPath] = append(grouped[goPath], plan)
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
 }
 
 func pathMapper(prefixes [][2]string) func(string) string {
