@@ -62,19 +62,19 @@ func (c *Crawler) Plan(ctx context.Context, loader Loader, schemas <-chan *Schem
 			inFlight  int
 			seen      = make(map[TypeInfo]bool)
 
-			helper = &PlanningHelper{loader}
-
 			// allSchemas represents the merged stream of explicitly requested schemas and their children; it is
 			// in essence the queue which powers a breadth-first search of the object graph
 			allSchemas = make(chan *Schema)
 			// puts all schemas on merged and puts a signal on noMoreComing when no more coming
 			noMoreComing = copyAndSignal(ctx, schemas, allSchemas)
-			depsDone     = make(chan struct{}) // one per deps completed
+			schemasDone  = make(chan struct{}) // one per deps completed
 			errs         = make(chan error, 1)
+
+			helper = &PlanningHelper{loader, allSchemas}
 		)
 
 		derivePlan := func(s *Schema) {
-			plan, deps, err := c.derivePlan(ctx, helper, s)
+			plan, err := c.derivePlan(ctx, helper, s)
 			if err != nil {
 				select {
 				case errs <- err:
@@ -88,17 +88,9 @@ func (c *Crawler) Plan(ctx context.Context, loader Loader, schemas <-chan *Schem
 			case <-ctx.Done():
 				return
 			}
-			// traverse dependencies
-			for _, schema := range deps {
-				select {
-				case allSchemas <- schema:
-				case <-ctx.Done():
-					return
-				}
-			}
-			// signal completion of this task
+
 			select {
-			case depsDone <- struct{}{}:
+			case schemasDone <- struct{}{}:
 			case <-ctx.Done():
 			}
 		}
@@ -127,7 +119,7 @@ func (c *Crawler) Plan(ctx context.Context, loader Loader, schemas <-chan *Schem
 				return
 			case <-ctx.Done():
 				return
-			case <-depsDone:
+			case <-schemasDone:
 				inFlight--
 			}
 		}
@@ -136,14 +128,16 @@ func (c *Crawler) Plan(ctx context.Context, loader Loader, schemas <-chan *Schem
 	return results
 }
 
-func (c *Crawler) derivePlan(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, []*Schema, error) {
+func (c *Crawler) derivePlan(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
 	for _, p := range c.planners {
-		pl, deps := p.Plan(ctx, helper, schema)
-		if pl == nil {
-			continue
+		pl, err := p.Plan(ctx, helper, schema)
+		if err != nil {
+			return nil, err
 		}
-		return pl, deps, nil
+		if pl != nil {
+			return pl, nil
+		}
 	}
 
-	return nil, nil, errors.New("unable to plan")
+	return nil, errors.New("unable to plan")
 }

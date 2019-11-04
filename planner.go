@@ -9,12 +9,12 @@ import (
 )
 
 type Planner interface {
-	Plan(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, []*Schema)
+	Plan(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error)
 }
 
-type plannerFunc func(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, []*Schema)
+type plannerFunc func(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error)
 
-func (p plannerFunc) Plan(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, []*Schema) {
+func (p plannerFunc) Plan(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
 	return p(ctx, helper, schema)
 }
 
@@ -22,9 +22,7 @@ func deriveStructFields(
 	ctx context.Context,
 	helper *PlanningHelper,
 	schema *Schema,
-) (fields []StructField, deps []*Schema, ok bool) {
-	ok = true
-
+) (fields []StructField, _ error) {
 	var properties []string
 	for k := range schema.Properties {
 		properties = append(properties, k)
@@ -34,18 +32,18 @@ func deriveStructFields(
 	for _, name := range properties {
 		fieldSchema, err := schema.Properties[name].Resolve(ctx, schema, helper)
 		if err != nil {
-			return nil, nil, false
+			return nil, err
 		}
 
 		fType := helper.TypeInfo(fieldSchema.Meta())
 		if fType.Unknown() && len(fieldSchema.OneOf) == 2 {
 			oneOfA, err := fieldSchema.OneOf[0].Resolve(ctx, fieldSchema, helper)
 			if err != nil {
-				return nil, nil, false
+				return nil, err
 			}
 			oneOfB, err := fieldSchema.OneOf[1].Resolve(ctx, fieldSchema, helper)
 			if err != nil {
-				return nil, nil, false
+				return nil, err
 			}
 			if oneOfA.ChooseType() == Null || oneOfB.ChooseType() == Null {
 				// this is a nillable field
@@ -54,13 +52,13 @@ func deriveStructFields(
 					valueSchema = oneOfB
 				}
 				if fType = helper.TypeInfo(valueSchema.Meta()); fType.Unknown() {
-					return nil, nil, false
+					return nil, nil
 				}
 				fType.Pointer = true
 			}
 		}
 		if fType.Unknown() {
-			return nil, nil, false
+			return nil, nil
 		}
 
 		fields = append(
@@ -73,7 +71,9 @@ func deriveStructFields(
 			},
 		)
 		if !fType.BuiltIn() {
-			deps = append(deps, fieldSchema)
+			if err := helper.Dep(ctx, fieldSchema); err != nil {
+				return nil, err
+			}
 		}
 	}
 	return
@@ -81,6 +81,7 @@ func deriveStructFields(
 
 type PlanningHelper struct {
 	Loader
+	Deps chan<- *Schema
 }
 
 func (p *PlanningHelper) TypeInfo(s SchemaMeta) TypeInfo {
@@ -95,7 +96,18 @@ func (p *PlanningHelper) Primitive(s SimpleType) string {
 	return primitives[s]
 }
 
-func planAllOfObject(ctx context.Context, helper *PlanningHelper, schema *Schema) (_ Plan, deps []*Schema) {
+func (p *PlanningHelper) Dep(ctx context.Context, schemas ...*Schema) error {
+	for _, s := range schemas {
+		select {
+		case p.Deps <- s:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+	return nil
+}
+
+func planAllOfObject(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
 	if len(schema.AllOf) == 0 {
 		return nil, nil
 	}
@@ -107,7 +119,7 @@ func planAllOfObject(ctx context.Context, helper *PlanningHelper, schema *Schema
 	for _, s := range schema.AllOf {
 		r, err := s.Resolve(ctx, schema, helper)
 		if err != nil {
-			return nil, nil
+			return nil, err
 		}
 		resolved = append(resolved, r)
 		if !foundObj && r.ChooseType() == Object {
@@ -128,22 +140,23 @@ func planAllOfObject(ctx context.Context, helper *PlanningHelper, schema *Schema
 		tInfo := helper.TypeInfo(subSchema.Meta())
 		if tInfo.Unknown() {
 			// this is an anonymous struct; add all of its inner fields to parent
-			fields, infos, ok := deriveStructFields(ctx, helper, subSchema)
-			if !ok {
-				return nil, nil
+			fields, err := deriveStructFields(ctx, helper, subSchema)
+			if err != nil {
+				return nil, err
 			}
 			s.Fields = append(s.Fields, fields...)
-			deps = append(deps, infos...)
 			continue
 		}
 		// this is a named type, add an embedded field for the subschema type
 		s.Fields = append(s.Fields, StructField{Type: tInfo})
-		deps = append(deps, subSchema)
+		if err := helper.Dep(ctx, subSchema); err != nil {
+			return nil, err
+		}
 	}
-	return s, deps
+	return s, nil
 }
 
-func planSimpleObject(ctx context.Context, helper *PlanningHelper, schema *Schema) (_ Plan, deps []*Schema) {
+func planSimpleObject(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
 	if schema.ChooseType() != Object {
 		return nil, nil
 	}
@@ -153,16 +166,15 @@ func planSimpleObject(ctx context.Context, helper *PlanningHelper, schema *Schem
 	}
 	s := &StructPlan{typeInfo: tInfo}
 	s.Comment = schema.Annotations.GetString("description")
-	fields, infos, ok := deriveStructFields(ctx, helper, schema)
-	if !ok {
-		return nil, nil
+	fields, err := deriveStructFields(ctx, helper, schema)
+	if err != nil {
+		return nil, err
 	}
 	s.Fields = fields
-	deps = append(deps, infos...)
-	return s, deps
+	return s, nil
 }
 
-func planSimpleArray(ctx context.Context, helper *PlanningHelper, schema *Schema) (_ Plan, deps []*Schema) {
+func planSimpleArray(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
 	if schema.ChooseType() != Array || schema.Items == nil || schema.Items.Items == nil {
 		return nil, nil
 	}
@@ -173,7 +185,7 @@ func planSimpleArray(ctx context.Context, helper *PlanningHelper, schema *Schema
 
 	itemSchema, err := schema.Items.Items.Resolve(ctx, schema, helper)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 	a := &ArrayPlan{typeInfo: tInfo}
 	a.Comment = schema.Annotations.GetString("description")
@@ -181,12 +193,14 @@ func planSimpleArray(ctx context.Context, helper *PlanningHelper, schema *Schema
 		return nil, nil
 	}
 	if !a.ItemType.BuiltIn() {
-		deps = append(deps, itemSchema)
+		if err := helper.Dep(ctx, itemSchema); err != nil {
+			return nil, err
+		}
 	}
-	return a, deps
+	return a, nil
 }
 
-func planEnum(ctx context.Context, helper *PlanningHelper, schema *Schema) (_ Plan, _ []*Schema) {
+func planEnum(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
 	if len(schema.Enum) == 0 {
 		return nil, nil
 	}
