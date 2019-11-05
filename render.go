@@ -43,7 +43,7 @@ func (r *Renderer) Render(ctx context.Context, fileNames []string, prefixes [][2
 
 	// load all initial schemas concurrently
 	loaded := loadInitial(ctx, &childRoutines, fileNames, loader, sendErr)
-	results := newCrawler().Plan(ctx, loader, loaded)
+	results := crawl(ctx, loader, loaded, Composite)
 	grouped, err := group(ctx, results, errs)
 	if err != nil {
 		return err

@@ -2,81 +2,43 @@ package jsonschema2go
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
 	"unicode"
 )
 
+var Composite = CompositePlanner{
+	plannerFunc(planAllOfObject),
+	plannerFunc(planSimpleObject),
+	plannerFunc(planSimpleArray),
+	plannerFunc(planEnum),
+}
+
 type Planner interface {
 	Plan(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error)
+}
+
+type CompositePlanner []Planner
+
+func (c CompositePlanner) Plan(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
+	for _, p := range c {
+		pl, err := p.Plan(ctx, helper, schema)
+		if err != nil {
+			return nil, err
+		}
+		if pl != nil {
+			return pl, nil
+		}
+	}
+	return nil, errors.New("unable to plan")
 }
 
 type plannerFunc func(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error)
 
 func (p plannerFunc) Plan(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
 	return p(ctx, helper, schema)
-}
-
-func deriveStructFields(
-	ctx context.Context,
-	helper *PlanningHelper,
-	schema *Schema,
-) (fields []StructField, _ error) {
-	var properties []string
-	for k := range schema.Properties {
-		properties = append(properties, k)
-	}
-	sort.Strings(properties)
-
-	for _, name := range properties {
-		fieldSchema, err := schema.Properties[name].Resolve(ctx, schema, helper)
-		if err != nil {
-			return nil, err
-		}
-
-		fType := helper.TypeInfo(fieldSchema.Meta())
-		if fType.Unknown() && len(fieldSchema.OneOf) == 2 {
-			oneOfA, err := fieldSchema.OneOf[0].Resolve(ctx, fieldSchema, helper)
-			if err != nil {
-				return nil, err
-			}
-			oneOfB, err := fieldSchema.OneOf[1].Resolve(ctx, fieldSchema, helper)
-			if err != nil {
-				return nil, err
-			}
-			if oneOfA.ChooseType() == Null || oneOfB.ChooseType() == Null {
-				// this is a nillable field
-				valueSchema := oneOfA
-				if valueSchema.ChooseType() == Null {
-					valueSchema = oneOfB
-				}
-				if fType = helper.TypeInfo(valueSchema.Meta()); fType.Unknown() {
-					return nil, nil
-				}
-				fType.Pointer = true
-			}
-		}
-		if fType.Unknown() {
-			return nil, nil
-		}
-
-		fields = append(
-			fields,
-			StructField{
-				Comment: fieldSchema.Annotations.GetString("description"),
-				Names:   []string{jsonPropertyToExportedName(name)},
-				Type:    fType,
-				Tag:     fmt.Sprintf(`json:"%s,omitempty"`, name),
-			},
-		)
-		if !fType.BuiltIn() {
-			if err := helper.Dep(ctx, fieldSchema); err != nil {
-				return nil, err
-			}
-		}
-	}
-	return
 }
 
 type PlanningHelper struct {
@@ -274,4 +236,65 @@ func exportedIdentifier(parts [][]rune) string {
 		words = append(words, string(rs))
 	}
 	return strings.Join(words, "")
+}
+
+func deriveStructFields(
+	ctx context.Context,
+	helper *PlanningHelper,
+	schema *Schema,
+) (fields []StructField, _ error) {
+	var properties []string
+	for k := range schema.Properties {
+		properties = append(properties, k)
+	}
+	sort.Strings(properties)
+
+	for _, name := range properties {
+		fieldSchema, err := schema.Properties[name].Resolve(ctx, schema, helper)
+		if err != nil {
+			return nil, err
+		}
+
+		fType := helper.TypeInfo(fieldSchema.Meta())
+		if fType.Unknown() && len(fieldSchema.OneOf) == 2 {
+			oneOfA, err := fieldSchema.OneOf[0].Resolve(ctx, fieldSchema, helper)
+			if err != nil {
+				return nil, err
+			}
+			oneOfB, err := fieldSchema.OneOf[1].Resolve(ctx, fieldSchema, helper)
+			if err != nil {
+				return nil, err
+			}
+			if oneOfA.ChooseType() == Null || oneOfB.ChooseType() == Null {
+				// this is a nillable field
+				valueSchema := oneOfA
+				if valueSchema.ChooseType() == Null {
+					valueSchema = oneOfB
+				}
+				if fType = helper.TypeInfo(valueSchema.Meta()); fType.Unknown() {
+					return nil, nil
+				}
+				fType.Pointer = true
+			}
+		}
+		if fType.Unknown() {
+			return nil, nil
+		}
+
+		fields = append(
+			fields,
+			StructField{
+				Comment: fieldSchema.Annotations.GetString("description"),
+				Names:   []string{jsonPropertyToExportedName(name)},
+				Type:    fType,
+				Tag:     fmt.Sprintf(`json:"%s,omitempty"`, name),
+			},
+		)
+		if !fType.BuiltIn() {
+			if err := helper.Dep(ctx, fieldSchema); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return
 }

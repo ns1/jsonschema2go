@@ -224,7 +224,7 @@ func TestSchemaToPlan(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			results := newCrawler().Plan(context.Background(), mockLoader{}, schemaChan(tt.schema))
+			results := crawl(context.Background(), mockLoader{}, schemaChan(tt.schema), Composite)
 			var (
 				got []Plan
 				err error
