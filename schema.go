@@ -237,19 +237,6 @@ func (s *Schema) Meta() SchemaMeta {
 	}
 }
 
-func (s *Schema) Resolve(ctx context.Context, src *Schema, loader Loader) (*Schema, error) {
-	if s.Ref == nil {
-		return s, nil
-	}
-
-	parsed2, err := url.Parse(*s.Ref)
-	if err != nil {
-		return nil, err
-	}
-
-	return loader.Load(ctx, src.curLoc.ResolveReference(parsed2))
-}
-
 type SchemaMeta struct {
 	ID          string
 	BestType    SimpleType
