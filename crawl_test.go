@@ -2,6 +2,7 @@ package jsonschema2go
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/stretchr/testify/require"
 	"sort"
 	"testing"
@@ -21,10 +22,10 @@ func TestSchemaToPlan(t *testing.T) {
 				Properties: map[string]*RefOrSchema{
 					"count": schema(Schema{Type: &TypeField{Integer}}),
 				},
-				Annotations: map[string]interface{}{
+				Annotations: annos(map[string]string{
 					"description": "i am bob",
 					"x-gopath":    "github.com/jwilner/jsonschema2go/example#Awesome",
-				},
+				}),
 			},
 			want: []Plan{
 				&StructPlan{
@@ -49,19 +50,19 @@ func TestSchemaToPlan(t *testing.T) {
 				Type: &TypeField{Object},
 				Properties: map[string]*RefOrSchema{
 					"nested": schema(Schema{
-						Annotations: map[string]interface{}{
+						Annotations: annos(map[string]string{
 							"x-gopath": "github.com/jwilner/jsonschema2go/example#NestedType",
-						},
+						}),
 						Type: &TypeField{Object},
 						Properties: map[string]*RefOrSchema{
 							"count": schema(Schema{Type: &TypeField{Integer}}),
 						},
 					}),
 				},
-				Annotations: map[string]interface{}{
+				Annotations: annos(map[string]string{
 					"description": "i am bob",
 					"x-gopath":    "github.com/jwilner/jsonschema2go/example#Awesome",
-				},
+				}),
 			},
 			want: []Plan{
 				&StructPlan{
@@ -99,9 +100,9 @@ func TestSchemaToPlan(t *testing.T) {
 		{
 			name: "composed anonymous struct",
 			schema: &Schema{
-				Annotations: map[string]interface{}{
+				Annotations: annos(map[string]string{
 					"x-gopath": "github.com/jwilner/jsonschema2go/example#AwesomeWithID",
-				},
+				}),
 				AllOf: []*RefOrSchema{
 					schema(
 						Schema{
@@ -117,10 +118,10 @@ func TestSchemaToPlan(t *testing.T) {
 							Properties: map[string]*RefOrSchema{
 								"count": schema(Schema{Type: &TypeField{Integer}}),
 							},
-							Annotations: map[string]interface{}{
+							Annotations: annos(map[string]string{
 								"description": "i am bob",
 								"x-gopath":    "github.com/jwilner/jsonschema2go/example#Awesome",
-							},
+							}),
 						},
 					),
 				},
@@ -164,9 +165,9 @@ func TestSchemaToPlan(t *testing.T) {
 		{
 			name: "enum",
 			schema: &Schema{
-				Annotations: map[string]interface{}{
+				Annotations: annos(map[string]string{
 					"x-gopath": "github.com/jwilner/jsonschema2go/example#Letter",
-				},
+				}),
 				Type: &TypeField{String},
 				Enum: []interface{}{
 					"a",
@@ -192,9 +193,9 @@ func TestSchemaToPlan(t *testing.T) {
 		{
 			name: "nullable built in",
 			schema: &Schema{
-				Annotations: map[string]interface{}{
+				Annotations: annos(map[string]string{
 					"x-gopath": "github.com/jwilner/jsonschema2go/example#Awesome",
-				},
+				}),
 				Type: &TypeField{Object},
 				Properties: map[string]*RefOrSchema{
 					"bob": schema(Schema{
@@ -261,4 +262,12 @@ func schemaChan(schemas ...*Schema) <-chan *Schema {
 		close(schemaC)
 	}()
 	return schemaC
+}
+
+func annos(annos map[string]string) TagMap {
+	m := make(map[string]json.RawMessage)
+	for k, v := range annos {
+		m[k], _ = json.Marshal(v)
+	}
+	return m
 }

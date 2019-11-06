@@ -71,28 +71,28 @@ func (c *cachingLoader) Run(ctx context.Context) error {
 	}
 
 	var (
-		wg         = new(sync.WaitGroup)
-		activeReqs = make(map[string][]chan<- schemaResult)
-		fetches    = make(chan uriSchemaResult)
-		cache      = make(map[string]*Schema)
+		childRoutines = new(sync.WaitGroup)
+		activeReqs    = make(map[string][]chan<- schemaResult)
+		fetches       = make(chan uriSchemaResult)
+		cache         = make(map[string]*Schema)
 	)
 
 	for {
 		select {
 		case <-ctx.Done():
-			wg.Wait()
+			childRoutines.Wait()
 			return ctx.Err()
 
 		case req := <-c.requests:
 			if schema, ok := cache[req.url]; ok {
-				respond(wg, schemaResult{schema, nil}, req.c)
+				respond(childRoutines, schemaResult{schema, nil}, req.c)
 				continue
 			}
 
 			activeReqs[req.url] = append(activeReqs[req.url], req.c)
 
 			if len(activeReqs[req.url]) == 1 { // this is the first req, so start a fetch
-				fetch(wg, fetches, req.url)
+				fetch(childRoutines, fetches, req.url)
 				continue
 			}
 
@@ -101,7 +101,7 @@ func (c *cachingLoader) Run(ctx context.Context) error {
 			delete(activeReqs, fet.url)
 
 			for _, r := range reqs {
-				respond(wg, fet.schemaResult, r)
+				respond(childRoutines, fet.schemaResult, r)
 			}
 
 			// we won't cache errors
@@ -149,7 +149,7 @@ func (c *cachingLoader) fetch(ctx context.Context, rawURL string) schemaResult {
 	}
 
 	schema := &sch
-	schema.curLoc = u
+	schema.setCurLoc(u)
 	return schemaResult{schema, nil}
 }
 

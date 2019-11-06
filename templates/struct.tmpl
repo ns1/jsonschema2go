@@ -7,3 +7,27 @@ type {{ .Type.Name }} struct {
     {{ range $Index, $Element := .Names -}}{{ if $Index -}}, {{ end -}}{{ . }}{{ end }} {{ if .Type.Pointer -}}*{{ end -}}{{ $.QualName .Type }} {{ if .Tag }}`{{ .Tag }}`{{ end }}
 {{ end }}
 }
+
+{{ range $t := .Traits -}}
+{{ if eq .Template "discriminator.tmpl" }}
+func (m *{{ $.Type.Name }}) UnmarshalJSON(data []byte) error {
+	var discrim struct {
+    {{ with .StructField -}}
+        {{ index .Names 0 }} {{ if .Type.Pointer -}}*{{ end -}}{{ $.QualName .Type }} {{ if .Tag }}`{{ .Tag }}`{{ end }}
+	{{ end }}
+	}
+	if err := json.Unmarshal(data, &discrim); err != nil {
+		return err
+	}
+	switch discrim.{{ index .StructField.Names 0 }} {
+	{{ range .Cases -}}
+	case "{{ .Value }}":
+		m.{{ index $t.StructField.Names 0 }} = new({{ $.QualName .TypeInfo }})
+	{{ end -}}
+	default:
+		return fmt.Errorf("unknown discriminator: %v", discrim.{{ index .StructField.Names 0 }})
+	}
+	return json.Unmarshal(data, m.{{ index .StructField.Names 0 }})
+}
+{{ end }}
+{{ end }}

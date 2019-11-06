@@ -1,0 +1,39 @@
+{
+  "x-gopath": "example.com/v1/foo#Bar",
+  "description": "Bar gives you some dumb info",
+  "x-godiscriminator": {
+    "propertyName": "direction",
+    "mapping": {
+      "l": "Left",
+      "r": "Right"
+    }
+  },
+  "oneOf": [
+    {
+      "x-gopath": "example.com/v1/foo#Left",
+      "type": "object",
+      "properties": {
+        "direction": {
+          "type": "string",
+          "enum": ["l"]
+        },
+        "value": {
+          "type": "integer"
+        }
+      }
+    },
+    {
+      "x-gopath": "example.com/v1/foo#Right",
+      "type": "object",
+      "properties": {
+        "direction": {
+          "type": "string",
+          "enum": ["r"]
+        },
+        "value": {
+          "type": "number"
+        }
+      }
+    }
+  ]
+}

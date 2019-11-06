@@ -1,6 +1,7 @@
 package jsonschema2go
 
 import (
+	"bufio"
 	"context"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
@@ -10,6 +11,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"unicode"
 )
 
 func Test_mapPath(t *testing.T) {
@@ -62,24 +64,25 @@ func TestRender(t *testing.T) {
 		if !e.IsDir() {
 			continue
 		}
-		testDir := path.Join(root, e.Name())
-
-		schemas, err := listAllFiles(testDir, ".json")
-		if err != nil {
-			t.Fatal(err)
-		}
-		for i := range schemas {
-			schemas[i] = "file:" + schemas[i]
-		}
-
-		wantDir := path.Join(root, e.Name())
-		wanted, err := listAllFiles(testDir, ".gen.go")
-		if err != nil {
-			t.Fatal(err)
-		}
 
 		t.Run(path.Base(e.Name()), func(t *testing.T) {
 			r := require.New(t)
+
+			testDir := path.Join(root, e.Name())
+
+			args, err := readLines(path.Join(testDir, "args.txt"))
+			r.NoError(err)
+
+			schemas := make([]string, 0, len(args))
+			for _, a := range args {
+				schemas = append(schemas, "file:"+path.Join(testDir, a))
+			}
+
+			wantDir := path.Join(root, e.Name())
+			wanted, err := listAllFiles(testDir, ".gen.go")
+			if err != nil {
+				r.NoError(err)
+			}
 
 			dirName, err := ioutil.TempDir("", e.Name())
 			r.NoError(err)
@@ -144,4 +147,19 @@ func readString(fname string) (string, error) {
 		return "", err
 	}
 	return string(byts), nil
+}
+
+func readLines(fname string) ([]string, error) {
+	f, err := os.Open(fname)
+	if err != nil {
+		return nil, err
+	}
+	var lines []string
+	s := bufio.NewScanner(f)
+	for s.Scan() {
+		if l := strings.TrimFunc(s.Text(), unicode.IsSpace); l != "" {
+			lines = append(lines, l)
+		}
+	}
+	return lines, nil
 }

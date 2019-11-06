@@ -100,11 +100,20 @@ func (i *ItemsFields) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, i.TupleFields)
 }
 
-type TagMap map[string]interface{}
+type TagMap map[string]json.RawMessage
 
-func (t TagMap) GetString(k string) string {
-	s, _ := t[k].(string)
-	return s
+func (t TagMap) GetString(k string) (s string) {
+	_, _ = t.Unmarshal(k, &s)
+	return
+}
+
+func (t TagMap) Unmarshal(k string, val interface{}) (bool, error) {
+	msg, ok := t[k]
+	if !ok {
+		return false, nil
+	}
+	err := json.Unmarshal(msg, &val)
+	return true, err
 }
 
 type RefOrSchema struct {
@@ -118,7 +127,7 @@ func (r *RefOrSchema) UnmarshalJSON(b []byte) error {
 		Ref string `json:"$ref"`
 	}
 	if err := json.Unmarshal(b, &ref); err != nil {
-		return err
+		return fmt.Errorf("unmarshal $ref: %w", err)
 	}
 	if ref.Ref != "" {
 		r.ref = &ref.Ref
@@ -135,7 +144,7 @@ func (r *RefOrSchema) Resolve(ctx context.Context, referer *Schema, loader Loade
 
 	parsed2, err := url.Parse(*r.ref)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parse $ref: %w", err)
 	}
 
 	return loader.Load(ctx, referer.curLoc.ResolveReference(parsed2))
@@ -196,6 +205,54 @@ type Schema struct {
 	curLoc *url.URL `json:"-"`
 }
 
+func (s *Schema) setCurLoc(u *url.URL) {
+	schemas := []*Schema{s}
+	push := func(r *RefOrSchema) {
+		if r != nil && r.schema != nil {
+			schemas = append(schemas, r.schema)
+		}
+	}
+
+	for len(schemas) > 0 {
+		s := schemas[0]
+		schemas = schemas[1:]
+
+		s.curLoc = u
+		if s.AdditionalItems != nil {
+			push(s.AdditionalItems.Schema)
+		}
+		if s.Items != nil {
+			push(s.Items.Items)
+			for _, f := range s.Items.TupleFields {
+				push(f)
+			}
+		}
+		if s.AdditionalProperties != nil {
+			push(s.AdditionalProperties.Schema)
+		}
+		for _, m := range []map[string]*RefOrSchema{
+			s.Definitions,
+			s.Properties,
+			s.PatternProperties,
+			s.Dependencies,
+		} {
+			for _, v := range m {
+				push(v)
+			}
+		}
+		for _, a := range [][]*RefOrSchema {
+			s.AllOf,
+			s.AnyOf,
+			s.OneOf,
+		}{
+			for _, v := range a {
+				push(v)
+			}
+		}
+		push(s.Not)
+	}
+}
+
 func (s *Schema) ChooseType() (t SimpleType) {
 	if s.Type != nil && len(*s.Type) > 0 {
 		t = (*s.Type)[0]
@@ -212,7 +269,7 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 	}
 	*s = Schema(s2)
 
-	var possAnnos map[string]interface{}
+	var possAnnos map[string]json.RawMessage
 	if err := json.Unmarshal(data, &possAnnos); err != nil {
 		return fmt.Errorf("unmarshal annotations: %w", err)
 	}
@@ -222,7 +279,7 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 			continue
 		}
 		if s.Annotations == nil {
-			s.Annotations = make(map[string]interface{})
+			s.Annotations = make(map[string]json.RawMessage)
 		}
 		s.Annotations[field] = v
 	}

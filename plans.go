@@ -22,7 +22,7 @@ func (t TypeInfo) Unknown() bool {
 var primitives = map[SimpleType]string{
 	Boolean: "bool",
 	Integer: "int",
-	Number:  "float",
+	Number:  "float64",
 	Null:    "interface{}",
 	String:  "string",
 }
@@ -32,6 +32,10 @@ type StructField struct {
 	Names   []string
 	Type    TypeInfo
 	Tag     string
+}
+
+type Trait interface {
+	Template() string
 }
 
 type Plan interface {
@@ -44,6 +48,7 @@ type StructPlan struct {
 
 	Comment string
 	Fields  []StructField
+	Traits  []Trait
 }
 
 func (s *StructPlan) Type() TypeInfo {
@@ -53,6 +58,11 @@ func (s *StructPlan) Type() TypeInfo {
 func (s *StructPlan) Deps() (deps []TypeInfo) {
 	for _, s := range s.Fields {
 		deps = append(deps, s.Type)
+	}
+	for _, t := range s.Traits {
+		if t, ok := t.(interface { Deps() []TypeInfo }); ok {
+			deps = append(deps, t.Deps()...)
+		}
 	}
 	return
 }

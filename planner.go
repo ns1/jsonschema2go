@@ -14,6 +14,7 @@ var Composite = CompositePlanner{
 	plannerFunc(planSimpleObject),
 	plannerFunc(planSimpleArray),
 	plannerFunc(planEnum),
+	plannerFunc(planDiscriminatedOneOfObject),
 }
 
 type Planner interface {
@@ -69,28 +70,133 @@ func (p *PlanningHelper) Dep(ctx context.Context, schemas ...*Schema) error {
 	return nil
 }
 
-func planAllOfObject(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
-	if len(schema.AllOf) == 0 {
+func planDiscriminatedOneOfObject(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
+	var discrim struct {
+		PropertyName string            `json:"propertyName"`
+		Mapping      map[string]string `json:"mapping"`
+	}
+	if ok, err := schema.Annotations.Unmarshal("x-godiscriminator", &discrim); !ok || err != nil {
+		return nil, err
+	}
+	composedTyp, schemas, err := loadSchemaList(ctx, helper, schema, schema.OneOf)
+	if err != nil {
+		return nil, err
+	}
+	if len(schemas) == 0 || composedTyp != Object {
 		return nil, nil
 	}
-	var (
-		resolved []*Schema
-		foundObj bool
+
+	tInfo := helper.TypeInfo(schema.Meta())
+	if tInfo.Unknown() {
+		return nil, nil
+	}
+
+	typeToNames := make(map[string][]string)
+	for k, v := range discrim.Mapping {
+		typeToNames[v] = append(typeToNames[v], k)
+	}
+
+	typeMapping := make(map[string]TypeInfo)
+	s := &StructPlan{typeInfo: tInfo}
+	s.Comment = schema.Annotations.GetString("description")
+	for _, subSchema := range schemas {
+		tInfo := helper.TypeInfo(subSchema.Meta())
+		names, ok := typeToNames[tInfo.Name]
+		if !ok {
+			return nil, fmt.Errorf("no discriminators for type: %v", tInfo.Name)
+		}
+		for _, n := range names {
+			typeMapping[n] = tInfo
+		}
+	}
+	if err := helper.Dep(ctx, schemas...); err != nil {
+		return nil, err
+	}
+
+	s.Fields = append(s.Fields, StructField{
+		Names: []string{jsonPropertyToExportedName(discrim.PropertyName)},
+		Type:  TypeInfo{Name: "interface{}"},
+	})
+
+	s.Traits = append(s.Traits,
+		&discriminatorMarshalTrait{
+			StructField{
+				Names: []string{jsonPropertyToExportedName(discrim.PropertyName)},
+				Type:  TypeInfo{Name: "string"},
+				Tag:   fmt.Sprintf(`json:"%s"`, discrim.PropertyName),
+			},
+			typeMapping,
+		},
 	)
 
-	for _, s := range schema.AllOf {
-		r, err := s.Resolve(ctx, schema, helper)
+	return s, nil
+}
+
+type discriminatorMarshalTrait struct {
+	StructField
+	types map[string]TypeInfo
+}
+
+func (d *discriminatorMarshalTrait) Template() string {
+	return "discriminator.tmpl"
+}
+
+type DiscriminatorCase struct {
+	Value string
+	TypeInfo
+}
+
+func (d *discriminatorMarshalTrait) Cases() (cases []DiscriminatorCase) {
+	for k, v := range d.types {
+		cases = append(cases, DiscriminatorCase{Value: k, TypeInfo: v})
+	}
+	sort.Slice(cases, func(i, j int) bool {
+		return cases[i].Name < cases[j].Name
+	})
+	return cases
+}
+
+func (d *discriminatorMarshalTrait) Deps() []TypeInfo {
+	return []TypeInfo{{GoPath: "encoding/json", Name: "Marshal"}, {GoPath: "fmt", Name: "Errorf"}}
+}
+
+func loadSchemaList(
+	ctx context.Context,
+	helper *PlanningHelper,
+	parent *Schema,
+	schemas []*RefOrSchema,
+) (SimpleType, []*Schema, error) {
+	var (
+		resolved  []*Schema
+		foundType SimpleType
+	)
+	for _, s := range schemas {
+		r, err := s.Resolve(ctx, parent, helper)
 		if err != nil {
-			return nil, err
+			return Unknown, nil, err
 		}
 		resolved = append(resolved, r)
-		if !foundObj && r.ChooseType() == Object {
-			foundObj = true
+		t := r.ChooseType()
+		if t == Unknown {
+			continue
+		}
+		if foundType == Unknown {
+			foundType = t
+			continue
 		}
 	}
-	if !foundObj {
+	return foundType, resolved, nil
+}
+
+func planAllOfObject(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
+	composedTyp, schemas, err := loadSchemaList(ctx, helper, schema, schema.AllOf)
+	if err != nil {
+		return nil, err
+	}
+	if len(schemas) == 0 || composedTyp != Object {
 		return nil, nil
 	}
+
 	tInfo := helper.TypeInfo(schema.Meta())
 	if tInfo.Unknown() {
 		return nil, nil
@@ -98,7 +204,7 @@ func planAllOfObject(ctx context.Context, helper *PlanningHelper, schema *Schema
 	s := &StructPlan{typeInfo: tInfo}
 	s.Comment = schema.Annotations.GetString("description")
 
-	for _, subSchema := range resolved {
+	for _, subSchema := range schemas {
 		tInfo := helper.TypeInfo(subSchema.Meta())
 		if tInfo.Unknown() {
 			// this is an anonymous struct; add all of its inner fields to parent

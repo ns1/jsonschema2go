@@ -1,0 +1,9 @@
+{
+  "x-gopath": "example.com/v1/foo#Foo",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    }
+  }
+}

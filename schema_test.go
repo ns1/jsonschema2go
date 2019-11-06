@@ -159,7 +159,7 @@ func TestSchema_UnmarshalJSON(t *testing.T) {
 		{
 			name: "annos",
 			data: `{"type": "string", "i-am-an-annotation": "hi"}`,
-			want: Schema{Type: &TypeField{String}, Annotations: map[string]interface{}{"i-am-an-annotation": "hi"}},
+			want: Schema{Type: &TypeField{String}, Annotations: annos(map[string]string{"i-am-an-annotation": "hi"})},
 		},
 		{
 			name: "recursive",
