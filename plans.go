@@ -60,7 +60,7 @@ func (s *StructPlan) Deps() (deps []TypeInfo) {
 		deps = append(deps, s.Type)
 	}
 	for _, t := range s.Traits {
-		if t, ok := t.(interface { Deps() []TypeInfo }); ok {
+		if t, ok := t.(interface{ Deps() []TypeInfo }); ok {
 			deps = append(deps, t.Deps()...)
 		}
 	}

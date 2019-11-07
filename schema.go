@@ -240,11 +240,11 @@ func (s *Schema) setCurLoc(u *url.URL) {
 				push(v)
 			}
 		}
-		for _, a := range [][]*RefOrSchema {
+		for _, a := range [][]*RefOrSchema{
 			s.AllOf,
 			s.AnyOf,
 			s.OneOf,
-		}{
+		} {
 			for _, v := range a {
 				push(v)
 			}
