@@ -29,5 +29,9 @@ func (m *{{ $.Type.Name }}) UnmarshalJSON(data []byte) error {
 	}
 	return json.Unmarshal(data, m.{{ index .StructField.Names 0 }})
 }
+
+func (m *{{ $.Type.Name }}) MarshalJSON() ([]byte, error) {
+	return json.Marshal(m.{{ index .StructField.Names 0 }})
+}
 {{ end }}
 {{ end }}

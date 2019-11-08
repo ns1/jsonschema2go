@@ -28,6 +28,10 @@ func (m *Bar) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, m.Direction)
 }
 
+func (m *Bar) MarshalJSON() ([]byte, error) {
+	return json.Marshal(m.Direction)
+}
+
 type Left struct {
 	Direction string `json:"direction,omitempty"`
 	Value     int    `json:"value,omitempty"`
