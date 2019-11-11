@@ -136,29 +136,6 @@ func print(
 	return nil
 }
 
-func group(ctx context.Context, results <-chan CrawlResult, errC <-chan error) (map[string][]Plan, error) {
-	// group together results
-	grouped := make(map[string][]Plan)
-	for {
-		select {
-		case err := <-errC:
-			return nil, err
-		case result, ok := <-results:
-			if !ok {
-				return grouped, nil
-			}
-			if result.Err != nil {
-				return nil, result.Err
-			}
-			plan := result.Plan
-			goPath := plan.Type().GoPath
-			grouped[goPath] = append(grouped[goPath], plan)
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		}
-	}
-}
-
 func pathMapper(prefixes [][2]string) func(string) string {
 	sort.Slice(prefixes, func(i, j int) bool {
 		return prefixes[i][0] < prefixes[j][0]
