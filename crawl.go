@@ -23,14 +23,27 @@ func doCrawl(
 	var childRoutines sync.WaitGroup
 	defer childRoutines.Wait()
 
+	loaded, errC := initialLoad(ctx, &childRoutines, loader, fileNames)
+
+	results := crawl(ctx, planner, loader, typer, loaded)
+
+	return group(ctx, results, errC)
+}
+
+func initialLoad(
+	ctx context.Context,
+	wg *sync.WaitGroup,
+	loader Loader,
+	fileNames []string,
+) (<-chan *Schema, <-chan error) {
 	// load all initial schemas concurrently
 	loaded := make(chan *Schema)
 	errC := make(chan error, 1)
 	var sent int64 // used to track completion of tasks
 	for _, fileName := range fileNames {
-		childRoutines.Add(1)
+		wg.Add(1)
 		go func(fileName string) {
-			defer childRoutines.Done()
+			defer wg.Done()
 
 			u, err := url.Parse(fileName)
 			if err != nil {
@@ -52,10 +65,7 @@ func doCrawl(
 			}
 		}(fileName)
 	}
-
-	results := crawl(ctx, planner, loader, typer, loaded)
-
-	return group(ctx, results, errC)
+	return loaded, errC
 }
 
 func newPlanningHelper(ctx context.Context, loader Loader, typer Typer, schemas <-chan *Schema) *PlanningHelper {
