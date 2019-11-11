@@ -126,7 +126,7 @@ func TestSchemaToPlan(t *testing.T) {
 								"description": "i am bob",
 							}),
 							Config: config{
-								GoPath:  "github.com/jwilner/jsonschema2go/example#Awesome",
+								GoPath: "github.com/jwilner/jsonschema2go/example#Awesome",
 							},
 						},
 					),
@@ -172,7 +172,7 @@ func TestSchemaToPlan(t *testing.T) {
 			name: "enum",
 			schema: &Schema{
 				Config: config{
-					GoPath:  "github.com/jwilner/jsonschema2go/example#Letter",
+					GoPath: "github.com/jwilner/jsonschema2go/example#Letter",
 				},
 				Type: &TypeField{String},
 				Enum: []interface{}{
@@ -200,7 +200,7 @@ func TestSchemaToPlan(t *testing.T) {
 			name: "nullable built in",
 			schema: &Schema{
 				Config: config{
-					GoPath:  "github.com/jwilner/jsonschema2go/example#Awesome",
+					GoPath: "github.com/jwilner/jsonschema2go/example#Awesome",
 				},
 				Type: &TypeField{Object},
 				Properties: map[string]*RefOrSchema{

@@ -82,9 +82,9 @@ func crawl(
 		defer close(results)
 
 		var (
-			wg        sync.WaitGroup
-			allCopied bool
-			inFlight  int
+			wg           sync.WaitGroup
+			allCopied    bool
+			inFlight     int
 			innerResults = make(chan CrawlResult)
 		)
 

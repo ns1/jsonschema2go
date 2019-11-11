@@ -91,7 +91,7 @@ func (c *cachingLoader) run() {
 
 	for {
 		select {
-		case errC :=<-c.closeC:
+		case errC := <-c.closeC:
 			cncl()
 			childRoutines.Wait()
 			errC <- nil

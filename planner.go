@@ -45,7 +45,7 @@ func (p plannerFunc) Plan(ctx context.Context, helper *PlanningHelper, schema *S
 type PlanningHelper struct {
 	Loader
 	Typer
-	Deps chan *Schema
+	Deps      chan *Schema
 	submitted <-chan struct{}
 }
 
