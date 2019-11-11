@@ -21,6 +21,7 @@ func doCrawl(
 	fileNames []string,
 ) (map[string][]Plan, error) {
 	var childRoutines sync.WaitGroup
+	defer childRoutines.Wait()
 
 	// load all initial schemas concurrently
 	loaded := make(chan *Schema)
