@@ -44,19 +44,17 @@ func (p plannerFunc) Plan(ctx context.Context, helper *PlanningHelper, schema *S
 
 type PlanningHelper struct {
 	Loader
-	Deps chan<- *Schema
+	Typer
+	Deps chan *Schema
+	submitted <-chan struct{}
 }
 
-func (p *PlanningHelper) TypeInfo(s SchemaMeta) TypeInfo {
-	parts := strings.SplitN(s.Annotations.GetString("x-gopath"), "#", 2)
-	if len(parts) == 2 {
-		return TypeInfo{GoPath: parts[0], Name: parts[1]}
-	}
-	return TypeInfo{Name: p.Primitive(s.BestType)}
+func (p *PlanningHelper) Schemas() <-chan *Schema {
+	return p.Deps
 }
 
-func (p *PlanningHelper) Primitive(s SimpleType) string {
-	return primitives[s]
+func (p *PlanningHelper) Submitted() <-chan struct{} {
+	return p.submitted
 }
 
 func (p *PlanningHelper) Dep(ctx context.Context, schemas ...*Schema) error {
@@ -70,13 +68,15 @@ func (p *PlanningHelper) Dep(ctx context.Context, schemas ...*Schema) error {
 	return nil
 }
 
+type Typer interface {
+	TypeInfo(s SchemaMeta) TypeInfo
+	Primitive(s SimpleType) string
+}
+
 func planDiscriminatedOneOfObject(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
-	var discrim struct {
-		PropertyName string            `json:"propertyName"`
-		Mapping      map[string]string `json:"mapping"`
-	}
-	if ok, err := schema.Annotations.Unmarshal("x-godiscriminator", &discrim); !ok || err != nil {
-		return nil, err
+	discrim := schema.Config.Discriminator
+	if !discrim.isSet() {
+		return nil, nil
 	}
 	composedTyp, schemas, err := loadSchemaList(ctx, helper, schema, schema.OneOf)
 	if err != nil {
@@ -403,4 +403,18 @@ func deriveStructFields(
 		}
 	}
 	return
+}
+
+type defaultTypeInfoer struct{}
+
+func (d defaultTypeInfoer) TypeInfo(s SchemaMeta) TypeInfo {
+	parts := strings.SplitN(s.Flags.GoPath, "#", 2)
+	if len(parts) == 2 {
+		return TypeInfo{GoPath: parts[0], Name: parts[1]}
+	}
+	return TypeInfo{Name: d.Primitive(s.BestType)}
+}
+
+func (defaultTypeInfoer) Primitive(s SimpleType) string {
+	return primitives[s]
 }

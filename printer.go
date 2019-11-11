@@ -84,12 +84,7 @@ func fileTmplWithFuncs(fName string) (*template.Template, error) {
 	return template.New(filepath.Base(fName)).ParseFiles(fName)
 }
 
-func newPrinter() *Printer {
-	return new(Printer)
-}
-
-type Printer struct {
-}
+type Printer struct{}
 
 func (p *Printer) Print(ctx context.Context, w io.Writer, goPath string, plans []Plan) error {
 	var imports *Imports

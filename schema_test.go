@@ -108,6 +108,7 @@ func Test_getJSONFieldNames(t *testing.T) {
 				"anyOf",
 				"oneOf",
 				"not",
+				"x-jsonschema2go",
 			},
 		},
 	}

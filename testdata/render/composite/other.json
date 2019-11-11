@@ -1,9 +1,0 @@
-{
-  "x-gopath": "example.com/v1/foo#Blob",
-  "type": "object",
-  "properties": {
-    "count": {
-      "type": "integer"
-    }
-  }
-}

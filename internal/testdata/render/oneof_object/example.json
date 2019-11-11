@@ -1,0 +1,45 @@
+{
+  "description": "Bar gives you some dumb info",
+  "x-jsonschema2go": {
+    "gopath": "github.com/jwilner/jsonschema2go/internal/testdata/render/oneof_object/foo#Bar",
+    "discriminator": {
+      "propertyName": "direction",
+      "mapping": {
+        "l": "Left",
+        "r": "Right"
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "x-jsonschema2go": {
+        "gopath": "github.com/jwilner/jsonschema2go/internal/testdata/render/oneof_object/foo#Left"
+      },
+      "type": "object",
+      "properties": {
+        "direction": {
+          "type": "string",
+          "enum": ["l"]
+        },
+        "value": {
+          "type": "integer"
+        }
+      }
+    },
+    {
+      "x-jsonschema2go": {
+        "gopath": "github.com/jwilner/jsonschema2go/internal/testdata/render/oneof_object/foo#Right"
+      },
+      "type": "object",
+      "properties": {
+        "direction": {
+          "type": "string",
+          "enum": ["r"]
+        },
+        "value": {
+          "type": "number"
+        }
+      }
+    }
+  ]
+}

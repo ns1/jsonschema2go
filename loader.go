@@ -30,20 +30,32 @@ type schemaRequest struct {
 type cachingLoader struct {
 	requests chan schemaRequest
 	client   HTTPDoer
+	closeC   chan chan<- error
 }
 
-func newLoader() *cachingLoader {
-	return &cachingLoader{
+func newCachingLoader() *cachingLoader {
+	c := &cachingLoader{
 		requests: make(chan schemaRequest),
 		client:   http.DefaultClient,
+		closeC:   make(chan chan<- error),
 	}
+	go c.run()
+	return c
 }
 
-func (c *cachingLoader) Run(ctx context.Context) error {
+func (c *cachingLoader) Close() error {
+	errC := make(chan error)
+	c.closeC <- errC
+	return <-errC
+}
+
+func (c *cachingLoader) run() {
 	type uriSchemaResult struct {
 		schemaResult
 		url string
 	}
+
+	ctx, cncl := context.WithCancel(context.Background())
 
 	respond := func(wg *sync.WaitGroup, res schemaResult, c chan<- schemaResult) {
 		wg.Add(1)
@@ -79,9 +91,11 @@ func (c *cachingLoader) Run(ctx context.Context) error {
 
 	for {
 		select {
-		case <-ctx.Done():
+		case errC :=<-c.closeC:
+			cncl()
 			childRoutines.Wait()
-			return ctx.Err()
+			errC <- nil
+			return
 
 		case req := <-c.requests:
 			if schema, ok := cache[req.url]; ok {

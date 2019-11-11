@@ -2,7 +2,10 @@ package jsonschema2go
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 	"sync"
+	"sync/atomic"
 )
 
 type CrawlResult struct {
@@ -10,7 +13,69 @@ type CrawlResult struct {
 	Err  error
 }
 
-func crawl(ctx context.Context, loader Loader, schemas <-chan *Schema, planner Planner) <-chan CrawlResult {
+func doCrawl(
+	ctx context.Context,
+	planner Planner,
+	loader Loader,
+	typer Typer,
+	fileNames []string,
+) (map[string][]Plan, error) {
+	var childRoutines sync.WaitGroup
+
+	// load all initial schemas concurrently
+	loaded := make(chan *Schema)
+	errC := make(chan error, 1)
+	var sent int64 // used to track completion of tasks
+	for _, fileName := range fileNames {
+		childRoutines.Add(1)
+		go func(fileName string) {
+			defer childRoutines.Done()
+
+			u, err := url.Parse(fileName)
+			if err != nil {
+				errC <- err
+				return
+			}
+
+			schema, err := loader.Load(ctx, u)
+			if err != nil {
+				errC <- fmt.Errorf("unable to resolve schema from %q: %w", fileName, err)
+				return
+			}
+			select {
+			case <-ctx.Done():
+			case loaded <- schema:
+				if atomic.AddInt64(&sent, 1) == int64(len(fileNames)) {
+					close(loaded)
+				}
+			}
+		}(fileName)
+	}
+
+	results := crawl(ctx, planner, loader, typer, loaded)
+
+	return group(ctx, results, errC)
+}
+
+func newPlanningHelper(ctx context.Context, loader Loader, typer Typer, schemas <-chan *Schema) *PlanningHelper {
+	// allSchemas represents the merged stream of explicitly requested schemas and their children; it is
+	// in essence the queue which powers a breadth-first search of the object graph
+	allSchemas := make(chan *Schema)
+	// puts all schemas on merged and puts a signal on noMoreComing when no more coming
+	noMoreComing := copyAndSignal(ctx, schemas, allSchemas)
+
+	return &PlanningHelper{loader, typer, allSchemas, noMoreComing}
+}
+
+func crawl(
+	ctx context.Context,
+	planner Planner,
+	loader Loader,
+	typer Typer,
+	schemas <-chan *Schema,
+) <-chan CrawlResult {
+	helper := newPlanningHelper(ctx, loader, typer, schemas)
+
 	results := make(chan CrawlResult)
 
 	go func() {
@@ -20,15 +85,7 @@ func crawl(ctx context.Context, loader Loader, schemas <-chan *Schema, planner P
 			wg        sync.WaitGroup
 			allCopied bool
 			inFlight  int
-
-			// allSchemas represents the merged stream of explicitly requested schemas and their children; it is
-			// in essence the queue which powers a breadth-first search of the object graph
-			allSchemas = make(chan *Schema)
-			// puts all schemas on merged and puts a signal on noMoreComing when no more coming
-			noMoreComing = copyAndSignal(ctx, schemas, allSchemas)
 			innerResults = make(chan CrawlResult)
-
-			helper = &PlanningHelper{loader, allSchemas}
 		)
 
 		defer wg.Wait()
@@ -56,19 +113,24 @@ func crawl(ctx context.Context, loader Loader, schemas <-chan *Schema, planner P
 			}
 
 			select {
-			case s := <-allSchemas:
+			case s := <-helper.Schemas():
 				t := helper.TypeInfo(s.Meta())
 				if seen[t] {
 					continue
 				}
 				seen[t] = true
+
+				if s.Config.Exclude {
+					continue
+				}
+
 				inFlight++
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
 					derivePlan(s)
 				}()
-			case <-noMoreComing:
+			case <-helper.Submitted():
 				allCopied = true
 			case res := <-innerResults:
 				if res.Err != nil {

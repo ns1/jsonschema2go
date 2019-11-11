@@ -1,9 +1,0 @@
-{
-  "x-gopath": "example.com/v1/foo#Letter",
-  "type": "string",
-  "enum": [
-    "a",
-    "b",
-    "c"
-  ]
-}

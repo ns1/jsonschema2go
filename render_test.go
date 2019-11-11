@@ -52,7 +52,11 @@ func Test_mapPath(t *testing.T) {
 }
 
 func TestRender(t *testing.T) {
-	root, err := filepath.Abs("testdata/render")
+	testDataDir, err := filepath.Abs("internal/testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+	root, err := filepath.Abs("internal/testdata/render")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,7 +82,6 @@ func TestRender(t *testing.T) {
 				schemas = append(schemas, "file:"+path.Join(testDir, a))
 			}
 
-			wantDir := path.Join(root, e.Name())
 			wanted, err := listAllFiles(testDir, ".gen.go")
 			if err != nil {
 				r.NoError(err)
@@ -88,11 +91,14 @@ func TestRender(t *testing.T) {
 			r.NoError(err)
 			defer os.RemoveAll(dirName)
 
-			renderer := NewRenderer()
-			r.NoError(renderer.Render(context.Background(), schemas, [][2]string{{"example.com/v1", dirName}}))
+			r.NoError(Render(
+				context.Background(),
+				schemas,
+				PrefixMap("github.com/jwilner/jsonschema2go/internal/testdata", dirName),
+			))
 			results, err := listAllFiles(dirName, ".gen.go")
 			r.NoError(err)
-			wantedByName := keyedBySuffix(wantDir, wanted)
+			wantedByName := keyedBySuffix(testDataDir, wanted)
 			resultsByName := keyedBySuffix(dirName, results)
 
 			r.Equal(sortedKeys(wantedByName), sortedKeys(resultsByName))

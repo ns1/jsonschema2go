@@ -22,9 +22,11 @@ func TestSchemaToPlan(t *testing.T) {
 				Properties: map[string]*RefOrSchema{
 					"count": schema(Schema{Type: &TypeField{Integer}}),
 				},
+				Config: config{
+					GoPath: "github.com/jwilner/jsonschema2go/example#Awesome",
+				},
 				Annotations: annos(map[string]string{
 					"description": "i am bob",
-					"x-gopath":    "github.com/jwilner/jsonschema2go/example#Awesome",
 				}),
 			},
 			want: []Plan{
@@ -50,9 +52,9 @@ func TestSchemaToPlan(t *testing.T) {
 				Type: &TypeField{Object},
 				Properties: map[string]*RefOrSchema{
 					"nested": schema(Schema{
-						Annotations: annos(map[string]string{
-							"x-gopath": "github.com/jwilner/jsonschema2go/example#NestedType",
-						}),
+						Config: config{
+							GoPath: "github.com/jwilner/jsonschema2go/example#NestedType",
+						},
 						Type: &TypeField{Object},
 						Properties: map[string]*RefOrSchema{
 							"count": schema(Schema{Type: &TypeField{Integer}}),
@@ -61,8 +63,10 @@ func TestSchemaToPlan(t *testing.T) {
 				},
 				Annotations: annos(map[string]string{
 					"description": "i am bob",
-					"x-gopath":    "github.com/jwilner/jsonschema2go/example#Awesome",
 				}),
+				Config: config{
+					GoPath: "github.com/jwilner/jsonschema2go/example#Awesome",
+				},
 			},
 			want: []Plan{
 				&StructPlan{
@@ -100,9 +104,9 @@ func TestSchemaToPlan(t *testing.T) {
 		{
 			name: "composed anonymous struct",
 			schema: &Schema{
-				Annotations: annos(map[string]string{
-					"x-gopath": "github.com/jwilner/jsonschema2go/example#AwesomeWithID",
-				}),
+				Config: config{
+					GoPath: "github.com/jwilner/jsonschema2go/example#AwesomeWithID",
+				},
 				AllOf: []*RefOrSchema{
 					schema(
 						Schema{
@@ -120,8 +124,10 @@ func TestSchemaToPlan(t *testing.T) {
 							},
 							Annotations: annos(map[string]string{
 								"description": "i am bob",
-								"x-gopath":    "github.com/jwilner/jsonschema2go/example#Awesome",
 							}),
+							Config: config{
+								GoPath:  "github.com/jwilner/jsonschema2go/example#Awesome",
+							},
 						},
 					),
 				},
@@ -165,9 +171,9 @@ func TestSchemaToPlan(t *testing.T) {
 		{
 			name: "enum",
 			schema: &Schema{
-				Annotations: annos(map[string]string{
-					"x-gopath": "github.com/jwilner/jsonschema2go/example#Letter",
-				}),
+				Config: config{
+					GoPath:  "github.com/jwilner/jsonschema2go/example#Letter",
+				},
 				Type: &TypeField{String},
 				Enum: []interface{}{
 					"a",
@@ -193,9 +199,9 @@ func TestSchemaToPlan(t *testing.T) {
 		{
 			name: "nullable built in",
 			schema: &Schema{
-				Annotations: annos(map[string]string{
-					"x-gopath": "github.com/jwilner/jsonschema2go/example#Awesome",
-				}),
+				Config: config{
+					GoPath:  "github.com/jwilner/jsonschema2go/example#Awesome",
+				},
 				Type: &TypeField{Object},
 				Properties: map[string]*RefOrSchema{
 					"bob": schema(Schema{
@@ -225,7 +231,7 @@ func TestSchemaToPlan(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			results := crawl(context.Background(), mockLoader{}, schemaChan(tt.schema), Composite)
+			results := crawl(context.Background(), Composite, mockLoader{}, defaultTypeInfoer{}, schemaChan(tt.schema))
 			var (
 				got []Plan
 				err error

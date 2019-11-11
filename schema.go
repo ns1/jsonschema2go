@@ -198,11 +198,29 @@ type Schema struct {
 	OneOf []*RefOrSchema `json:"oneOf,omitempty"`
 	Not   *RefOrSchema   `json:"not,omitempty"`
 
+	// jsonschema2go config
+	Config config `json:"x-jsonschema2go"`
+
 	// user extensible
 	Annotations TagMap `json:"-"`
 
 	// curLoc -- internal bookkeeping, the resource from which this schema was loaded
 	curLoc *url.URL `json:"-"`
+}
+
+type config struct {
+	GoPath        string        `json:"gopath"`
+	Exclude       bool          `json:"exclude"`
+	Discriminator discriminator `json:"discriminator"`
+}
+
+type discriminator struct {
+	PropertyName string            `json:"propertyName"`
+	Mapping      map[string]string `json:"mapping"`
+}
+
+func (d *discriminator) isSet() bool {
+	return d.PropertyName != ""
 }
 
 func (s *Schema) setCurLoc(u *url.URL) {
@@ -291,6 +309,7 @@ func (s *Schema) Meta() SchemaMeta {
 		ID:          s.ID,
 		BestType:    s.ChooseType(),
 		Annotations: s.Annotations,
+		Flags:       s.Config,
 	}
 }
 
@@ -298,6 +317,7 @@ type SchemaMeta struct {
 	ID          string
 	BestType    SimpleType
 	Annotations TagMap
+	Flags       config
 }
 
 type Loader interface {

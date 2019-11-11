@@ -3,102 +3,86 @@ package jsonschema2go
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
-	"sync/atomic"
 )
 
-func NewRenderer() *Renderer {
-	return &Renderer{}
+type Option func(s *settings)
+
+type settings struct {
+	prefixes [][2]string
+	typer    Typer
+	planner  Planner
+	printer  *Printer
+	loader   Loader
 }
 
-type Renderer struct{}
+func PrefixMap(pairs ...string) Option {
+	if len(pairs)%2 != 0 {
+		panic("must be even list of prefixes")
+	}
+	var prefixes [][2]string
+	for i := 0; i < len(pairs); i += 2 {
+		prefixes = append(prefixes, [2]string{pairs[i], pairs[i+1]})
+	}
+	return func(s *settings) {
+		s.prefixes = prefixes
+	}
+}
 
-func (r *Renderer) Render(ctx context.Context, fileNames []string, prefixes [][2]string) error {
-	var childRoutines sync.WaitGroup
-	defer childRoutines.Wait()
+func CustomTyper(typer Typer) Option {
+	return func(s *settings) {
+		s.typer = typer
+	}
+}
 
+func CustomPlanners(planners ...Planner) Option {
+	return func(s *settings) {
+		s.planner = CompositePlanner(planners)
+	}
+}
+
+func Render(ctx context.Context, fileNames []string, options ...Option) error {
+
+	s := &settings{
+		typer:   defaultTypeInfoer{},
+		planner: Composite,
+		printer: new(Printer),
+	}
+	for _, o := range options {
+		o(s)
+	}
+
+	if s.loader == nil {
+		c := newCachingLoader()
+		defer func() {
+			_ = c.Close()
+		}()
+		s.loader = c
+	}
 	ctx, cncl := context.WithCancel(ctx)
 	defer cncl()
 
-	loader := newLoader()
-	childRoutines.Add(1)
-	go func() {
-		defer childRoutines.Done()
-		_ = loader.Run(ctx) // run the background cache processes
-	}()
-
-	errs := make(chan error, 1)
-	sendErr := func(err error) {
-		// don't block if one is already sent on buffered chan
-		select {
-		case errs <- err:
-		default:
-		}
-	}
-
-	// load all initial schemas concurrently
-	loaded := loadInitial(ctx, &childRoutines, fileNames, loader, sendErr)
-	results := crawl(ctx, loader, loaded, Composite)
-	grouped, err := group(ctx, results, errs)
+	grouped, err := doCrawl(ctx, s.planner, s.loader, s.typer, fileNames)
 	if err != nil {
 		return err
 	}
 
-	return print(ctx, &childRoutines, newPrinter(), grouped, prefixes)
-}
-
-func loadInitial(
-	ctx context.Context,
-	childRoutines *sync.WaitGroup,
-	fileNames []string,
-	loader Loader,
-	sendErr func(error),
-) <-chan *Schema {
-	loaded := make(chan *Schema)
-
-	sent := int64(0) // int64 used to track completion of tasks
-	for _, fileName := range fileNames {
-
-		childRoutines.Add(1)
-		go func(fileName string) {
-			defer childRoutines.Done()
-
-			u, err := url.Parse(fileName)
-			if err != nil {
-				sendErr(err)
-				return
-			}
-
-			schema, err := loader.Load(ctx, u)
-			if err != nil {
-				sendErr(fmt.Errorf("unable to resolve schema from %q: %w", fileName, err))
-				return
-			}
-			select {
-			case <-ctx.Done():
-			case loaded <- schema:
-				if atomic.AddInt64(&sent, 1) == int64(len(fileNames)) {
-					close(loaded)
-				}
-			}
-		}(fileName)
-	}
-
-	return loaded
+	return print(ctx, s.printer, grouped, s.prefixes)
 }
 
 func print(
 	ctx context.Context,
-	childRoutines *sync.WaitGroup,
 	printer *Printer,
 	grouped map[string][]Plan,
 	prefixes [][2]string,
 ) error {
+	var childRoutines sync.WaitGroup
+	defer childRoutines.Wait()
+
 	mapper := pathMapper(prefixes)
 	done := make(chan struct{})
 	errs := make(chan error, 1)
