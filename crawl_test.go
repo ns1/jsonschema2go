@@ -231,7 +231,7 @@ func TestSchemaToPlan(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			results := crawl(context.Background(), Composite, mockLoader{}, defaultTypeInfoer{}, schemaChan(tt.schema))
+			results := crawl(context.Background(), Composite, mockLoader{}, defaultTyper, schemaChan(tt.schema))
 			var (
 				got []Plan
 				err error

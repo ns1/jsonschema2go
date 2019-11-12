@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"reflect"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 var knownSchemaFields = make(map[string]bool)
@@ -97,7 +99,7 @@ func (i *ItemsFields) UnmarshalJSON(data []byte) error {
 		i.Items = new(RefOrSchema)
 		return json.Unmarshal(data, i.Items)
 	}
-	return json.Unmarshal(data, i.TupleFields)
+	return json.Unmarshal(data, &i.TupleFields)
 }
 
 type TagMap map[string]json.RawMessage
@@ -205,7 +207,7 @@ type Schema struct {
 	Annotations TagMap `json:"-"`
 
 	// curLoc -- internal bookkeeping, the resource from which this schema was loaded
-	curLoc *url.URL `json:"-"`
+	curLoc *url.URL
 }
 
 type config struct {
@@ -328,7 +330,9 @@ func getJSONFieldNames(val interface{}) (fields []string) {
 	t := reflect.TypeOf(val)
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
-
+		if r, _ := utf8.DecodeRuneInString(field.Name); r == utf8.RuneError || unicode.IsLower(r) {
+			continue
+		}
 		vals := strings.SplitN(field.Tag.Get("json"), ",", 2)
 		if len(vals) == 0 || vals[0] == "" {
 			fields = append(fields, field.Name)

@@ -44,7 +44,7 @@ func (p plannerFunc) Plan(ctx context.Context, helper *PlanningHelper, schema *S
 
 type PlanningHelper struct {
 	Loader
-	Typer
+	typer
 	Deps      chan *Schema
 	submitted <-chan struct{}
 }
@@ -66,11 +66,6 @@ func (p *PlanningHelper) Dep(ctx context.Context, schemas ...*Schema) error {
 		}
 	}
 	return nil
-}
-
-type Typer interface {
-	TypeInfo(s SchemaMeta) TypeInfo
-	Primitive(s SimpleType) string
 }
 
 func planDiscriminatedOneOfObject(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
@@ -405,16 +400,28 @@ func deriveStructFields(
 	return
 }
 
-type defaultTypeInfoer struct{}
+var defaultTyper = typer{defaultTypeFunc, primitives}
 
-func (d defaultTypeInfoer) TypeInfo(s SchemaMeta) TypeInfo {
+func defaultTypeFunc(s SchemaMeta) TypeInfo {
 	parts := strings.SplitN(s.Flags.GoPath, "#", 2)
 	if len(parts) == 2 {
 		return TypeInfo{GoPath: parts[0], Name: parts[1]}
 	}
+	return TypeInfo{}
+}
+
+type typer struct {
+	typeFunc   func(SchemaMeta) TypeInfo
+	primitives map[SimpleType]string
+}
+
+func (d typer) TypeInfo(s SchemaMeta) TypeInfo {
+	if f := d.typeFunc(s); f.Name != "" {
+		return f
+	}
 	return TypeInfo{Name: d.Primitive(s.BestType)}
 }
 
-func (defaultTypeInfoer) Primitive(s SimpleType) string {
-	return primitives[s]
+func (d typer) Primitive(s SimpleType) string {
+	return d.primitives[s]
 }

@@ -169,3 +169,46 @@ func readLines(fname string) ([]string, error) {
 	}
 	return lines, nil
 }
+
+func Test_typeFromID(t *testing.T) {
+	for _, tt := range []struct {
+		name                   string
+		pairs                  [][2]string
+		id, wantPath, wantName string
+	}{
+		{
+			name:     "maps",
+			pairs:    [][2]string{{"https://example.com/v1/", "github.com/example/"}},
+			id:       "https://example.com/v1/blah/bar.json",
+			wantPath: "github.com/example/blah",
+			wantName: "Bar",
+		},
+		{
+			name:     "maps no extension",
+			pairs:    [][2]string{{"https://example.com/v1/", "github.com/example/"}},
+			id:       "https://example.com/v1/blah/bar",
+			wantPath: "github.com/example/blah",
+			wantName: "Bar",
+		},
+		{
+			name:     "maps no pairs",
+			pairs:    [][2]string{},
+			id:       "https://example.com/v1/blah/bar",
+			wantPath: "example.com/v1/blah",
+			wantName: "Bar",
+		},
+		{
+			name:     "maps no scheme",
+			pairs:    [][2]string{},
+			id:       "example.com/v1/blah/bar",
+			wantPath: "example.com/v1/blah",
+			wantName: "Bar",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			if path, name := typeFromID(tt.pairs)(tt.id); tt.wantName != name || tt.wantPath != path {
+				t.Errorf("wanted (%q, %q) got (%q, %q)", tt.wantPath, tt.wantName, path, name)
+			}
+		})
+	}
+}

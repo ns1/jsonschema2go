@@ -3,6 +3,7 @@ package jsonschema2go
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -14,28 +15,28 @@ type Option func(s *settings)
 
 type settings struct {
 	prefixes [][2]string
-	typer    Typer
+	typer    typer
 	planner  Planner
 	printer  *Printer
 	loader   Loader
 }
 
 func PrefixMap(pairs ...string) Option {
-	if len(pairs)%2 != 0 {
-		panic("must be even list of prefixes")
-	}
-	var prefixes [][2]string
-	for i := 0; i < len(pairs); i += 2 {
-		prefixes = append(prefixes, [2]string{pairs[i], pairs[i+1]})
-	}
+	prefixes := prefixPairs(pairs)
 	return func(s *settings) {
 		s.prefixes = prefixes
 	}
 }
 
-func CustomTyper(typer Typer) Option {
+func CustomTypeFunc(typeFunc func(SchemaMeta) TypeInfo) Option {
 	return func(s *settings) {
-		s.typer = typer
+		s.typer.typeFunc = typeFunc
+	}
+}
+
+func CustomPrimitivesMap(primitivesMap map[SimpleType]string) Option {
+	return func(s *settings) {
+		s.typer.primitives = primitivesMap
 	}
 }
 
@@ -45,12 +46,53 @@ func CustomPlanners(planners ...Planner) Option {
 	}
 }
 
-func Render(ctx context.Context, fileNames []string, options ...Option) error {
+func TypeFromID(pairs ...string) Option {
+	mapper := typeFromID(prefixPairs(pairs))
+	return func(s *settings) {
+		s.typer.typeFunc = func(meta SchemaMeta) TypeInfo {
+			if t := defaultTypeFunc(meta); !t.Unknown() {
+				return t
+			}
+			if path, name := mapper(meta.ID); name != "" {
+				return TypeInfo{GoPath: path, Name: name}
+			}
+			return TypeInfo{}
+		}
+	}
+}
 
+func typeFromID(pairs [][2]string) func(string) (string, string) {
+	mapper := pathMapper(pairs)
+	stripScheme := func(s string) string {
+		u, err := url.Parse(s)
+		if err != nil {
+			return ""
+		}
+		u.Scheme = ""
+		s = u.String()
+		if strings.HasPrefix(s, "//") {
+			s = s[len("//"):]
+		}
+		return s
+	}
+	return func(s string) (string, string) {
+		pathParts := strings.Split(stripScheme(mapper(s)), "/")
+		if len(pathParts) < 2 {
+			return "", ""
+		}
+		nameParts := strings.SplitN(pathParts[len(pathParts)-1], ".", 2)
+		if len(nameParts) == 0 {
+			return "", ""
+		}
+		return strings.Join(pathParts[:len(pathParts)-1], "/"), jsonPropertyToExportedName(nameParts[0])
+	}
+}
+
+func Render(ctx context.Context, fileNames []string, options ...Option) error {
 	s := &settings{
-		typer:   defaultTypeInfoer{},
 		planner: Composite,
 		printer: new(Printer),
+		typer:   defaultTyper,
 	}
 	for _, o := range options {
 		o(s)
@@ -151,4 +193,15 @@ func pathMapper(prefixes [][2]string) func(string) string {
 		}
 		return path
 	}
+}
+
+func prefixPairs(pairs []string) [][2]string {
+	if len(pairs)%2 != 0 {
+		panic("must be even list of prefixes")
+	}
+	var prefixes [][2]string
+	for i := 0; i < len(pairs); i += 2 {
+		prefixes = append(prefixes, [2]string{pairs[i], pairs[i+1]})
+	}
+	return prefixes
 }

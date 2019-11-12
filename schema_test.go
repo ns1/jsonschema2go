@@ -179,6 +179,18 @@ func TestSchema_UnmarshalJSON(t *testing.T) {
 				schema(Schema{AdditionalProperties: &BoolOrSchema{Bool: boolPtr(true)}}),
 			}},
 		},
+		{
+			name: "itemFields tuple",
+			data: `{"items": [{"type": "integer"}, {"type": "string"}]}`,
+			want: Schema{
+				Items: &ItemsFields{
+					TupleFields: []*RefOrSchema{
+						schema(Schema{Type: &TypeField{Integer}}),
+						schema(Schema{Type: &TypeField{String}}),
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -17,7 +17,7 @@ func doCrawl(
 	ctx context.Context,
 	planner Planner,
 	loader Loader,
-	typer Typer,
+	typer typer,
 	fileNames []string,
 ) (map[string][]Plan, error) {
 	var childRoutines sync.WaitGroup
@@ -68,7 +68,12 @@ func initialLoad(
 	return loaded, errC
 }
 
-func newPlanningHelper(ctx context.Context, loader Loader, typer Typer, schemas <-chan *Schema) *PlanningHelper {
+func newPlanningHelper(
+	ctx context.Context,
+	loader Loader,
+	typer typer,
+	schemas <-chan *Schema,
+) *PlanningHelper {
 	// allSchemas represents the merged stream of explicitly requested schemas and their children; it is
 	// in essence the queue which powers a breadth-first search of the object graph
 	allSchemas := make(chan *Schema)
@@ -82,7 +87,7 @@ func crawl(
 	ctx context.Context,
 	planner Planner,
 	loader Loader,
-	typer Typer,
+	typer typer,
 	schemas <-chan *Schema,
 ) <-chan CrawlResult {
 	helper := newPlanningHelper(ctx, loader, typer, schemas)
