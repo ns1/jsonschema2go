@@ -1,4 +1,4 @@
-package jsonschema2go
+package json2go
 
 import (
 	"bytes"
@@ -17,20 +17,20 @@ func TestImports_List(t *testing.T) {
 	}{
 		{
 			"empty",
-			"github.com/jwilner/jsonschema2go",
+			"github.com/jwilner/json2go",
 			[]string{},
 			nil,
 		},
 		{
 			"alias",
-			"github.com/jwilner/jsonschema2go",
+			"github.com/jwilner/json2go",
 			[]string{
-				"github.com/jwilner/jsonschema2go/example",
-				"github.com/jwilner/jsonschema2go/foo/example",
+				"github.com/jwilner/json2go/example",
+				"github.com/jwilner/json2go/foo/example",
 			},
 			[]Import{
-				{"github.com/jwilner/jsonschema2go/example", ""},
-				{"github.com/jwilner/jsonschema2go/foo/example", "example2"},
+				{"github.com/jwilner/json2go/example", ""},
+				{"github.com/jwilner/json2go/foo/example", "example2"},
 			},
 		},
 	}
@@ -51,30 +51,30 @@ func TestImports_QualName(t *testing.T) {
 	}{
 		{
 			"builtin",
-			"github.com/jwilner/jsonschema2go",
-			[]string{"github.com/jwilner/jsonschema2go/example", "github.com/jwilner/jsonschema2go/foo/example"},
+			"github.com/jwilner/json2go",
+			[]string{"github.com/jwilner/json2go/example", "github.com/jwilner/json2go/foo/example"},
 			TypeInfo{Name: "int"},
 			"int",
 		},
 		{
 			"external",
-			"github.com/jwilner/jsonschema2go",
-			[]string{"github.com/jwilner/jsonschema2go/example", "github.com/jwilner/jsonschema2go/foo/example"},
-			TypeInfo{GoPath: "github.com/jwilner/jsonschema2go", Name: "Bob"},
+			"github.com/jwilner/json2go",
+			[]string{"github.com/jwilner/json2go/example", "github.com/jwilner/json2go/foo/example"},
+			TypeInfo{GoPath: "github.com/jwilner/json2go", Name: "Bob"},
 			"Bob",
 		},
 		{
 			"external",
-			"github.com/jwilner/jsonschema2go",
-			[]string{"github.com/jwilner/jsonschema2go/example", "github.com/jwilner/jsonschema2go/foo/example"},
-			TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/example", Name: "Bob"},
+			"github.com/jwilner/json2go",
+			[]string{"github.com/jwilner/json2go/example", "github.com/jwilner/json2go/foo/example"},
+			TypeInfo{GoPath: "github.com/jwilner/json2go/example", Name: "Bob"},
 			"example.Bob",
 		},
 		{
 			"external with alias",
-			"github.com/jwilner/jsonschema2go",
-			[]string{"github.com/jwilner/jsonschema2go/example", "github.com/jwilner/jsonschema2go/foo/example"},
-			TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/foo/example", Name: "Bob"},
+			"github.com/jwilner/json2go",
+			[]string{"github.com/jwilner/json2go/example", "github.com/jwilner/json2go/foo/example"},
+			TypeInfo{GoPath: "github.com/jwilner/json2go/foo/example", Name: "Bob"},
 			"example2.Bob",
 		},
 	}
@@ -95,7 +95,7 @@ func TestPrintFile(t *testing.T) {
 	}{
 		{
 			name:   "simple struct",
-			goPath: "github.com/jwilner/jsonschema2go",
+			goPath: "github.com/jwilner/json2go",
 			plans: []Plan{
 				&StructPlan{
 					Comment: "Bob does lots of cool things",
@@ -108,7 +108,7 @@ func TestPrintFile(t *testing.T) {
 				},
 			},
 			wantW: `
-package jsonschema2go
+package json2go
 
 
 // Bob does lots of cool things
@@ -118,7 +118,7 @@ type Bob struct {
 		},
 		{
 			name:   "struct with qualified field",
-			goPath: "github.com/jwilner/jsonschema2go",
+			goPath: "github.com/jwilner/json2go",
 			plans: []Plan{
 				&StructPlan{
 					Comment: "Bob does lots of cool things",
@@ -127,7 +127,7 @@ type Bob struct {
 						{
 							Names: []string{"Other"},
 							Type: TypeInfo{
-								GoPath: "github.com/jwilner/jsonschema2go/blah",
+								GoPath: "github.com/jwilner/json2go/blah",
 								Name:   "OtherType",
 							},
 							Tag: `json:"other,omitempty"`,
@@ -139,10 +139,10 @@ type Bob struct {
 				},
 			},
 			wantW: `
-package jsonschema2go
+package json2go
 
 import (
-	"github.com/jwilner/jsonschema2go/blah"
+	"github.com/jwilner/json2go/blah"
 )
 
 // Bob does lots of cool things
@@ -153,7 +153,7 @@ type Bob struct {
 		},
 		{
 			name:   "struct with aliased import",
-			goPath: "github.com/jwilner/jsonschema2go",
+			goPath: "github.com/jwilner/json2go",
 			plans: []Plan{
 				&StructPlan{
 					Comment: "Bob does lots of cool things",
@@ -162,7 +162,7 @@ type Bob struct {
 						{
 							Names: []string{"Other"},
 							Type: TypeInfo{
-								GoPath:  "github.com/jwilner/jsonschema2go/blah",
+								GoPath:  "github.com/jwilner/json2go/blah",
 								Name:    "OtherType",
 								Pointer: true,
 							},
@@ -171,7 +171,7 @@ type Bob struct {
 						{
 							Names: []string{"OtherOther"},
 							Type: TypeInfo{
-								GoPath: "github.com/jwilner/jsonschema2go/bob/blah",
+								GoPath: "github.com/jwilner/json2go/bob/blah",
 								Name:   "AnotherType",
 							},
 							Tag: `json:"another,omitempty"`,
@@ -183,11 +183,11 @@ type Bob struct {
 				},
 			},
 			wantW: `
-package jsonschema2go
+package json2go
 
 import (
-	"github.com/jwilner/jsonschema2go/blah"
-	blah2 "github.com/jwilner/jsonschema2go/bob/blah"
+	"github.com/jwilner/json2go/blah"
+	blah2 "github.com/jwilner/json2go/bob/blah"
 )
 
 // Bob does lots of cool things
@@ -199,14 +199,14 @@ type Bob struct {
 		},
 		{
 			name:   "struct with embedded",
-			goPath: "github.com/jwilner/jsonschema2go",
+			goPath: "github.com/jwilner/json2go",
 			plans: []Plan{
 				&StructPlan{
 					Comment: "Bob does lots of cool things",
 					Fields: []StructField{
 						{
 							Type: TypeInfo{
-								GoPath: "github.com/jwilner/jsonschema2go/blah",
+								GoPath: "github.com/jwilner/json2go/blah",
 								Name:   "OtherType",
 							},
 						},
@@ -217,10 +217,10 @@ type Bob struct {
 				},
 			},
 			wantW: `
-package jsonschema2go
+package json2go
 
 import (
-	"github.com/jwilner/jsonschema2go/blah"
+	"github.com/jwilner/json2go/blah"
 )
 
 // Bob does lots of cool things
@@ -230,14 +230,14 @@ type Bob struct {
 		},
 		{
 			name:   "struct with embedded",
-			goPath: "github.com/jwilner/jsonschema2go",
+			goPath: "github.com/jwilner/json2go",
 			plans: []Plan{
 				&StructPlan{
 					Comment: "Bob does lots of cool things",
 					Fields: []StructField{
 						{
 							Type: TypeInfo{
-								GoPath: "github.com/jwilner/jsonschema2go",
+								GoPath: "github.com/jwilner/json2go",
 								Name:   "OtherType",
 							},
 						},
@@ -257,7 +257,7 @@ type Bob struct {
 				},
 			},
 			wantW: `
-package jsonschema2go
+package json2go
 
 // Bob does lots of cool things
 type Bob struct {
@@ -271,7 +271,7 @@ type OtherType struct {
 		},
 		{
 			name:   "array with struct",
-			goPath: "github.com/jwilner/jsonschema2go",
+			goPath: "github.com/jwilner/json2go",
 			plans: []Plan{
 				&ArrayPlan{
 					typeInfo: TypeInfo{
@@ -279,7 +279,7 @@ type OtherType struct {
 					},
 					Comment: "Bob does lots of cool things",
 					ItemType: TypeInfo{
-						GoPath: "github.com/jwilner/jsonschema2go",
+						GoPath: "github.com/jwilner/json2go",
 						Name:   "OtherType",
 					},
 				},
@@ -294,7 +294,7 @@ type OtherType struct {
 				},
 			},
 			wantW: `
-package jsonschema2go
+package json2go
 
 import (
 	"encoding/json"

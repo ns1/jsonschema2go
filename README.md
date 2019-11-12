@@ -1,8 +1,8 @@
-[![Build Status](https://travis-ci.com/jwilner/jsonschema2go.svg?branch=master)](https://travis-ci.com/jwilner/jsonschema2go)
-[![Coverage Status](https://coveralls.io/repos/github/jwilner/jsonschema2go/badge.svg?branch=master)](https://coveralls.io/github/jwilner/jsonschema2go?branch=master)
-[![Go Report Card](https://goreportcard.com/badge/github.com/jwilner/jsonschema2go)](https://goreportcard.com/report/github.com/jwilner/jsonschema2go)
+[![Build Status](https://travis-ci.com/jwilner/json2go.svg?branch=master)](https://travis-ci.com/jwilner/json2go)
+[![Coverage Status](https://coveralls.io/repos/github/jwilner/json2go/badge.svg?branch=master)](https://coveralls.io/github/jwilner/json2go?branch=master)
+[![Go Report Card](https://goreportcard.com/badge/github.com/jwilner/json2go)](https://goreportcard.com/report/github.com/jwilner/json2go)
 
-# jsonschema2go
+# json2go
 
 Generate Go types from JSON Schema files. Designed to be configurable to permit custom handling of different schema patterns.
 
@@ -10,16 +10,16 @@ Given a schema like in `example.json`:
 ```json
 {
   "description": "Bar gives you some dumb info",
-  "x-jsonschema2go": {
-    "gopath": "github.com/jwilner/jsonschema2go/internal/example/foo#Bar"
+  "x-json2go": {
+    "gopath": "github.com/jwilner/json2go/internal/example/foo#Bar"
   },
   "properties": {
     "baz": {
       "type": "string"
     },
     "boz": {
-      "x-jsonschema2go": {
-        "gopath": "github.com/jwilner/jsonschema2go/internal/example/foo#Boz"
+      "x-json2go": {
+        "gopath": "github.com/jwilner/json2go/internal/example/foo#Boz"
       },
       "type": "object",
       "properties": {
@@ -30,7 +30,7 @@ Given a schema like in `example.json`:
 }
 ```
 
-`jsonschema2go` generates types like:
+`json2go` generates types like:
 ```go
 package foo
 
@@ -47,7 +47,7 @@ type Boz struct {
 
 ## Types
 
-Default configuration for `jsonschema2go` handles primitives, arrays, objects, `allOf` polymorphism, and `oneOf` polymorphism (with discriminator annotation).
+Default configuration for `json2go` handles primitives, arrays, objects, `allOf` polymorphism, and `oneOf` polymorphism (with discriminator annotation).
 
 ## Usage
 ```go
@@ -57,11 +57,11 @@ import (
     "context"
     "log"
 
-    "github.com/jwilner/jsonschema2go"
+    "github.com/jwilner/json2go"
 )
 
 func main() {
-    if err := jsonschema2go.Render(context.Background(), []string{"example.json"}); err != nil {
+    if err := json2go.Render(context.Background(), []string{"example.json"}); err != nil {
         log.Fatal(err)
     }
 }

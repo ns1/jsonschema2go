@@ -1,16 +1,16 @@
 {
   "description": "Bar gives you some dumb info",
   "type": "object",
-  "x-jsonschema2go": {
-    "gopath": "github.com/jwilner/jsonschema2go/internal/testdata/render/exclude/foo#Bar"
+  "x-json2go": {
+    "gopath": "github.com/jwilner/json2go/internal/testdata/render/exclude/foo#Bar"
   },
   "properties": {
     "name": {
       "type": "string"
     },
     "inner": {
-      "x-jsonschema2go": {
-        "gopath": "github.com/jwilner/jsonschema2go/internal/testdata/render/exclude/foo#Excluded",
+      "x-json2go": {
+        "gopath": "github.com/jwilner/json2go/internal/testdata/render/exclude/foo#Excluded",
         "exclude": true
       },
       "type": "object",

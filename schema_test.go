@@ -1,4 +1,4 @@
-package jsonschema2go
+package json2go
 
 import (
 	"context"
@@ -108,7 +108,7 @@ func Test_getJSONFieldNames(t *testing.T) {
 				"anyOf",
 				"oneOf",
 				"not",
-				"x-jsonschema2go",
+				"x-json2go",
 			},
 		},
 	}

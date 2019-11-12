@@ -1,7 +1,7 @@
 {
   "description": "Bar gives you some dumb info",
-  "x-jsonschema2go": {
-    "gopath": "github.com/jwilner/jsonschema2go/internal/testdata/render/multi_pkg/foo#Bar"
+  "x-json2go": {
+    "gopath": "github.com/jwilner/json2go/internal/testdata/render/multi_pkg/foo#Bar"
   },
   "allOf": [
     {

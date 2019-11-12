@@ -1,7 +1,7 @@
 {
   "type": "object",
-  "x-jsonschema2go": {
-    "gopath": "github.com/jwilner/jsonschema2go/internal/testdata/render/nested/foo#Foo"
+  "x-json2go": {
+    "gopath": "github.com/jwilner/json2go/internal/testdata/render/nested/foo#Foo"
   },
   "properties": {
     "name": {

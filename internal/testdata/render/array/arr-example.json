@@ -1,6 +1,6 @@
 {
-  "x-jsonschema2go": {
-    "gopath": "github.com/jwilner/jsonschema2go/internal/testdata/render/array/foo#Barz"
+  "x-json2go": {
+    "gopath": "github.com/jwilner/json2go/internal/testdata/render/array/foo#Barz"
   },
   "description": "Barz gives you lots of dumb info",
   "type": "array",

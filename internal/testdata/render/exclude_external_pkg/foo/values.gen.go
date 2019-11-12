@@ -1,7 +1,7 @@
 package foo
 
 import (
-	"github.com/jwilner/jsonschema2go/internal/testdata/render/exclude_external_pkg/other"
+	"github.com/jwilner/json2go/internal/testdata/render/exclude_external_pkg/other"
 )
 
 // Bar gives you some dumb info

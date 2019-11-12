@@ -1,6 +1,6 @@
 {
-  "x-jsonschema2go": {
-    "gopath": "github.com/jwilner/jsonschema2go/internal/testdata/render/composite/foo#Blob"
+  "x-json2go": {
+    "gopath": "github.com/jwilner/json2go/internal/testdata/render/composite/foo#Blob"
   },
   "type": "object",
   "properties": {
