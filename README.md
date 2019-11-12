@@ -61,7 +61,7 @@ import (
 )
 
 func main() {
-    if err := json2go.Render(context.Background(), []string{"example.json"}); err != nil {
+    if err := json2go.Generate(context.Background(), []string{"example.json"}); err != nil {
         log.Fatal(err)
     }
 }

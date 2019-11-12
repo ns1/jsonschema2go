@@ -91,7 +91,7 @@ func TestRender(t *testing.T) {
 			r.NoError(err)
 			defer os.RemoveAll(dirName)
 
-			r.NoError(Render(
+			r.NoError(Generate(
 				context.Background(),
 				schemas,
 				PrefixMap("github.com/jwilner/json2go/internal/testdata", dirName),

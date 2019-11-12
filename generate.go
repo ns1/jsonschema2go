@@ -88,7 +88,7 @@ func typeFromID(pairs [][2]string) func(string) (string, string) {
 	}
 }
 
-func Render(ctx context.Context, fileNames []string, options ...Option) error {
+func Generate(ctx context.Context, fileNames []string, options ...Option) error {
 	s := &settings{
 		planner: Composite,
 		printer: new(Printer),
