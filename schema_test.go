@@ -191,6 +191,15 @@ func TestSchema_UnmarshalJSON(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "itemFields schema",
+			data: `{"items": {"type": "integer"}}`,
+			want: Schema{
+				Items: &ItemsFields{
+					Items: schema(Schema{Type: &TypeField{Integer}}),
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
