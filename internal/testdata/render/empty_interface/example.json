@@ -1,0 +1,13 @@
+{
+  "x-jsonschema2go": {
+    "gopath": "github.com/jwilner/jsonschema2go/internal/testdata/render/empty_interface/foo#Bar"
+  },
+  "description": "Bar gives you some dumb info",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "value": {}
+  }
+}

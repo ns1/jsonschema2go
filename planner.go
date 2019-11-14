@@ -379,9 +379,8 @@ func deriveStructFields(
 			}
 		}
 		if fType.Unknown() {
-			return nil, nil
+			fType = TypeInfo{Name: "interface{}"}
 		}
-
 		fields = append(
 			fields,
 			StructField{
