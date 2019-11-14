@@ -320,7 +320,7 @@ func (m Bob) MarshalJSON() ([]byte, error) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var w bytes.Buffer
-			err := new(Printer).Print(context.Background(), &w, tt.goPath, tt.plans)
+			err := newPrinter(nil).Print(context.Background(), &w, tt.goPath, tt.plans)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("printStruct() error = %v, wantErr %v", err, tt.wantErr)
 			}

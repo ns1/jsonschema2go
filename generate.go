@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"text/template"
 )
 
 type Option func(s *settings)
@@ -61,6 +62,12 @@ func TypeFromID(pairs ...string) Option {
 	}
 }
 
+func CustomTemplate(tmpl *template.Template) Option {
+	return func(s *settings) {
+		s.printer = newPrinter(tmpl)
+	}
+}
+
 func typeFromID(pairs [][2]string) func(string) (string, string) {
 	mapper := pathMapper(pairs)
 	stripScheme := func(s string) string {
@@ -91,7 +98,7 @@ func typeFromID(pairs [][2]string) func(string) (string, string) {
 func Generate(ctx context.Context, fileNames []string, options ...Option) error {
 	s := &settings{
 		planner: Composite,
-		printer: new(Printer),
+		printer: newPrinter(nil),
 		typer:   defaultTyper,
 	}
 	for _, o := range options {

@@ -7,15 +7,11 @@ import (
 	"go/format"
 	"io"
 	"path"
-	"path/filepath"
 	"sort"
 	"text/template"
 )
 
-var (
-	structTmpl = template.Must(fileTmplWithFuncs("templates/struct.tmpl"))
-	valueTmpl  = template.Must(template.New("values.tmpl").ParseGlob("templates/*.tmpl"))
-)
+//go:generate go run internal/cmd/gentmpl/gentmpl.go
 
 type Import struct {
 	GoPath, Alias string
@@ -80,11 +76,16 @@ func (i *Imports) QualName(info TypeInfo) string {
 	return fmt.Sprintf("%s.%s", qual, info.Name)
 }
 
-func fileTmplWithFuncs(fName string) (*template.Template, error) {
-	return template.New(filepath.Base(fName)).ParseFiles(fName)
+func newPrinter(tmpl *template.Template) *Printer {
+	if tmpl == nil {
+		tmpl = valueTmpl
+	}
+	return &Printer{valueTmpl}
 }
 
-type Printer struct{}
+type Printer struct {
+	tmpl *template.Template
+}
 
 func (p *Printer) Print(ctx context.Context, w io.Writer, goPath string, plans []Plan) error {
 	var imports *Imports
