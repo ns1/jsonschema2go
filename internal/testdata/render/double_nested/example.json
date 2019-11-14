@@ -1,13 +1,13 @@
 {
-  "x-json2go": {
-    "gopath": "github.com/jwilner/json2go/internal/testdata/render/double_nested/foo#Bar"
+  "x-jsonschema2go": {
+    "gopath": "github.com/jwilner/jsonschema2go/internal/testdata/render/double_nested/foo#Bar"
   },
   "description": "Bar gives you some dumb info",
   "type": "object",
   "properties": {
     "foo": {
-      "x-json2go": {
-        "gopath": "github.com/jwilner/json2go/internal/testdata/render/double_nested/foo#Foo"
+      "x-jsonschema2go": {
+        "gopath": "github.com/jwilner/jsonschema2go/internal/testdata/render/double_nested/foo#Foo"
       },
       "type": "object",
       "properties": {

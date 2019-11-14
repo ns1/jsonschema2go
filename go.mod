@@ -1,4 +1,4 @@
-module github.com/jwilner/json2go
+module github.com/jwilner/jsonschema2go
 
 go 1.13
 

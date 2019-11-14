@@ -1,7 +1,7 @@
 {
   "description": "Bar gives you some dumb info",
-  "x-json2go": {
-    "gopath": "github.com/jwilner/json2go/internal/testdata/render/oneof_object/foo#Bar",
+  "x-jsonschema2go": {
+    "gopath": "github.com/jwilner/jsonschema2go/internal/testdata/render/oneof_object/foo#Bar",
     "discriminator": {
       "propertyName": "direction",
       "mapping": {
@@ -12,8 +12,8 @@
   },
   "oneOf": [
     {
-      "x-json2go": {
-        "gopath": "github.com/jwilner/json2go/internal/testdata/render/oneof_object/foo#Left"
+      "x-jsonschema2go": {
+        "gopath": "github.com/jwilner/jsonschema2go/internal/testdata/render/oneof_object/foo#Left"
       },
       "type": "object",
       "properties": {
@@ -27,8 +27,8 @@
       }
     },
     {
-      "x-json2go": {
-        "gopath": "github.com/jwilner/json2go/internal/testdata/render/oneof_object/foo#Right"
+      "x-jsonschema2go": {
+        "gopath": "github.com/jwilner/jsonschema2go/internal/testdata/render/oneof_object/foo#Right"
       },
       "type": "object",
       "properties": {

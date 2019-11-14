@@ -1,7 +1,7 @@
 package foo
 
 import (
-	"github.com/jwilner/json2go/internal/testdata/render/multi_pkg/foobar"
+	"github.com/jwilner/jsonschema2go/internal/testdata/render/multi_pkg/foobar"
 )
 
 // Bar gives you some dumb info

@@ -1,8 +1,8 @@
 {
   "description": "Bar gives you some dumb info",
   "type": "object",
-  "x-json2go": {
-    "gopath": "github.com/jwilner/json2go/internal/testdata/render/string_pointer/foo#Bar"
+  "x-jsonschema2go": {
+    "gopath": "github.com/jwilner/jsonschema2go/internal/testdata/render/string_pointer/foo#Bar"
   },
   "properties": {
     "name": {

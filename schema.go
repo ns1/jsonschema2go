@@ -1,4 +1,4 @@
-package json2go
+package jsonschema2go
 
 import (
 	"bytes"
@@ -200,8 +200,8 @@ type Schema struct {
 	OneOf []*RefOrSchema `json:"oneOf,omitempty"`
 	Not   *RefOrSchema   `json:"not,omitempty"`
 
-	// json2go config
-	Config config `json:"x-json2go"`
+	// jsonschema2go config
+	Config config `json:"x-jsonschema2go"`
 
 	// user extensible
 	Annotations TagMap `json:"-"`

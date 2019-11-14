@@ -1,4 +1,4 @@
-package json2go
+package jsonschema2go
 
 import (
 	"bufio"
@@ -22,23 +22,23 @@ func Test_mapPath(t *testing.T) {
 		want     string
 	}{
 		{"empty", "blah", nil, "blah"},
-		{"one", "github.com/json2go/foo/bar", [][2]string{{"github.com/json2go", "code"}}, "code/foo/bar"},
+		{"one", "github.com/jsonschema2go/foo/bar", [][2]string{{"github.com/jsonschema2go", "code"}}, "code/foo/bar"},
 		{
 			"greater",
-			"github.com/json2go/foo/bar",
-			[][2]string{{"github.com/json2go", "code"}, {"github.com/otherpath", "blob"}},
+			"github.com/jsonschema2go/foo/bar",
+			[][2]string{{"github.com/jsonschema2go", "code"}, {"github.com/otherpath", "blob"}},
 			"code/foo/bar",
 		},
 		{
 			"less",
-			"github.com/json2go/foo/bar",
-			[][2]string{{"github.com/a", "other"}, {"github.com/json2go", "code"}},
+			"github.com/jsonschema2go/foo/bar",
+			[][2]string{{"github.com/a", "other"}, {"github.com/jsonschema2go", "code"}},
 			"code/foo/bar",
 		},
 		{
 			"takes longest",
-			"github.com/json2go/foo/bar",
-			[][2]string{{"github.com/", "other"}, {"github.com/json2go", "code"}},
+			"github.com/jsonschema2go/foo/bar",
+			[][2]string{{"github.com/", "other"}, {"github.com/jsonschema2go", "code"}},
 			"code/foo/bar",
 		},
 	}
@@ -94,7 +94,7 @@ func TestRender(t *testing.T) {
 			r.NoError(Generate(
 				context.Background(),
 				schemas,
-				PrefixMap("github.com/jwilner/json2go/internal/testdata", dirName),
+				PrefixMap("github.com/jwilner/jsonschema2go/internal/testdata", dirName),
 			))
 			results, err := listAllFiles(dirName, ".gen.go")
 			r.NoError(err)

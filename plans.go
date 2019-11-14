@@ -1,4 +1,4 @@
-package json2go
+package jsonschema2go
 
 import (
 	"fmt"
