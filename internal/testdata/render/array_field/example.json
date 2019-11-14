@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "x-jsonschema2go": {
+    "gopath": "github.com/jwilner/jsonschema2go/internal/testdata/render/array_field/foo#Bar"
+  },
+  "properties": {
+    "options": {
+      "type": "array",
+      "items": {
+        "$ref": "inner.json"
+      }
+    }
+  }
+}

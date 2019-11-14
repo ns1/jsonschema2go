@@ -33,6 +33,14 @@ func TestImports_List(t *testing.T) {
 				{"github.com/jwilner/jsonschema2go/foo/example", "example2"},
 			},
 		},
+		{
+			"multiple",
+			"github.com/jwilner/jsonschema2go",
+			[]string{"encoding/json", "encoding/json"},
+			[]Import{
+				{"encoding/json", ""},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

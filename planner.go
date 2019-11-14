@@ -33,7 +33,7 @@ func (c CompositePlanner) Plan(ctx context.Context, helper *PlanningHelper, sche
 			return pl, nil
 		}
 	}
-	return nil, errors.New("unable to plan")
+	return nil, fmt.Errorf("unable to plan %v", schema.curLoc)
 }
 
 type plannerFunc func(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error)
@@ -355,8 +355,28 @@ func deriveStructFields(
 		if err != nil {
 			return nil, err
 		}
-
 		fType := helper.TypeInfo(fieldSchema.Meta())
+		if fType.Unknown() && fieldSchema.ChooseType() == Array {
+			if fieldSchema.Items == nil && fieldSchema.Items.Items == nil {
+				return nil, errors.New("unknown item type")
+			}
+			itemSchema, err := fieldSchema.Items.Items.Resolve(ctx, fieldSchema, helper)
+			if err != nil {
+				return nil, err
+			}
+			itemType := helper.TypeInfo(itemSchema.Meta())
+			itemType.Array = true
+			fields = append(
+				fields,
+				StructField{
+					Comment: fieldSchema.Annotations.GetString("description"),
+					Names:   []string{jsonPropertyToExportedName(name)},
+					Type:    itemType,
+					Tag:     fmt.Sprintf(`json:"%s,omitempty"`, name),
+				},
+			)
+			continue
+		}
 		if fType.Unknown() && len(fieldSchema.OneOf) == 2 {
 			oneOfA, err := fieldSchema.OneOf[0].Resolve(ctx, fieldSchema, helper)
 			if err != nil {
@@ -378,7 +398,7 @@ func deriveStructFields(
 				fType.Pointer = true
 			}
 		}
-		if fType.Unknown() {
+		if fieldSchema.ChooseType() == Unknown && fType.Unknown() {
 			fType = TypeInfo{Name: "interface{}"}
 		}
 		fields = append(

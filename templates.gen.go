@@ -40,7 +40,7 @@ const (
 {{ end -}}
 type {{ .Type.Name }} struct {
 {{ range .Fields -}}
-    {{ range $Index, $Element := .Names -}}{{ if $Index -}}, {{ end -}}{{ . }}{{ end }} {{ if .Type.Pointer -}}*{{ end -}}{{ $.QualName .Type }} {{ if .Tag }}` + "`" + `{{ .Tag }}` + "`" + `{{ end }}
+    {{ range $Index, $Element := .Names -}}{{ if $Index -}}, {{ end -}}{{ . }}{{ end }} {{ if .Type.Array -}}[]{{ end -}}{{ if .Type.Pointer -}}*{{ end -}}{{ $.QualName .Type }} {{ if .Tag }}` + "`" + `{{ .Tag }}` + "`" + `{{ end }}
 {{ end }}
 }
 

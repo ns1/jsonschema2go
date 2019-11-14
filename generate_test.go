@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"github.com/stretchr/testify/require"
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -77,15 +78,16 @@ func TestRender(t *testing.T) {
 			args, err := readLines(path.Join(testDir, "args.txt"))
 			r.NoError(err)
 
-			schemas := make([]string, 0, len(args))
+			var golden bool
+			paths := make([]string, 0, len(args))
 			for _, a := range args {
-				schemas = append(schemas, "file:"+path.Join(testDir, a))
+				if a == "GOLDEN" {
+					golden = true
+					continue
+				}
+				paths = append(paths, "file:"+path.Join(testDir, a))
 			}
 
-			wanted, err := listAllFiles(testDir, ".gen.go")
-			if err != nil {
-				r.NoError(err)
-			}
 
 			dirName, err := ioutil.TempDir("", e.Name())
 			r.NoError(err)
@@ -93,13 +95,36 @@ func TestRender(t *testing.T) {
 
 			r.NoError(Generate(
 				context.Background(),
-				schemas,
+				paths,
 				PrefixMap("github.com/jwilner/jsonschema2go/internal/testdata", dirName),
 			))
 			results, err := listAllFiles(dirName, ".gen.go")
 			r.NoError(err)
-			wantedByName := keyedBySuffix(testDataDir, wanted)
+			if golden {
+				for _, p := range results {
+					newPath := path.Join(testDataDir, p[len(dirName):])
+					r.NoError(os.MkdirAll(filepath.Dir(newPath), 0755))
+					func() {
+						f, err := os.Open(p)
+						r.NoError(err)
+						defer f.Close()
+
+						f2, err := os.Create(newPath)
+						r.NoError(err)
+						defer f2.Close()
+
+						_, err = io.Copy(f2, f)
+						r.NoError(err)
+					}()
+				}
+			}
+
 			resultsByName := keyedBySuffix(dirName, results)
+			wanted, err := listAllFiles(testDir, ".gen.go")
+			if err != nil {
+				r.NoError(err)
+			}
+			wantedByName := keyedBySuffix(testDataDir, wanted)
 
 			r.Equal(sortedKeys(wantedByName), sortedKeys(resultsByName))
 

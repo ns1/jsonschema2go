@@ -9,6 +9,7 @@ type TypeInfo struct {
 	GoPath  string
 	Name    string
 	Pointer bool
+	Array   bool
 }
 
 func (t TypeInfo) BuiltIn() bool {

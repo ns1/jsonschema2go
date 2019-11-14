@@ -23,23 +23,32 @@ type Imports struct {
 }
 
 func newImports(currentGoPath string, importGoPaths []string) *Imports {
-	baseName := make(map[string][]string)
+	baseName := make(map[string]map[string]bool)
 	for _, i := range importGoPaths {
 		if i != "" && i != currentGoPath {
 			pkg := path.Base(i)
-			baseName[pkg] = append(baseName[pkg], i)
+			if _, ok := baseName[pkg]; !ok {
+				baseName[pkg] = make(map[string]bool)
+			}
+			baseName[pkg][i] = true
 		}
 	}
 
 	aliases := make(map[string]string)
 	for k, v := range baseName {
 		if len(v) == 1 {
-			aliases[v[0]] = ""
+			for i := range v {
+				aliases[i] = ""
+			}
 			continue
 		}
-		sort.Strings(v)
+		imps := make([]string, 0, len(v))
+		for i := range v {
+			imps = append(imps, i)
+		}
+		sort.Strings(imps)
 
-		for i, path := range v {
+		for i, path := range imps {
 			if i == 0 {
 				aliases[path] = ""
 				continue

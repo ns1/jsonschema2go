@@ -23,7 +23,7 @@ func init() {
 type SimpleType uint8
 
 const (
-	Unknown = iota
+	Unknown SimpleType = iota
 	Array
 	Boolean
 	Integer
@@ -276,6 +276,9 @@ func (s *Schema) setCurLoc(u *url.URL) {
 func (s *Schema) ChooseType() (t SimpleType) {
 	if s.Type != nil && len(*s.Type) > 0 {
 		t = (*s.Type)[0]
+	}
+	if len(s.Properties) > 0 {
+		return Object // we'll assume object if it has properties
 	}
 	return
 }
