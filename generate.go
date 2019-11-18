@@ -68,6 +68,12 @@ func CustomTemplate(tmpl *template.Template) Option {
 	}
 }
 
+func CustomInitialisms(names ...string) Option {
+	return func(s *settings) {
+		s.typer.namer = newNamer(append(names, "id", "http"))
+	}
+}
+
 func typeFromID(pairs [][2]string) func(string) (string, string) {
 	mapper := pathMapper(pairs)
 	stripScheme := func(s string) string {
@@ -91,7 +97,7 @@ func typeFromID(pairs [][2]string) func(string) (string, string) {
 		if len(nameParts) == 0 {
 			return "", ""
 		}
-		return strings.Join(pathParts[:len(pathParts)-1], "/"), jsonPropertyToExportedName(nameParts[0])
+		return strings.Join(pathParts[:len(pathParts)-1], "/"), nameParts[0]
 	}
 }
 

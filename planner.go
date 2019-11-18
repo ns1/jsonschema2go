@@ -33,7 +33,7 @@ func (c CompositePlanner) Plan(ctx context.Context, helper *PlanningHelper, sche
 			return pl, nil
 		}
 	}
-	return nil, fmt.Errorf("unable to plan %v", schema.curLoc)
+	return nil, fmt.Errorf("unable to plan %v", schema.Loc)
 }
 
 type plannerFunc func(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error)
@@ -92,7 +92,7 @@ func planDiscriminatedOneOfObject(ctx context.Context, helper *PlanningHelper, s
 	}
 
 	typeMapping := make(map[string]TypeInfo)
-	s := &StructPlan{typeInfo: tInfo}
+	s := &StructPlan{typeInfo: tInfo, id: schema.CalcID}
 	s.Comment = schema.Annotations.GetString("description")
 	for _, subSchema := range schemas {
 		tInfo := helper.TypeInfo(subSchema.Meta())
@@ -109,14 +109,14 @@ func planDiscriminatedOneOfObject(ctx context.Context, helper *PlanningHelper, s
 	}
 
 	s.Fields = append(s.Fields, StructField{
-		Names: []string{jsonPropertyToExportedName(discrim.PropertyName)},
+		Names: []string{helper.JSONPropertyExported(discrim.PropertyName)},
 		Type:  TypeInfo{Name: "interface{}"},
 	})
 
 	s.Traits = append(s.Traits,
 		&discriminatorMarshalTrait{
 			StructField{
-				Names: []string{jsonPropertyToExportedName(discrim.PropertyName)},
+				Names: []string{helper.JSONPropertyExported(discrim.PropertyName)},
 				Type:  TypeInfo{Name: "string"},
 				Tag:   fmt.Sprintf(`json:"%s"`, discrim.PropertyName),
 			},
@@ -141,9 +141,20 @@ type DiscriminatorCase struct {
 	TypeInfo
 }
 
+func (d *discriminatorMarshalTrait) Default() *DiscriminatorCase {
+	for k, v := range d.types {
+		if k == "*" {
+			return &DiscriminatorCase{Value: k, TypeInfo: v}
+		}
+	}
+	return nil
+}
+
 func (d *discriminatorMarshalTrait) Cases() (cases []DiscriminatorCase) {
 	for k, v := range d.types {
-		cases = append(cases, DiscriminatorCase{Value: k, TypeInfo: v})
+		if k != "*" {
+			cases = append(cases, DiscriminatorCase{Value: k, TypeInfo: v})
+		}
 	}
 	sort.Slice(cases, func(i, j int) bool {
 		return cases[i].Name < cases[j].Name
@@ -196,7 +207,7 @@ func planAllOfObject(ctx context.Context, helper *PlanningHelper, schema *Schema
 	if tInfo.Unknown() {
 		return nil, nil
 	}
-	s := &StructPlan{typeInfo: tInfo}
+	s := &StructPlan{typeInfo: tInfo, id: schema.CalcID}
 	s.Comment = schema.Annotations.GetString("description")
 
 	for _, subSchema := range schemas {
@@ -227,7 +238,7 @@ func planSimpleObject(ctx context.Context, helper *PlanningHelper, schema *Schem
 	if tInfo.Unknown() {
 		return nil, nil
 	}
-	s := &StructPlan{typeInfo: tInfo}
+	s := &StructPlan{typeInfo: tInfo, id: schema.CalcID}
 	s.Comment = schema.Annotations.GetString("description")
 	fields, err := deriveStructFields(ctx, helper, schema)
 	if err != nil {
@@ -250,7 +261,7 @@ func planSimpleArray(ctx context.Context, helper *PlanningHelper, schema *Schema
 	if err != nil {
 		return nil, err
 	}
-	a := &ArrayPlan{typeInfo: tInfo}
+	a := &ArrayPlan{typeInfo: tInfo, id: schema.CalcID}
 	a.Comment = schema.Annotations.GetString("description")
 	if a.ItemType = helper.TypeInfo(itemSchema.Meta()); a.ItemType.Unknown() {
 		return nil, nil
@@ -273,24 +284,31 @@ func planEnum(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan
 		return nil, nil
 	}
 
-	e := &EnumPlan{typeInfo: tInfo}
+	e := &EnumPlan{typeInfo: tInfo, id: schema.CalcID}
 	e.Comment = schema.Annotations.GetString("description")
 	e.BaseType = TypeInfo{Name: helper.Primitive(schema.ChooseType())}
 	for _, m := range schema.Enum {
-		name := jsonPropertyToExportedName(fmt.Sprintf("%s", m))
+		name := helper.JSONPropertyExported(fmt.Sprintf("%s", m))
 		e.Members = append(e.Members, EnumMember{Name: name, Field: m})
 	}
 	return e, nil
 }
 
-var knownInitialisms = map[string]bool{
-	"id":   true,
-	"http": true,
+func newNamer(knownInitialisms []string) *namer {
+	m := make(map[string]bool)
+	for _, n := range knownInitialisms {
+		m[n] = true
+	}
+	return &namer{m}
 }
 
-func jsonPropertyToExportedName(name string) string {
+type namer struct {
+	knownInitialisms map[string]bool
+}
+
+func (n *namer) JSONPropertyExported(name string) string {
 	if strings.ToUpper(name) == name {
-		return exportedIdentifier([][]rune{[]rune(strings.ToLower(name))})
+		return n.exportedIdentifier([][]rune{[]rune(strings.ToLower(name))})
 	}
 
 	var (
@@ -323,13 +341,13 @@ func jsonPropertyToExportedName(name string) string {
 		parts = append(parts, current)
 	}
 
-	return exportedIdentifier(parts)
+	return n.exportedIdentifier(parts)
 }
 
-func exportedIdentifier(parts [][]rune) string {
+func (n *namer) exportedIdentifier(parts [][]rune) string {
 	var words []string
 	for _, rs := range parts {
-		if word := string(rs); knownInitialisms[word] {
+		if word := string(rs); n.knownInitialisms[word] {
 			words = append(words, strings.ToUpper(word))
 			continue
 		}
@@ -365,16 +383,20 @@ func deriveStructFields(
 				return nil, err
 			}
 			itemType := helper.TypeInfo(itemSchema.Meta())
+			if itemType.Unknown() {
+				itemType.Name = "interface{}"
+			}
 			itemType.Array = true
 			fields = append(
 				fields,
 				StructField{
 					Comment: fieldSchema.Annotations.GetString("description"),
-					Names:   []string{jsonPropertyToExportedName(name)},
+					Names:   []string{helper.JSONPropertyExported(name)},
 					Type:    itemType,
 					Tag:     fmt.Sprintf(`json:"%s,omitempty"`, name),
 				},
 			)
+			helper.Dep(ctx, itemSchema)
 			continue
 		}
 		if fType.Unknown() && len(fieldSchema.OneOf) == 2 {
@@ -405,7 +427,7 @@ func deriveStructFields(
 			fields,
 			StructField{
 				Comment: fieldSchema.Annotations.GetString("description"),
-				Names:   []string{jsonPropertyToExportedName(name)},
+				Names:   []string{helper.JSONPropertyExported(name)},
 				Type:    fType,
 				Tag:     fmt.Sprintf(`json:"%s,omitempty"`, name),
 			},
@@ -419,7 +441,7 @@ func deriveStructFields(
 	return
 }
 
-var defaultTyper = typer{defaultTypeFunc, primitives}
+var defaultTyper = typer{newNamer([]string{"id", "http"}), defaultTypeFunc, primitives}
 
 func defaultTypeFunc(s SchemaMeta) TypeInfo {
 	parts := strings.SplitN(s.Flags.GoPath, "#", 2)
@@ -430,12 +452,14 @@ func defaultTypeFunc(s SchemaMeta) TypeInfo {
 }
 
 type typer struct {
+	*namer
 	typeFunc   func(SchemaMeta) TypeInfo
 	primitives map[SimpleType]string
 }
 
 func (d typer) TypeInfo(s SchemaMeta) TypeInfo {
 	if f := d.typeFunc(s); f.Name != "" {
+		f.Name = d.namer.JSONPropertyExported(f.Name)
 		return f
 	}
 	return TypeInfo{Name: d.Primitive(s.BestType)}

@@ -163,7 +163,7 @@ func (c *cachingLoader) fetch(ctx context.Context, rawURL string) schemaResult {
 	}
 
 	schema := &sch
-	schema.setCurLoc(u)
+	schema.setLoc(u)
 	return schemaResult{schema, nil}
 }
 

@@ -13,6 +13,9 @@ func init() {
 {{ if .Comment -}}
 // {{ .Comment }}
 {{ end -}}
+{{ if .ID -}}
+// generated from {{ .ID }}
+{{ end -}}
 type {{ .Type.Name }} []{{ $.QualName .ItemType }}
 
 func (m {{ .Type.Name }}) MarshalJSON() ([]byte, error) {
@@ -26,6 +29,9 @@ func (m {{ .Type.Name }}) MarshalJSON() ([]byte, error) {
 {{ if .Comment -}}
 // {{ .Comment }}
 {{ end -}}
+{{ if .ID -}}
+    // generated from {{ .ID }}
+{{ end -}}
 type {{ .Type.Name }} {{ $.QualName .BaseType }}
 
 const (
@@ -37,6 +43,9 @@ const (
 	valueTmpl = template.Must(valueTmpl.New("struct.tmpl").Parse(`{{/* gotype: github.com/jwilner/jsonschema2go.structPlanContext */}}
 {{ if .Comment -}}
 // {{ .Comment }}
+{{ end -}}
+{{ if .ID -}}
+// generated from {{ .ID }}
 {{ end -}}
 type {{ .Type.Name }} struct {
 {{ range .Fields -}}
@@ -60,8 +69,13 @@ func (m *{{ $.Type.Name }}) UnmarshalJSON(data []byte) error {
 	case "{{ .Value }}":
 		m.{{ index $t.StructField.Names 0 }} = new({{ $.QualName .TypeInfo }})
 	{{ end -}}
+    {{ with .Default -}}
+	default:
+        m.{{ index $t.StructField.Names 0}} = new({{ $.QualName .TypeInfo }})
+	{{ else -}}
 	default:
 		return fmt.Errorf("unknown discriminator: %v", discrim.{{ index .StructField.Names 0 }})
+	{{ end -}}
 	}
 	return json.Unmarshal(data, m.{{ index .StructField.Names 0 }})
 }

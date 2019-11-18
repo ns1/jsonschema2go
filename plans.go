@@ -2,6 +2,7 @@ package jsonschema2go
 
 import (
 	"fmt"
+	"net/url"
 	"strconv"
 )
 
@@ -42,10 +43,12 @@ type Trait interface {
 type Plan interface {
 	Type() TypeInfo
 	Deps() []TypeInfo
+	ID() string
 }
 
 type StructPlan struct {
 	typeInfo TypeInfo
+	id       *url.URL
 
 	Comment string
 	Fields  []StructField
@@ -54,6 +57,13 @@ type StructPlan struct {
 
 func (s *StructPlan) Type() TypeInfo {
 	return s.typeInfo
+}
+
+func (s *StructPlan) ID() string {
+	if s.id != nil {
+		return s.id.String()
+	}
+	return ""
 }
 
 func (s *StructPlan) Deps() (deps []TypeInfo) {
@@ -70,9 +80,17 @@ func (s *StructPlan) Deps() (deps []TypeInfo) {
 
 type ArrayPlan struct {
 	typeInfo TypeInfo
+	id       *url.URL
 
 	Comment  string
 	ItemType TypeInfo
+}
+
+func (a *ArrayPlan) ID() string {
+	if a.id != nil {
+		return a.id.String()
+	}
+	return ""
 }
 
 func (a *ArrayPlan) Type() TypeInfo {
@@ -85,10 +103,18 @@ func (a *ArrayPlan) Deps() []TypeInfo {
 
 type EnumPlan struct {
 	typeInfo TypeInfo
+	id       *url.URL
 
 	Comment  string
 	BaseType TypeInfo
 	Members  []EnumMember
+}
+
+func (e *EnumPlan) ID() string {
+	if e.id != nil {
+		return e.id.String()
+	}
+	return ""
 }
 
 type EnumMember struct {

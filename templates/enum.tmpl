@@ -2,6 +2,9 @@
 {{ if .Comment -}}
 // {{ .Comment }}
 {{ end -}}
+{{ if .ID -}}
+    // generated from {{ .ID }}
+{{ end -}}
 type {{ .Type.Name }} {{ $.QualName .BaseType }}
 
 const (

@@ -206,28 +206,28 @@ func Test_typeFromID(t *testing.T) {
 			pairs:    [][2]string{{"https://example.com/v1/", "github.com/example/"}},
 			id:       "https://example.com/v1/blah/bar.json",
 			wantPath: "github.com/example/blah",
-			wantName: "Bar",
+			wantName: "bar",
 		},
 		{
 			name:     "maps no extension",
 			pairs:    [][2]string{{"https://example.com/v1/", "github.com/example/"}},
 			id:       "https://example.com/v1/blah/bar",
 			wantPath: "github.com/example/blah",
-			wantName: "Bar",
+			wantName: "bar",
 		},
 		{
 			name:     "maps no pairs",
 			pairs:    [][2]string{},
 			id:       "https://example.com/v1/blah/bar",
 			wantPath: "example.com/v1/blah",
-			wantName: "Bar",
+			wantName: "bar",
 		},
 		{
 			name:     "maps no scheme",
 			pairs:    [][2]string{},
 			id:       "example.com/v1/blah/bar",
 			wantPath: "example.com/v1/blah",
-			wantName: "Bar",
+			wantName: "bar",
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

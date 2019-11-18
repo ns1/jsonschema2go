@@ -149,7 +149,7 @@ func (r *RefOrSchema) Resolve(ctx context.Context, referer *Schema, loader Loade
 		return nil, fmt.Errorf("parse $ref: %w", err)
 	}
 
-	return loader.Load(ctx, referer.curLoc.ResolveReference(parsed2))
+	return loader.Load(ctx, referer.Loc.ResolveReference(parsed2))
 }
 
 type Schema struct {
@@ -206,8 +206,10 @@ type Schema struct {
 	// user extensible
 	Annotations TagMap `json:"-"`
 
-	// curLoc -- internal bookkeeping, the resource from which this schema was loaded
-	curLoc *url.URL
+	// Loc -- internal bookkeeping, the resource from which this schema was loaded
+	Loc *url.URL `json:"-"`
+	// CalcID -- the calculated ID of the resource
+	CalcID *url.URL `json:"-"`
 }
 
 type config struct {
@@ -225,51 +227,74 @@ func (d *discriminator) isSet() bool {
 	return d.PropertyName != ""
 }
 
-func (s *Schema) setCurLoc(u *url.URL) {
-	schemas := []*Schema{s}
-	push := func(r *RefOrSchema) {
-		if r != nil && r.schema != nil {
-			schemas = append(schemas, r.schema)
-		}
+func (s *Schema) setLoc(loc *url.URL) {
+	type urlSchema struct {
+		*url.URL
+		*Schema
 	}
 
+	var schemas []*urlSchema
+	push := func(r *RefOrSchema, id *url.URL, keys ...interface{}) {
+		if r != nil && r.schema != nil {
+			if id != nil && r.schema.CalcID == nil {
+				sKeys := make([]string, 0, len(keys))
+				for _, k := range keys {
+					sKeys = append(sKeys, fmt.Sprintf("%v", k))
+				}
+				id, _ = id.Parse(id.String())
+				if len(sKeys) > 0 {
+					id.Fragment += "/" + strings.Join(sKeys, "/")
+				}
+				r.schema.CalcID = id
+			}
+			schemas = append(schemas, &urlSchema{r.schema.CalcID, r.schema})
+		}
+	}
+	push(&RefOrSchema{schema: s}, s.CalcID)
 	for len(schemas) > 0 {
-		s := schemas[0]
+		s := schemas[0].Schema
+		u := schemas[0].URL
 		schemas = schemas[1:]
 
-		s.curLoc = u
+		s.Loc = loc
 		if s.AdditionalItems != nil {
-			push(s.AdditionalItems.Schema)
+			push(s.AdditionalItems.Schema, u, "additionalItems")
 		}
 		if s.Items != nil {
-			push(s.Items.Items)
-			for _, f := range s.Items.TupleFields {
-				push(f)
+			push(s.Items.Items, u, "items")
+			for i, f := range s.Items.TupleFields {
+				push(f, u, "items", i)
 			}
 		}
 		if s.AdditionalProperties != nil {
-			push(s.AdditionalProperties.Schema)
+			push(s.AdditionalProperties.Schema, u, "additionalProperties")
 		}
-		for _, m := range []map[string]*RefOrSchema{
-			s.Definitions,
-			s.Properties,
-			s.PatternProperties,
-			s.Dependencies,
+		for _, m := range []struct {
+			name    string
+			schemas map[string]*RefOrSchema
+		}{
+			{"definitions", s.Definitions},
+			{"properties", s.Properties},
+			{"patternProperties", s.PatternProperties},
+			{"dependencies", s.Dependencies},
 		} {
-			for _, v := range m {
-				push(v)
+			for k, v := range m.schemas {
+				push(v, u, m.name, k)
 			}
 		}
-		for _, a := range [][]*RefOrSchema{
-			s.AllOf,
-			s.AnyOf,
-			s.OneOf,
+		for _, a := range []struct {
+			name    string
+			schemas []*RefOrSchema
+		}{
+			{"allOf", s.AllOf},
+			{"anyOf", s.AnyOf},
+			{"oneOf", s.OneOf},
 		} {
-			for _, v := range a {
-				push(v)
+			for i, v := range a.schemas {
+				push(v, u, a.name, i)
 			}
 		}
-		push(s.Not)
+		push(s.Not, u, "not")
 	}
 }
 
@@ -284,13 +309,22 @@ func (s *Schema) ChooseType() (t SimpleType) {
 }
 
 func (s *Schema) UnmarshalJSON(data []byte) error {
-	type schema Schema
+	{
+		type schema Schema
 
-	var s2 schema
-	if err := json.Unmarshal(data, &s2); err != nil {
-		return fmt.Errorf("unmarshal schema: %w", err)
+		var s2 schema
+		if err := json.Unmarshal(data, &s2); err != nil {
+			return fmt.Errorf("unmarshal schema: %w", err)
+		}
+		*s = Schema(s2)
 	}
-	*s = Schema(s2)
+
+	if s.ID != "" {
+		var err error
+		if s.CalcID, err = url.Parse(s.ID); err != nil {
+			return fmt.Errorf("parsing %q: %w", s.ID, err)
+		}
+	}
 
 	var possAnnos map[string]json.RawMessage
 	if err := json.Unmarshal(data, &possAnnos); err != nil {

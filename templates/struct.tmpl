@@ -2,6 +2,9 @@
 {{ if .Comment -}}
 // {{ .Comment }}
 {{ end -}}
+{{ if .ID -}}
+// generated from {{ .ID }}
+{{ end -}}
 type {{ .Type.Name }} struct {
 {{ range .Fields -}}
     {{ range $Index, $Element := .Names -}}{{ if $Index -}}, {{ end -}}{{ . }}{{ end }} {{ if .Type.Array -}}[]{{ end -}}{{ if .Type.Pointer -}}*{{ end -}}{{ $.QualName .Type }} {{ if .Tag }}`{{ .Tag }}`{{ end }}
@@ -24,8 +27,13 @@ func (m *{{ $.Type.Name }}) UnmarshalJSON(data []byte) error {
 	case "{{ .Value }}":
 		m.{{ index $t.StructField.Names 0 }} = new({{ $.QualName .TypeInfo }})
 	{{ end -}}
+    {{ with .Default -}}
+	default:
+        m.{{ index $t.StructField.Names 0}} = new({{ $.QualName .TypeInfo }})
+	{{ else -}}
 	default:
 		return fmt.Errorf("unknown discriminator: %v", discrim.{{ index .StructField.Names 0 }})
+	{{ end -}}
 	}
 	return json.Unmarshal(data, m.{{ index .StructField.Names 0 }})
 }
