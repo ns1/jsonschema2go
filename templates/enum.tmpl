@@ -3,7 +3,7 @@
 // {{ .Comment }}
 {{ end -}}
 {{ if .ID -}}
-    // generated from {{ .ID }}
+// generated from {{ .ID }}
 {{ end -}}
 type {{ .Type.Name }} {{ $.QualName .BaseType }}
 
@@ -12,3 +12,15 @@ const (
     {{ $.Type.Name }}{{ .Name }} {{ $.Type.Name }}= {{ $.Literal .Field }}
 {{ end }}
 )
+
+func (m {{ .Type.Name }}) Validate() error {
+{{ if .Members -}}
+    switch m {
+{{ range .Members -}}
+    case {{ $.Type.Name }}{{ .Name }}:
+        return nil
+{{ end -}}
+    }
+{{ end -}}
+    return fmt.Errorf("unknown {{ .Type.Name }}: %v", m)
+}

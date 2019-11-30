@@ -38,9 +38,10 @@ func TestSchemaToPlan(t *testing.T) {
 					Comment: "i am bob",
 					Fields: []StructField{
 						{
-							Names: []string{"Count"},
-							Type:  TypeInfo{Name: "int"},
-							Tag:   `json:"count,omitempty"`,
+							Names:     []string{"Count"},
+							Type:      TypeInfo{Name: "int"},
+							JSONNames: []string{"count"},
+							Tag:       `json:"count,omitempty"`,
 						},
 					},
 				},
@@ -77,12 +78,14 @@ func TestSchemaToPlan(t *testing.T) {
 					Comment: "i am bob",
 					Fields: []StructField{
 						{
-							Names: []string{"Nested"},
+							Names:     []string{"Nested"},
+							JSONNames: []string{"nested"},
 							Type: TypeInfo{
 								GoPath: "github.com/jwilner/jsonschema2go/example",
 								Name:   "NestedType",
 							},
-							Tag: `json:"nested,omitempty"`,
+							Tag:        `json:"nested,omitempty"`,
+							validators: []Validator{{Name: "subschema"}},
 						},
 					},
 				},
@@ -93,9 +96,10 @@ func TestSchemaToPlan(t *testing.T) {
 					},
 					Fields: []StructField{
 						{
-							Names: []string{"Count"},
-							Type:  TypeInfo{Name: "int"},
-							Tag:   `json:"count,omitempty"`,
+							Names:     []string{"Count"},
+							JSONNames: []string{"count"},
+							Type:      TypeInfo{Name: "int"},
+							Tag:       `json:"count,omitempty"`,
 						},
 					},
 				},
@@ -141,9 +145,10 @@ func TestSchemaToPlan(t *testing.T) {
 					Comment: "i am bob",
 					Fields: []StructField{
 						{
-							Names: []string{"Count"},
-							Type:  TypeInfo{Name: "int"},
-							Tag:   `json:"count,omitempty"`,
+							Names:     []string{"Count"},
+							JSONNames: []string{"count"},
+							Type:      TypeInfo{Name: "int"},
+							Tag:       `json:"count,omitempty"`,
 						},
 					},
 				},
@@ -154,9 +159,10 @@ func TestSchemaToPlan(t *testing.T) {
 					},
 					Fields: []StructField{
 						{
-							Names: []string{"ID"},
-							Type:  TypeInfo{Name: "int"},
-							Tag:   `json:"id,omitempty"`,
+							Names:     []string{"ID"},
+							JSONNames: []string{"id"},
+							Type:      TypeInfo{Name: "int"},
+							Tag:       `json:"id,omitempty"`,
 						},
 						{
 							Type: TypeInfo{
@@ -220,9 +226,10 @@ func TestSchemaToPlan(t *testing.T) {
 					},
 					Fields: []StructField{
 						{
-							Names: []string{"Bob"},
-							Type:  TypeInfo{Name: "int", Pointer: true},
-							Tag:   `json:"bob,omitempty"`,
+							Names:     []string{"Bob"},
+							JSONNames: []string{"bob"},
+							Type:      TypeInfo{Name: "int", Pointer: true},
+							Tag:       `json:"bob,omitempty"`,
 						},
 					},
 				},

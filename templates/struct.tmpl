@@ -11,6 +11,45 @@ type {{ .Type.Name }} struct {
 {{ end }}
 }
 
+
+{{ if .ValidateInitialize }}
+var (
+{{ range $Field := .Fields -}}
+{{ range $Name := .Names -}}
+{{ range $Field.Validators -}}
+{{ with $v := .VarExpr (.NameSpace $.Type.Name $Name) -}}
+	{{ $v }}
+{{ end -}}
+{{ end -}}
+{{ end -}}
+{{ end -}}
+)
+{{ end -}}
+
+func (m *{{ $.Type.Name }}) Validate() error {
+{{ range $Field := .Fields -}}
+{{ range $Index, $Name := .Names -}}
+{{ range $Field.Validators -}}
+{{ if eq .Name "subschema" -}}
+    if err := m.{{ $Name }}.Validate(); err != nil {
+        return err
+	}
+{{ else -}}
+    if {{ .TestExpr (.NameSpace $.Type.Name $Name) (printf "m.%s" $Name) }} {
+		return &{{ $.Type.Name }}ValidationError{
+    		errType: "{{ .Name }}",
+			jsonField: "{{ index $Field.JSONNames $Index }}",
+			field: "{{ $Name }}",
+			message: fmt.Sprintf({{ .Sprintf (.NameSpace $.Type.Name $Name) (printf "m.%s" $Name) }}),
+		}
+	}
+{{ end -}}
+{{ end -}}
+{{ end -}}
+{{ end -}}
+	return nil
+}
+
 {{ range $t := .Traits -}}
 {{ if eq .Template "discriminator.tmpl" }}
 func (m *{{ $.Type.Name }}) UnmarshalJSON(data []byte) error {
@@ -43,3 +82,28 @@ func (m *{{ $.Type.Name }}) MarshalJSON() ([]byte, error) {
 }
 {{ end }}
 {{ end }}
+
+type {{ .Type.Name }}ValidationError struct {
+	errType, jsonField, field, message string
+}
+
+func (e *{{ .Type.Name }}ValidationError) ErrType() string {
+	return e.errType
+}
+
+func (e *{{ .Type.Name }}ValidationError) JSONField() string {
+	return e.jsonField
+}
+
+func (e *{{ .Type.Name }}ValidationError) Field() string {
+	return e.field
+}
+
+func (e *{{ .Type.Name }}ValidationError) Message() string {
+	return e.message
+}
+
+func (e *{{ .Type.Name }}ValidationError) Error() string {
+	return fmt.Sprintf("%v: %v", e.field, e.message)
+}
+

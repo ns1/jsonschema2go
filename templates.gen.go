@@ -24,13 +24,96 @@ func (m {{ .Type.Name }}) MarshalJSON() ([]byte, error) {
     }
     return json.Marshal([]{{ $.QualName .ItemType }}(m))
 }
+
+{{ if .ItemValidateInitialize }}
+var (
+{{ range .ItemValidators -}}
+{{ with $v := .VarExpr (.NameSpace $.Type.Name "items") -}}
+    {{ $v }}
+{{ end -}}
+{{ end -}}
+)
+{{ end -}}
+
+func (m {{ $.Type.Name }}) Validate() error {
+{{ range .Validators -}}
+{{ if eq .Name "uniqueItems" -}}
+    seen := make(map[{{$.QualName $.ItemType}}]bool)
+    for _, v := range m {
+        if seen[v] {
+            return &{{ $.Type.Name }}ValidationError{
+                errType: "uniqueItems",
+                jsonField: "",
+                field: "",
+                message: fmt.Sprintf("items must be unique but %v occurs more than once", v),
+            }
+        }
+        seen[v] = true
+    }
+{{ else -}}
+	if {{ .TestExpr (.NameSpace $.Type.Name) "m" }} {
+		return &{{ $.Type.Name }}ValidationError{
+			"{{ .Name }}",
+			"",
+			"",
+			fmt.Sprintf({{ .Sprintf (.NameSpace $.Type.Name) "m" }}),
+		}
+	}
+{{ end -}}
+{{ end -}}
+{{ with .ItemValidators -}}
+    for i := range m {
+        {{ range . -}}
+        {{ if eq .Name "subschema" -}}
+        if err := m[i].Validate(); err != nil {
+            return err
+        }
+        {{ else -}}
+        if {{ .TestExpr (.NameSpace $.Type.Name "Items") "m[i]" }} {
+            return &{{ $.Type.Name }}ValidationError{
+                "{{ .Name }}",
+                fmt.Sprintf("%d", i),
+                fmt.Sprintf("%d", i),
+                fmt.Sprintf({{ .Sprintf (.NameSpace $.Type.Name "Items") "m[i]" }}),
+            }
+        }
+        {{ end -}}
+        {{ end -}}
+    }
+{{ end -}}
+	return nil
+}
+
+type {{ .Type.Name }}ValidationError struct {
+    errType, jsonField, field, message string
+}
+
+func (e *{{ .Type.Name }}ValidationError) ErrType() string {
+    return e.errType
+}
+
+func (e *{{ .Type.Name }}ValidationError) JSONField() string {
+    return e.jsonField
+}
+
+func (e *{{ .Type.Name }}ValidationError) Field() string {
+    return e.field
+}
+
+func (e *{{ .Type.Name }}ValidationError) Message() string {
+    return e.message
+}
+
+func (e *{{ .Type.Name }}ValidationError) Error() string {
+    return fmt.Sprintf("%v: %v", e.field, e.message)
+}
 `))
 	valueTmpl = template.Must(valueTmpl.New("enum.tmpl").Parse(`{{/* gotype: github.com/jwilner/jsonschema2go.enumPlanContext */}}
 {{ if .Comment -}}
 // {{ .Comment }}
 {{ end -}}
 {{ if .ID -}}
-    // generated from {{ .ID }}
+// generated from {{ .ID }}
 {{ end -}}
 type {{ .Type.Name }} {{ $.QualName .BaseType }}
 
@@ -39,7 +122,18 @@ const (
     {{ $.Type.Name }}{{ .Name }} {{ $.Type.Name }}= {{ $.Literal .Field }}
 {{ end }}
 )
-`))
+
+func (m {{ .Type.Name }}) Validate() error {
+{{ if .Members -}}
+    switch m {
+{{ range .Members -}}
+    case {{ $.Type.Name }}{{ .Name }}:
+        return nil
+{{ end -}}
+    }
+{{ end -}}
+    return fmt.Errorf("unknown {{ .Type.Name }}: %v", m)
+}`))
 	valueTmpl = template.Must(valueTmpl.New("struct.tmpl").Parse(`{{/* gotype: github.com/jwilner/jsonschema2go.structPlanContext */}}
 {{ if .Comment -}}
 // {{ .Comment }}
@@ -51,6 +145,45 @@ type {{ .Type.Name }} struct {
 {{ range .Fields -}}
     {{ range $Index, $Element := .Names -}}{{ if $Index -}}, {{ end -}}{{ . }}{{ end }} {{ if .Type.Array -}}[]{{ end -}}{{ if .Type.Pointer -}}*{{ end -}}{{ $.QualName .Type }} {{ if .Tag }}` + "`" + `{{ .Tag }}` + "`" + `{{ end }}
 {{ end }}
+}
+
+
+{{ if .ValidateInitialize }}
+var (
+{{ range $Field := .Fields -}}
+{{ range $Name := .Names -}}
+{{ range $Field.Validators -}}
+{{ with $v := .VarExpr (.NameSpace $.Type.Name $Name) -}}
+	{{ $v }}
+{{ end -}}
+{{ end -}}
+{{ end -}}
+{{ end -}}
+)
+{{ end -}}
+
+func (m *{{ $.Type.Name }}) Validate() error {
+{{ range $Field := .Fields -}}
+{{ range $Index, $Name := .Names -}}
+{{ range $Field.Validators -}}
+{{ if eq .Name "subschema" -}}
+    if err := m.{{ $Name }}.Validate(); err != nil {
+        return err
+	}
+{{ else -}}
+    if {{ .TestExpr (.NameSpace $.Type.Name $Name) (printf "m.%s" $Name) }} {
+		return &{{ $.Type.Name }}ValidationError{
+    		errType: "{{ .Name }}",
+			jsonField: "{{ index $Field.JSONNames $Index }}",
+			field: "{{ $Name }}",
+			message: fmt.Sprintf({{ .Sprintf (.NameSpace $.Type.Name $Name) (printf "m.%s" $Name) }}),
+		}
+	}
+{{ end -}}
+{{ end -}}
+{{ end -}}
+{{ end -}}
+	return nil
 }
 
 {{ range $t := .Traits -}}
@@ -85,8 +218,34 @@ func (m *{{ $.Type.Name }}) MarshalJSON() ([]byte, error) {
 }
 {{ end }}
 {{ end }}
+
+type {{ .Type.Name }}ValidationError struct {
+	errType, jsonField, field, message string
+}
+
+func (e *{{ .Type.Name }}ValidationError) ErrType() string {
+	return e.errType
+}
+
+func (e *{{ .Type.Name }}ValidationError) JSONField() string {
+	return e.jsonField
+}
+
+func (e *{{ .Type.Name }}ValidationError) Field() string {
+	return e.field
+}
+
+func (e *{{ .Type.Name }}ValidationError) Message() string {
+	return e.message
+}
+
+func (e *{{ .Type.Name }}ValidationError) Error() string {
+	return fmt.Sprintf("%v: %v", e.field, e.message)
+}
+
 `))
 	valueTmpl = template.Must(valueTmpl.New("values.tmpl").Parse(`{{/* gotype: github.com/jwilner/jsonschema2go.Plans */}}
+// Code generated by jsonschema2go. DO NOT EDIT.
 package {{ .Imports.CurPackage }}
 
 {{ with .Imports.List -}}

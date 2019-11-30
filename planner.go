@@ -2,10 +2,11 @@ package jsonschema2go
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
+	"text/template"
 	"unicode"
 )
 
@@ -33,7 +34,15 @@ func (c CompositePlanner) Plan(ctx context.Context, helper *PlanningHelper, sche
 			return pl, nil
 		}
 	}
-	return nil, fmt.Errorf("unable to plan %v", schema.Loc)
+	// we require types for objects and arrays
+	if t := schema.ChooseType(); t == Object || t == Array {
+		id := schema.Loc
+		if schema.CalcID != nil {
+			id = schema.CalcID
+		}
+		return nil, fmt.Errorf("unable to plan %v", id)
+	}
+	return nil, nil
 }
 
 type plannerFunc func(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error)
@@ -81,7 +90,7 @@ func planDiscriminatedOneOfObject(ctx context.Context, helper *PlanningHelper, s
 		return nil, nil
 	}
 
-	tInfo := helper.TypeInfo(schema.Meta())
+	tInfo := helper.TypeInfo(schema)
 	if tInfo.Unknown() {
 		return nil, nil
 	}
@@ -95,7 +104,7 @@ func planDiscriminatedOneOfObject(ctx context.Context, helper *PlanningHelper, s
 	s := &StructPlan{typeInfo: tInfo, id: schema.CalcID}
 	s.Comment = schema.Annotations.GetString("description")
 	for _, subSchema := range schemas {
-		tInfo := helper.TypeInfo(subSchema.Meta())
+		tInfo := helper.TypeInfo(subSchema)
 		names, ok := typeToNames[tInfo.Name]
 		if !ok {
 			return nil, fmt.Errorf("no discriminators for type: %v", tInfo.Name)
@@ -109,16 +118,18 @@ func planDiscriminatedOneOfObject(ctx context.Context, helper *PlanningHelper, s
 	}
 
 	s.Fields = append(s.Fields, StructField{
-		Names: []string{helper.JSONPropertyExported(discrim.PropertyName)},
-		Type:  TypeInfo{Name: "interface{}"},
+		Names:     []string{helper.JSONPropertyExported(discrim.PropertyName)},
+		JSONNames: []string{discrim.PropertyName},
+		Type:      TypeInfo{Name: "interface{}"},
 	})
 
 	s.Traits = append(s.Traits,
 		&discriminatorMarshalTrait{
 			StructField{
-				Names: []string{helper.JSONPropertyExported(discrim.PropertyName)},
-				Type:  TypeInfo{Name: "string"},
-				Tag:   fmt.Sprintf(`json:"%s"`, discrim.PropertyName),
+				Names:     []string{helper.JSONPropertyExported(discrim.PropertyName)},
+				JSONNames: []string{discrim.PropertyName},
+				Type:      TypeInfo{Name: "string"},
+				Tag:       fmt.Sprintf(`json:"%s"`, discrim.PropertyName),
 			},
 			typeMapping,
 		},
@@ -203,7 +214,7 @@ func planAllOfObject(ctx context.Context, helper *PlanningHelper, schema *Schema
 		return nil, nil
 	}
 
-	tInfo := helper.TypeInfo(schema.Meta())
+	tInfo := helper.TypeInfo(schema)
 	if tInfo.Unknown() {
 		return nil, nil
 	}
@@ -211,7 +222,7 @@ func planAllOfObject(ctx context.Context, helper *PlanningHelper, schema *Schema
 	s.Comment = schema.Annotations.GetString("description")
 
 	for _, subSchema := range schemas {
-		tInfo := helper.TypeInfo(subSchema.Meta())
+		tInfo := helper.TypeInfo(subSchema)
 		if tInfo.Unknown() {
 			// this is an anonymous struct; add all of its inner fields to parent
 			fields, err := deriveStructFields(ctx, helper, subSchema)
@@ -234,7 +245,7 @@ func planSimpleObject(ctx context.Context, helper *PlanningHelper, schema *Schem
 	if schema.ChooseType() != Object {
 		return nil, nil
 	}
-	tInfo := helper.TypeInfo(schema.Meta())
+	tInfo := helper.TypeInfo(schema)
 	if tInfo.Unknown() {
 		return nil, nil
 	}
@@ -252,7 +263,7 @@ func planSimpleArray(ctx context.Context, helper *PlanningHelper, schema *Schema
 	if schema.ChooseType() != Array || schema.Items == nil || schema.Items.Items == nil {
 		return nil, nil
 	}
-	tInfo := helper.TypeInfo(schema.Meta())
+	tInfo := helper.TypeInfo(schema)
 	if tInfo.Unknown() {
 		return nil, nil
 	}
@@ -263,7 +274,7 @@ func planSimpleArray(ctx context.Context, helper *PlanningHelper, schema *Schema
 	}
 	a := &ArrayPlan{typeInfo: tInfo, id: schema.CalcID}
 	a.Comment = schema.Annotations.GetString("description")
-	if a.ItemType = helper.TypeInfo(itemSchema.Meta()); a.ItemType.Unknown() {
+	if a.ItemType = helper.TypeInfo(itemSchema); a.ItemType.Unknown() {
 		return nil, nil
 	}
 	if !a.ItemType.BuiltIn() {
@@ -271,6 +282,30 @@ func planSimpleArray(ctx context.Context, helper *PlanningHelper, schema *Schema
 			return nil, err
 		}
 	}
+	if schema.MinItems > 0 {
+		minItemsS := strconv.FormatUint(schema.MinItems, 10)
+		a.validators = append(a.validators, Validator{
+			Name:     "minItems",
+			testExpr: templateStr(`len({{ .QualifiedName }}) < ` + minItemsS),
+			sprintfExpr: templateStr(
+				`"must have length greater than ` + minItemsS + ` but was %d", len({{ .QualifiedName }})`,
+			),
+		})
+	}
+	if schema.MaxItems != nil {
+		maxItemsS := strconv.FormatUint(*schema.MaxItems, 10)
+		a.validators = append(a.validators, Validator{
+			Name:     "maxItems",
+			testExpr: templateStr(`len({{ .QualifiedName }}) > ` + maxItemsS),
+			sprintfExpr: templateStr(
+				`"must have length greater than ` + maxItemsS + ` but was %d", len({{ .QualifiedName }})`,
+			),
+		})
+	}
+	if schema.UniqueItems {
+		a.validators = append(a.validators, Validator{Name: "uniqueItems"})
+	}
+	a.itemValidators = newStyles(itemSchema)
 	return a, nil
 }
 
@@ -279,7 +314,7 @@ func planEnum(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan
 		return nil, nil
 	}
 
-	tInfo := helper.TypeInfo(schema.Meta())
+	tInfo := helper.TypeInfo(schema)
 	if tInfo.Unknown() {
 		return nil, nil
 	}
@@ -357,6 +392,111 @@ func (n *namer) exportedIdentifier(parts [][]rune) string {
 	return strings.Join(words, "")
 }
 
+type minItems uint64
+
+func (m minItems) Template() string {
+	return "min_items.tmpl"
+}
+
+type maxItems uint64
+
+func (m maxItems) Template() string {
+	return "max_items.tmpl"
+}
+
+type uniqueItems struct{}
+
+func (u uniqueItems) Template() string {
+	return "unique_items.tmpl"
+}
+
+func templateStr(str string) *template.Template {
+	return template.Must(template.New("").Parse(str))
+}
+
+func newStyles(schema *Schema) (styles []Validator) {
+	switch schema.ChooseType() {
+	case Array, Object:
+		if !schema.Config.NoValidate {
+			styles = append(styles, Validator{Name: "subschema"})
+		}
+	case String:
+		if schema.Pattern != nil {
+			pattern := *schema.Pattern
+			styles = append(styles, Validator{
+				Name:        "pattern",
+				varExpr:     templateStr("{{ .NameSpace }}Pattern = regexp.MustCompile(`" + pattern + "`)"),
+				testExpr:    templateStr("!{{ .NameSpace }}Pattern.MatchString({{ .QualifiedName }})"),
+				sprintfExpr: templateStr(`"must match '` + pattern + `' but got %q", {{ .QualifiedName }}`),
+				Deps:        []TypeInfo{{GoPath: "regexp", Name: "MustCompile"}},
+			})
+		}
+		if schema.MinLength != 0 {
+			lenStr := strconv.FormatUint(schema.MinLength, 10)
+			styles = append(styles, Validator{
+				Name:     "minLength",
+				testExpr: templateStr(`len({{ .QualifiedName }}) < ` + lenStr),
+				sprintfExpr: templateStr(
+					`"must have length greater than ` + lenStr + ` but was %d", len({{ .QualifiedName }})`,
+				),
+			})
+		}
+		if schema.MaxLength != nil {
+			lenStr := strconv.FormatUint(*schema.MaxLength, 10)
+			styles = append(styles, Validator{
+				Name:     "maxLength",
+				testExpr: templateStr(`len({{ .QualifiedName }}) > ` + lenStr),
+				sprintfExpr: templateStr(
+					`"must have length less than ` + lenStr + ` but was %d", len({{ .QualifiedName }})`,
+				),
+			})
+		}
+	case Integer:
+		if schema.MultipleOf != nil {
+			multipleOf := strconv.FormatInt(int64(*schema.MultipleOf), 10)
+			styles = append(styles, Validator{
+				Name:        "multipleOf",
+				testExpr:    templateStr(`{{ .QualifiedName }}%` + multipleOf + ` != 0`),
+				sprintfExpr: templateStr(`"must be a multiple of ` + multipleOf + ` but was %d", {{ .QualifiedName }}`),
+			})
+		}
+		fallthrough
+	case Number:
+		numValidator := func(name, comparator, english string, limit float64, exclusive bool) {
+			if exclusive {
+				name += "Exclusive"
+				comparator += "="
+				english += " or equal to"
+			}
+			sLimit := fmt.Sprintf("%v", limit)
+			styles = append(styles, Validator{
+				Name:        name,
+				testExpr:    templateStr(`{{ .QualifiedName }} ` + comparator + sLimit),
+				sprintfExpr: templateStr(`"must be ` + english + ` ` + sLimit + ` but was %v", {{ .QualifiedName }}`),
+			})
+		}
+		if schema.Minimum != nil {
+			numValidator(
+				"minimum",
+				"<",
+				"greater than",
+				*schema.Minimum,
+				schema.ExclusiveMinimum != nil && *schema.ExclusiveMinimum,
+			)
+		}
+		if schema.Maximum != nil {
+			numValidator(
+				"maximum",
+				">",
+				"less than",
+				*schema.Minimum,
+				schema.ExclusiveMinimum != nil && *schema.ExclusiveMinimum,
+			)
+		}
+	}
+	return
+}
+
 func deriveStructFields(
 	ctx context.Context,
 	helper *PlanningHelper,
@@ -373,32 +513,7 @@ func deriveStructFields(
 		if err != nil {
 			return nil, err
 		}
-		fType := helper.TypeInfo(fieldSchema.Meta())
-		if fType.Unknown() && fieldSchema.ChooseType() == Array {
-			if fieldSchema.Items == nil && fieldSchema.Items.Items == nil {
-				return nil, errors.New("unknown item type")
-			}
-			itemSchema, err := fieldSchema.Items.Items.Resolve(ctx, fieldSchema, helper)
-			if err != nil {
-				return nil, err
-			}
-			itemType := helper.TypeInfo(itemSchema.Meta())
-			if itemType.Unknown() {
-				itemType.Name = "interface{}"
-			}
-			itemType.Array = true
-			fields = append(
-				fields,
-				StructField{
-					Comment: fieldSchema.Annotations.GetString("description"),
-					Names:   []string{helper.JSONPropertyExported(name)},
-					Type:    itemType,
-					Tag:     fmt.Sprintf(`json:"%s,omitempty"`, name),
-				},
-			)
-			helper.Dep(ctx, itemSchema)
-			continue
-		}
+		fType := helper.TypeInfo(fieldSchema)
 		if fType.Unknown() && len(fieldSchema.OneOf) == 2 {
 			oneOfA, err := fieldSchema.OneOf[0].Resolve(ctx, fieldSchema, helper)
 			if err != nil {
@@ -414,7 +529,7 @@ func deriveStructFields(
 				if valueSchema.ChooseType() == Null {
 					valueSchema = oneOfB
 				}
-				if fType = helper.TypeInfo(valueSchema.Meta()); fType.Unknown() {
+				if fType = helper.TypeInfo(valueSchema); fType.Unknown() {
 					return nil, nil
 				}
 				fType.Pointer = true
@@ -426,10 +541,12 @@ func deriveStructFields(
 		fields = append(
 			fields,
 			StructField{
-				Comment: fieldSchema.Annotations.GetString("description"),
-				Names:   []string{helper.JSONPropertyExported(name)},
-				Type:    fType,
-				Tag:     fmt.Sprintf(`json:"%s,omitempty"`, name),
+				Comment:    fieldSchema.Annotations.GetString("description"),
+				Names:      []string{helper.JSONPropertyExported(name)},
+				JSONNames:  []string{name},
+				Type:       fType,
+				Tag:        fmt.Sprintf(`json:"%s,omitempty"`, name),
+				validators: newStyles(fieldSchema),
 			},
 		)
 		if !fType.BuiltIn() {
@@ -443,8 +560,8 @@ func deriveStructFields(
 
 var defaultTyper = typer{newNamer([]string{"id", "http"}), defaultTypeFunc, primitives}
 
-func defaultTypeFunc(s SchemaMeta) TypeInfo {
-	parts := strings.SplitN(s.Flags.GoPath, "#", 2)
+func defaultTypeFunc(s *Schema) TypeInfo {
+	parts := strings.SplitN(s.Config.GoPath, "#", 2)
 	if len(parts) == 2 {
 		return TypeInfo{GoPath: parts[0], Name: parts[1]}
 	}
@@ -453,16 +570,19 @@ func defaultTypeFunc(s SchemaMeta) TypeInfo {
 
 type typer struct {
 	*namer
-	typeFunc   func(SchemaMeta) TypeInfo
+	typeFunc   func(s *Schema) TypeInfo
 	primitives map[SimpleType]string
 }
 
-func (d typer) TypeInfo(s SchemaMeta) TypeInfo {
+func (d typer) TypeInfo(s *Schema) TypeInfo {
+	if t := s.ChooseType(); t != Array && t != Object && s.Config.GoPath == "" {
+		return TypeInfo{Name: d.Primitive(t)}
+	}
 	if f := d.typeFunc(s); f.Name != "" {
 		f.Name = d.namer.JSONPropertyExported(f.Name)
 		return f
 	}
-	return TypeInfo{Name: d.Primitive(s.BestType)}
+	return TypeInfo{Name: d.Primitive(s.ChooseType())}
 }
 
 func (d typer) Primitive(s SimpleType) string {

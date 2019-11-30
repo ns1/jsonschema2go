@@ -130,7 +130,7 @@ func crawl(
 
 			select {
 			case s := <-helper.Schemas():
-				t := helper.TypeInfo(s.Meta())
+				t := helper.TypeInfo(s)
 				if seen[t] {
 					continue
 				}
@@ -207,6 +207,9 @@ func group(ctx context.Context, results <-chan CrawlResult, errC <-chan error) (
 			}
 			if result.Err != nil {
 				return nil, result.Err
+			}
+			if result.Plan == nil {
+				continue
 			}
 			plan := result.Plan
 			goPath := plan.Type().GoPath

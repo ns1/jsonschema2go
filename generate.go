@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"text/template"
+	"unicode"
 )
 
 type Option func(s *settings)
@@ -29,7 +30,7 @@ func PrefixMap(pairs ...string) Option {
 	}
 }
 
-func CustomTypeFunc(typeFunc func(SchemaMeta) TypeInfo) Option {
+func CustomTypeFunc(typeFunc func(schema *Schema) TypeInfo) Option {
 	return func(s *settings) {
 		s.typer.typeFunc = typeFunc
 	}
@@ -50,12 +51,14 @@ func CustomPlanners(planners ...Planner) Option {
 func TypeFromID(pairs ...string) Option {
 	mapper := typeFromID(prefixPairs(pairs))
 	return func(s *settings) {
-		s.typer.typeFunc = func(meta SchemaMeta) TypeInfo {
-			if t := defaultTypeFunc(meta); !t.Unknown() {
+		s.typer.typeFunc = func(schema *Schema) TypeInfo {
+			if t := defaultTypeFunc(schema); !t.Unknown() {
 				return t
 			}
-			if path, name := mapper(meta.ID); name != "" {
-				return TypeInfo{GoPath: path, Name: name}
+			if schema.CalcID != nil {
+				if path, name := mapper(schema.CalcID.String()); name != "" {
+					return TypeInfo{GoPath: path, Name: name}
+				}
 			}
 			return TypeInfo{}
 		}
@@ -76,28 +79,35 @@ func CustomInitialisms(names ...string) Option {
 
 func typeFromID(pairs [][2]string) func(string) (string, string) {
 	mapper := pathMapper(pairs)
-	stripScheme := func(s string) string {
+	return func(s string) (string, string) {
+		s = mapper(s)
 		u, err := url.Parse(s)
 		if err != nil {
-			return ""
+			return "", ""
 		}
-		u.Scheme = ""
-		s = u.String()
-		if strings.HasPrefix(s, "//") {
-			s = s[len("//"):]
-		}
-		return s
-	}
-	return func(s string) (string, string) {
-		pathParts := strings.Split(stripScheme(mapper(s)), "/")
+		pathParts := strings.Split(u.Host+u.Path, "/")
 		if len(pathParts) < 2 {
 			return "", ""
 		}
+		// drop the extension
 		nameParts := strings.SplitN(pathParts[len(pathParts)-1], ".", 2)
 		if len(nameParts) == 0 {
 			return "", ""
 		}
-		return strings.Join(pathParts[:len(pathParts)-1], "/"), nameParts[0]
+		path, name := strings.Join(pathParts[:len(pathParts)-1], "/"), nameParts[0]
+		// add any fragment info
+		if u.Fragment != "" {
+			frags := strings.Split(u.Fragment, "/")
+			for _, frag := range frags {
+				if frag == "" || frag == "properties" {
+					continue
+				}
+				runes := []rune(frag)
+				runes[0] = unicode.ToUpper(runes[0])
+				name += string(runes)
+			}
+		}
+		return path, name
 	}
 }
 

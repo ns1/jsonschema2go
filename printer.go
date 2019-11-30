@@ -8,7 +8,9 @@ import (
 	"io"
 	"path"
 	"sort"
+	"strings"
 	"text/template"
+	"unicode"
 )
 
 //go:generate go run internal/cmd/gentmpl/gentmpl.go
@@ -83,6 +85,16 @@ func (i *Imports) QualName(info TypeInfo) string {
 		qual = alias
 	}
 	return fmt.Sprintf("%s.%s", qual, info.Name)
+}
+
+func (*Imports) NameSpace(names ...string) string {
+	name := strings.Join(names, "")
+	if len(name) > 0 {
+		runes := []rune(name)
+		runes[0] = unicode.ToLower(runes[0])
+		name = string(runes)
+	}
+	return name
 }
 
 func newPrinter(tmpl *template.Template) *Printer {

@@ -216,6 +216,7 @@ type config struct {
 	GoPath        string        `json:"gopath"`
 	Exclude       bool          `json:"exclude"`
 	Discriminator discriminator `json:"discriminator"`
+	NoValidate    bool          `json:"noValidate"`
 }
 
 type discriminator struct {
@@ -346,6 +347,7 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 func (s *Schema) Meta() SchemaMeta {
 	return SchemaMeta{
 		ID:          s.ID,
+		CalcID:      s.CalcID,
 		BestType:    s.ChooseType(),
 		Annotations: s.Annotations,
 		Flags:       s.Config,
@@ -357,6 +359,7 @@ type SchemaMeta struct {
 	BestType    SimpleType
 	Annotations TagMap
 	Flags       config
+	CalcID      *url.URL
 }
 
 type Loader interface {

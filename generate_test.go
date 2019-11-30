@@ -97,6 +97,7 @@ func TestRender(t *testing.T) {
 				context.Background(),
 				paths,
 				PrefixMap("github.com/jwilner/jsonschema2go/internal/testdata", dirName),
+				TypeFromID("https://example.com/testdata", "github.com/jwilner/jsonschema2go/internal/testdata"),
 			))
 			results, err := listAllFiles(dirName, ".gen.go")
 			r.NoError(err)
@@ -228,6 +229,27 @@ func Test_typeFromID(t *testing.T) {
 			id:       "example.com/v1/blah/bar",
 			wantPath: "example.com/v1/blah",
 			wantName: "bar",
+		},
+		{
+			name:     "maps empty fragment",
+			pairs:    [][2]string{{"https://example.com/v1/", "github.com/example/"}},
+			id:       "https://example.com/v1/blah/bar.json#",
+			wantPath: "github.com/example/blah",
+			wantName: "bar",
+		},
+		{
+			name:     "maps properties fragment",
+			pairs:    [][2]string{{"https://example.com/v1/", "github.com/example/"}},
+			id:       "https://example.com/v1/blah/bar.json#/properties/baz",
+			wantPath: "github.com/example/blah",
+			wantName: "barBaz",
+		},
+		{
+			name:     "maps extended fragment",
+			pairs:    [][2]string{{"https://example.com/v1/", "github.com/example/"}},
+			id:       "https://example.com/v1/blah/bar.json#/properties/baz/items/2/properties/hello",
+			wantPath: "github.com/example/blah",
+			wantName: "barBazItems2Hello",
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
