@@ -1,0 +1,10 @@
+{
+  "id": "https://example.com/testdata/render/array_pattern/foo/bar.json",
+  "description": "Bar gives you lots of dumb info",
+  "type": "array",
+  "items": {
+    "type": "string",
+    "pattern": "^[a-z]{10}$",
+    "minLength": 3
+  }
+}

@@ -28,7 +28,7 @@ func (m {{ .Type.Name }}) MarshalJSON() ([]byte, error) {
 {{ if .ItemValidateInitialize }}
 var (
 {{ range .ItemValidators -}}
-{{ with $v := .VarExpr (.NameSpace $.Type.Name "items") -}}
+{{ with $v := .VarExpr (.NameSpace $.Type.Name "Items") -}}
     {{ $v }}
 {{ end -}}
 {{ end -}}

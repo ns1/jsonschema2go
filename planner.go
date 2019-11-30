@@ -466,6 +466,7 @@ func newStyles(schema *Schema) (styles []Validator) {
 			if exclusive {
 				name += "Exclusive"
 				comparator += "="
+			} else {
 				english += " or equal to"
 			}
 			sLimit := fmt.Sprintf("%v", limit)

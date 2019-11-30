@@ -9,22 +9,18 @@ Generate Go types from JSON Schema files. Designed to be configurable to permit 
 Given a schema like in `example.json`:
 ```json
 {
-  "description": "Bar gives you some dumb info",
+  "description": "Bar contains some info",
   "x-jsonschema2go": {
-    "gopath": "github.com/jwilner/jsonschema2go/internal/example/foo#Bar"
+    "gopath": "github.com/jwilner/jsonschema2go/internal/testdata/render/example/foo#Bar"
   },
   "properties": {
     "baz": {
-      "type": "string"
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{10}$"
     },
-    "boz": {
-      "x-jsonschema2go": {
-        "gopath": "github.com/jwilner/jsonschema2go/internal/example/foo#Boz"
-      },
-      "type": "object",
-      "properties": {
-        "count": "integer"
-      }
+    "count": {
+      "type": "integer",
+      "minimum": 3
     }
   }
 }
@@ -32,16 +28,34 @@ Given a schema like in `example.json`:
 
 `jsonschema2go` generates types like:
 ```go
-package foo
-
-// Bar gives you some dumb info
+// Bar contains some info
 type Bar struct {
-    Baz string  `json:"baz,omitempty"`
-    Boz Boz     `json:"boz,omitempty"`
+	Baz   string `json:"baz,omitempty"`
+	Count int    `json:"count,omitempty"`
 }
 
-type Boz struct {
-    Count int   `json:"count,omitempty"`
+var (
+	barBazPattern = regexp.MustCompile(`^[0-9a-fA-F]{10}$`)
+)
+
+func (m *Bar) Validate() error {
+	if !barBazPattern.MatchString(m.Baz) {
+		return &BarValidationError{
+			errType:   "pattern",
+			jsonField: "baz",
+			field:     "Baz",
+			message:   fmt.Sprintf("must match '^[0-9a-fA-F]{10}$' but got %q", m.Baz),
+		}
+	}
+	if m.Count < 3 {
+		return &BarValidationError{
+			errType:   "minimum",
+			jsonField: "count",
+			field:     "Count",
+			message:   fmt.Sprintf("must be greater than or equal to 3 but was %v", m.Count),
+		}
+	}
+	return nil
 }
 ```
 

@@ -31,7 +31,7 @@ func (m *Bar) Validate() error {
 			errType:   "maximumExclusive",
 			jsonField: "exclInteger",
 			field:     "ExclInteger",
-			message:   fmt.Sprintf("must be less than or equal to 1 but was %v", m.ExclInteger),
+			message:   fmt.Sprintf("must be less than 1 but was %v", m.ExclInteger),
 		}
 	}
 	if m.ExclInteger <= 1 {
@@ -39,7 +39,7 @@ func (m *Bar) Validate() error {
 			errType:   "minimumExclusive",
 			jsonField: "exclInteger",
 			field:     "ExclInteger",
-			message:   fmt.Sprintf("must be greater than or equal to 1 but was %v", m.ExclInteger),
+			message:   fmt.Sprintf("must be greater than 1 but was %v", m.ExclInteger),
 		}
 	}
 	if m.ExclNumber >= 1 {
@@ -47,7 +47,7 @@ func (m *Bar) Validate() error {
 			errType:   "maximumExclusive",
 			jsonField: "exclNumber",
 			field:     "ExclNumber",
-			message:   fmt.Sprintf("must be less than or equal to 1 but was %v", m.ExclNumber),
+			message:   fmt.Sprintf("must be less than 1 but was %v", m.ExclNumber),
 		}
 	}
 	if m.ExclNumber <= 1 {
@@ -55,7 +55,7 @@ func (m *Bar) Validate() error {
 			errType:   "minimumExclusive",
 			jsonField: "exclNumber",
 			field:     "ExclNumber",
-			message:   fmt.Sprintf("must be greater than or equal to 1 but was %v", m.ExclNumber),
+			message:   fmt.Sprintf("must be greater than 1 but was %v", m.ExclNumber),
 		}
 	}
 	if m.Integer > 1 {
@@ -63,7 +63,7 @@ func (m *Bar) Validate() error {
 			errType:   "maximum",
 			jsonField: "integer",
 			field:     "Integer",
-			message:   fmt.Sprintf("must be less than 1 but was %v", m.Integer),
+			message:   fmt.Sprintf("must be less than or equal to 1 but was %v", m.Integer),
 		}
 	}
 	if m.Integer < 1 {
@@ -71,7 +71,7 @@ func (m *Bar) Validate() error {
 			errType:   "minimum",
 			jsonField: "integer",
 			field:     "Integer",
-			message:   fmt.Sprintf("must be greater than 1 but was %v", m.Integer),
+			message:   fmt.Sprintf("must be greater than or equal to 1 but was %v", m.Integer),
 		}
 	}
 	if m.Integer%3 != 0 {
@@ -87,7 +87,7 @@ func (m *Bar) Validate() error {
 			errType:   "maximum",
 			jsonField: "number",
 			field:     "Number",
-			message:   fmt.Sprintf("must be less than 1 but was %v", m.Number),
+			message:   fmt.Sprintf("must be less than or equal to 1 but was %v", m.Number),
 		}
 	}
 	if m.Number < 1 {
@@ -95,7 +95,7 @@ func (m *Bar) Validate() error {
 			errType:   "minimum",
 			jsonField: "number",
 			field:     "Number",
-			message:   fmt.Sprintf("must be greater than 1 but was %v", m.Number),
+			message:   fmt.Sprintf("must be greater than or equal to 1 but was %v", m.Number),
 		}
 	}
 	if len(m.String) > 10 {
