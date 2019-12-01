@@ -195,6 +195,7 @@ func TestSchemaToPlan(t *testing.T) {
 						},
 					},
 					required: nil,
+					Traits: []Trait{&boxedEncodingTrait{}},
 				},
 			},
 		},

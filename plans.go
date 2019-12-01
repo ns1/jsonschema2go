@@ -51,6 +51,13 @@ type StructField struct {
 	validators []Validator
 }
 
+func (s *StructField) FieldReference() string {
+	if s.Name == "" {
+		return s.Type.Name
+	}
+	return s.Name
+}
+
 func (s StructField) Validators() []Validator {
 	sort.Slice(s.validators, func(i, j int) bool {
 		return s.validators[i].Name < s.validators[j].Name

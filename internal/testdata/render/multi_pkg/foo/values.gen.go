@@ -2,6 +2,7 @@
 package foo
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/jwilner/jsonschema2go/boxed"
 	"github.com/jwilner/jsonschema2go/internal/testdata/render/multi_pkg/foobar"
@@ -15,6 +16,19 @@ type Bar struct {
 
 func (m *Bar) Validate() error {
 	return nil
+}
+
+func (m *Bar) MarshalJSON() ([]byte, error) {
+	inner := struct {
+		Name        *string `json:"name,omitempty"`
+		foobar.Blob `json:",omitempty"`
+	}{
+		Blob: m.Blob,
+	}
+	if m.Name.Set {
+		inner.Name = &m.Name.String
+	}
+	return json.Marshal(inner)
 }
 
 type BarValidationError struct {

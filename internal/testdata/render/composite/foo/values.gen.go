@@ -17,6 +17,19 @@ func (m *Bar) Validate() error {
 	return nil
 }
 
+func (m *Bar) MarshalJSON() ([]byte, error) {
+	inner := struct {
+		Name *string `json:"name,omitempty"`
+		Blob `json:",omitempty"`
+	}{
+		Blob: m.Blob,
+	}
+	if m.Name.Set {
+		inner.Name = &m.Name.String
+	}
+	return json.Marshal(inner)
+}
+
 type BarValidationError struct {
 	errType, jsonField, field, message string
 }

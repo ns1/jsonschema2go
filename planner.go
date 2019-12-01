@@ -238,6 +238,14 @@ func planAllOfObject(ctx context.Context, helper *PlanningHelper, schema *Schema
 			return nil, err
 		}
 	}
+
+	for _, f := range s.Fields {
+		if f.Type.GoPath == "github.com/jwilner/jsonschema2go/boxed" {
+			s.Traits = append(s.Traits, &boxedEncodingTrait{})
+			break
+		}
+	}
+
 	return s, nil
 }
 
@@ -317,7 +325,7 @@ func planSimpleArray(ctx context.Context, helper *PlanningHelper, schema *Schema
 	if schema.UniqueItems {
 		a.validators = append(a.validators, Validator{Name: "uniqueItems"})
 	}
-	a.itemValidators = newStyles(itemSchema)
+	a.itemValidators = validators(itemSchema)
 	return a, nil
 }
 
@@ -408,7 +416,7 @@ func templateStr(str string) *template.Template {
 	return template.Must(template.New("").Parse(str))
 }
 
-func newStyles(schema *Schema) (styles []Validator) {
+func validators(schema *Schema) (styles []Validator) {
 	switch schema.ChooseType() {
 	case Array, Object:
 		if !schema.Config.NoValidate {
@@ -563,7 +571,7 @@ func deriveStructFields(
 				JSONName:   name,
 				Type:       fType,
 				Tag:        tag,
-				validators: newStyles(fieldSchema),
+				validators: validators(fieldSchema),
 			},
 		)
 	}

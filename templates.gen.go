@@ -147,7 +147,6 @@ type {{ .Type.Name }} struct {
 {{ end }}
 }
 
-
 {{ if .ValidateInitialize }}
 var (
 {{ range $Field := .Fields -}}
@@ -206,7 +205,7 @@ func (m *{{ $.Type.Name }}) MarshalJSON() ([]byte, error) {
 	} {
 {{ range $.Fields -}}
 {{ if ne .Type.GoPath "github.com/jwilner/jsonschema2go/boxed" -}}
-		{{ .Name }}: m.{{ .Name }},
+		{{ .FieldReference }}: m.{{ .FieldReference }},
 {{ end -}}
 {{ end -}}
 	}
