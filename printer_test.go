@@ -108,7 +108,7 @@ func TestPrintFile(t *testing.T) {
 				&StructPlan{
 					Comment: "Bob does lots of cool things",
 					Fields: []StructField{
-						{Names: []string{"Count"}, Type: TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
+						{Name: "Count", Type: TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
 					},
 					typeInfo: TypeInfo{
 						Name: "Bob",
@@ -165,9 +165,9 @@ func (e *BobValidationError) Error() string {
 				&StructPlan{
 					Comment: "Bob does lots of cool things",
 					Fields: []StructField{
-						{Names: []string{"Count"}, Type: TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
+						{Name: "Count", Type: TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
 						{
-							Names: []string{"Other"},
+							Name: "Other",
 							Type: TypeInfo{
 								GoPath: "github.com/jwilner/jsonschema2go/blah",
 								Name:   "OtherType",
@@ -232,9 +232,9 @@ func (e *BobValidationError) Error() string {
 				&StructPlan{
 					Comment: "Bob does lots of cool things",
 					Fields: []StructField{
-						{Names: []string{"Count"}, Type: TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
+						{Name: "Count", Type: TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
 						{
-							Names: []string{"Other"},
+							Name: "Other",
 							Type: TypeInfo{
 								GoPath:  "github.com/jwilner/jsonschema2go/blah",
 								Name:    "OtherType",
@@ -243,7 +243,7 @@ func (e *BobValidationError) Error() string {
 							Tag: `json:"other,omitempty"`,
 						},
 						{
-							Names: []string{"OtherOther"},
+							Name: "OtherOther",
 							Type: TypeInfo{
 								GoPath: "github.com/jwilner/jsonschema2go/bob/blah",
 								Name:   "AnotherType",
@@ -387,7 +387,7 @@ func (e *BobValidationError) Error() string {
 				&StructPlan{
 					Comment: "OtherType does lots of cool things",
 					Fields: []StructField{
-						{Type: TypeInfo{Name: "int"}, Names: []string{"Count"}, Tag: `json:"count,omitempty"`},
+						{Type: TypeInfo{Name: "int"}, Name: "Count", Tag: `json:"count,omitempty"`},
 					},
 					typeInfo: TypeInfo{
 						Name: "OtherType",
@@ -487,7 +487,7 @@ func (e *OtherTypeValidationError) Error() string {
 				&StructPlan{
 					Comment: "OtherType does lots of cool things",
 					Fields: []StructField{
-						{Type: TypeInfo{Name: "int"}, Names: []string{"Count"}, Tag: `json:"count,omitempty"`},
+						{Type: TypeInfo{Name: "int"}, Name: "Count", Tag: `json:"count,omitempty"`},
 					},
 					typeInfo: TypeInfo{
 						Name: "OtherType",

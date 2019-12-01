@@ -16,6 +16,14 @@ type TypeInfo struct {
 	Name    string
 	Pointer bool
 	Array   bool
+	valPath string
+}
+
+func (t TypeInfo) ValPath() string {
+	if t.valPath != "" {
+		return "." + t.valPath
+	}
+	return ""
 }
 
 func (t TypeInfo) BuiltIn() bool {
@@ -28,7 +36,7 @@ func (t TypeInfo) Unknown() bool {
 
 var primitives = map[SimpleType]string{
 	Boolean: "bool",
-	Integer: "int",
+	Integer: "int64",
 	Number:  "float64",
 	Null:    "interface{}",
 	String:  "string",
@@ -36,8 +44,8 @@ var primitives = map[SimpleType]string{
 
 type StructField struct {
 	Comment    string
-	Names      []string
-	JSONNames  []string
+	Name       string
+	JSONName   string
 	Type       TypeInfo
 	Tag        string
 	validators []Validator
@@ -103,13 +111,34 @@ type Plan interface {
 	ID() string
 }
 
+type boxedEncodingTrait struct {}
+
+func (boxedEncodingTrait) Template() string {
+	return "boxed.tmpl"
+}
+
+func (boxedEncodingTrait) Deps() []TypeInfo {
+	return []TypeInfo{{GoPath: "encoding/json", Name: "Marshal"}}
+}
+
+func (boxedEncodingTrait) Primitive(t TypeInfo) string {
+	s := []rune(t.Name)
+	s[0] = unicode.ToLower(s[0])
+	return string(s)
+}
+
 type StructPlan struct {
 	typeInfo TypeInfo
 	id       *url.URL
 
-	Comment string
-	Fields  []StructField
-	Traits  []Trait
+	Comment  string
+	Fields   []StructField
+	Traits   []Trait
+	required map[string]bool
+}
+
+func (s *StructPlan) Required(fieldName string) bool {
+	return s.required[fieldName]
 }
 
 func (s *StructPlan) Type() TypeInfo {

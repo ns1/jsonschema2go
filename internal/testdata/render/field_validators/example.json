@@ -2,6 +2,9 @@
   "id": "https://example.com/testdata/render/field_validators/foo/bar.json",
   "description": "Bar gives you some dumb info",
   "type": "object",
+  "required": [
+    "string"
+  ],
   "properties": {
     "string": {
       "type": "string",

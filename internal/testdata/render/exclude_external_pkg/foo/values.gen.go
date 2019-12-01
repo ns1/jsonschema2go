@@ -2,14 +2,16 @@
 package foo
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/jwilner/jsonschema2go/boxed"
 	"github.com/jwilner/jsonschema2go/internal/testdata/render/exclude_external_pkg/other"
 )
 
 // Bar gives you some dumb info
 type Bar struct {
 	Inner other.Excluded `json:"inner,omitempty"`
-	Name  string         `json:"name,omitempty"`
+	Name  boxed.String   `json:"name"`
 }
 
 func (m *Bar) Validate() error {
@@ -17,6 +19,19 @@ func (m *Bar) Validate() error {
 		return err
 	}
 	return nil
+}
+
+func (m *Bar) MarshalJSON() ([]byte, error) {
+	inner := struct {
+		Inner other.Excluded `json:"inner,omitempty"`
+		Name  *string        `json:"name,omitempty"`
+	}{
+		Inner: m.Inner,
+	}
+	if m.Name.Set {
+		inner.Name = &m.Name.String
+	}
+	return json.Marshal(inner)
 }
 
 type BarValidationError struct {

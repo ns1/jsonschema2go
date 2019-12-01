@@ -118,18 +118,18 @@ func planDiscriminatedOneOfObject(ctx context.Context, helper *PlanningHelper, s
 	}
 
 	s.Fields = append(s.Fields, StructField{
-		Names:     []string{helper.JSONPropertyExported(discrim.PropertyName)},
-		JSONNames: []string{discrim.PropertyName},
-		Type:      TypeInfo{Name: "interface{}"},
+		Name:     helper.JSONPropertyExported(discrim.PropertyName),
+		JSONName: discrim.PropertyName,
+		Type:     TypeInfo{Name: "interface{}"},
 	})
 
 	s.Traits = append(s.Traits,
 		&discriminatorMarshalTrait{
 			StructField{
-				Names:     []string{helper.JSONPropertyExported(discrim.PropertyName)},
-				JSONNames: []string{discrim.PropertyName},
-				Type:      TypeInfo{Name: "string"},
-				Tag:       fmt.Sprintf(`json:"%s"`, discrim.PropertyName),
+				Name:     helper.JSONPropertyExported(discrim.PropertyName),
+				JSONName: discrim.PropertyName,
+				Type:     TypeInfo{Name: "string"},
+				Tag:      fmt.Sprintf(`json:"%s"`, discrim.PropertyName),
 			},
 			typeMapping,
 		},
@@ -256,6 +256,18 @@ func planSimpleObject(ctx context.Context, helper *PlanningHelper, schema *Schem
 		return nil, err
 	}
 	s.Fields = fields
+	s.required = make(map[string]bool)
+	for _, r := range schema.Required {
+		s.required[r] = true
+	}
+
+	for _, f := range fields {
+		if f.Type.GoPath == "github.com/jwilner/jsonschema2go/boxed" {
+			s.Traits = append(s.Traits, &boxedEncodingTrait{})
+			break
+		}
+	}
+
 	return s, nil
 }
 
@@ -392,24 +404,6 @@ func (n *namer) exportedIdentifier(parts [][]rune) string {
 	return strings.Join(words, "")
 }
 
-type minItems uint64
-
-func (m minItems) Template() string {
-	return "min_items.tmpl"
-}
-
-type maxItems uint64
-
-func (m maxItems) Template() string {
-	return "max_items.tmpl"
-}
-
-type uniqueItems struct{}
-
-func (u uniqueItems) Template() string {
-	return "unique_items.tmpl"
-}
-
 func templateStr(str string) *template.Template {
 	return template.Must(template.New("").Parse(str))
 }
@@ -539,22 +533,39 @@ func deriveStructFields(
 		if fieldSchema.ChooseType() == Unknown && fType.Unknown() {
 			fType = TypeInfo{Name: "interface{}"}
 		}
-		fields = append(
-			fields,
-			StructField{
-				Comment:    fieldSchema.Annotations.GetString("description"),
-				Names:      []string{helper.JSONPropertyExported(name)},
-				JSONNames:  []string{name},
-				Type:       fType,
-				Tag:        fmt.Sprintf(`json:"%s,omitempty"`, name),
-				validators: newStyles(fieldSchema),
-			},
-		)
 		if !fType.BuiltIn() {
 			if err := helper.Dep(ctx, fieldSchema); err != nil {
 				return nil, err
 			}
 		}
+		tag := fmt.Sprintf(`json:"%s,omitempty"`, name)
+		if fType.BuiltIn() && !fType.Pointer {
+			switch fType.Name {
+			case "string":
+				fType = TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/boxed", Name: "String", valPath: "String"}
+				tag = fmt.Sprintf(`json:"%s"`, name)
+			case "int64":
+				fType = TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/boxed", Name: "Int64", valPath: "Int64"}
+				tag = fmt.Sprintf(`json:"%s"`, name)
+			case "bool":
+				fType = TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/boxed", Name: "Bool", valPath: "Bool"}
+				tag = fmt.Sprintf(`json:"%s"`, name)
+			case "float64":
+				fType = TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/boxed", Name: "Float64", valPath: "Float64"}
+				tag = fmt.Sprintf(`json:"%s"`, name)
+			}
+		}
+		fields = append(
+			fields,
+			StructField{
+				Comment:    fieldSchema.Annotations.GetString("description"),
+				Name:       helper.JSONPropertyExported(name),
+				JSONName:   name,
+				Type:       fType,
+				Tag:        tag,
+				validators: newStyles(fieldSchema),
+			},
+		)
 	}
 	return
 }

@@ -2,15 +2,27 @@
 package foobar
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/jwilner/jsonschema2go/boxed"
 )
 
 type Blob struct {
-	Count int `json:"count,omitempty"`
+	Count boxed.Int64 `json:"count"`
 }
 
 func (m *Blob) Validate() error {
 	return nil
+}
+
+func (m *Blob) MarshalJSON() ([]byte, error) {
+	inner := struct {
+		Count *int64 `json:"count,omitempty"`
+	}{}
+	if m.Count.Set {
+		inner.Count = &m.Count.Int64
+	}
+	return json.Marshal(inner)
 }
 
 type BlobValidationError struct {
