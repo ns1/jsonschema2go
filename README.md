@@ -22,7 +22,8 @@ Given a schema like in `example.json`:
       "type": "integer",
       "minimum": 3
     }
-  }
+  },
+  "required": ["baz"]
 }
 ```
 
@@ -30,8 +31,8 @@ Given a schema like in `example.json`:
 ```go
 // Bar contains some info
 type Bar struct {
-	Baz   string `json:"baz,omitempty"`
-	Count int    `json:"count,omitempty"`
+	Baz   boxed.String `json:"baz"`
+	Count boxed.Int64  `json:"count"`
 }
 
 var (
@@ -39,24 +40,33 @@ var (
 )
 
 func (m *Bar) Validate() error {
-	if !barBazPattern.MatchString(m.Baz) {
+	if !m.Baz.Set {
+		return &BarValidationError{
+			errType:   "required",
+			jsonField: "baz",
+			field:     "Baz",
+			message:   "field required",
+		}
+	}
+	if !barBazPattern.MatchString(m.Baz.String) {
 		return &BarValidationError{
 			errType:   "pattern",
 			jsonField: "baz",
 			field:     "Baz",
-			message:   fmt.Sprintf("must match '^[0-9a-fA-F]{10}$' but got %q", m.Baz),
+			message:   fmt.Sprintf("must match '^[0-9a-fA-F]{10}$' but got %q", m.Baz.String),
 		}
 	}
-	if m.Count < 3 {
+	if m.Count.Set && m.Count.Int64 < 3 {
 		return &BarValidationError{
 			errType:   "minimum",
 			jsonField: "count",
 			field:     "Count",
-			message:   fmt.Sprintf("must be greater than or equal to 3 but was %v", m.Count),
+			message:   fmt.Sprintf("must be greater than or equal to 3 but was %v", m.Count.Int64),
 		}
 	}
 	return nil
 }
+
 ```
 
 ## Types

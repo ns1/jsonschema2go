@@ -38,12 +38,18 @@ func TestSchemaToPlan(t *testing.T) {
 					Comment: "i am bob",
 					Fields: []StructField{
 						{
-							Names:     []string{"Count"},
-							Type:      TypeInfo{Name: "int"},
-							JSONNames: []string{"count"},
-							Tag:       `json:"count,omitempty"`,
+							Name: "Count",
+							Type: TypeInfo{
+								GoPath:  "github.com/jwilner/jsonschema2go/boxed",
+								Name:    "Int64",
+								valPath: "Int64",
+							},
+							JSONName: "count",
+							Tag:      `json:"count"`,
 						},
 					},
+					Traits: []Trait{&boxedEncodingTrait{}},
+					required: map[string]bool{},
 				},
 			},
 		},
@@ -78,8 +84,8 @@ func TestSchemaToPlan(t *testing.T) {
 					Comment: "i am bob",
 					Fields: []StructField{
 						{
-							Names:     []string{"Nested"},
-							JSONNames: []string{"nested"},
+							Name:     "Nested",
+							JSONName: "nested",
 							Type: TypeInfo{
 								GoPath: "github.com/jwilner/jsonschema2go/example",
 								Name:   "NestedType",
@@ -88,6 +94,7 @@ func TestSchemaToPlan(t *testing.T) {
 							validators: []Validator{{Name: "subschema"}},
 						},
 					},
+					required: map[string]bool{},
 				},
 				&StructPlan{
 					typeInfo: TypeInfo{
@@ -96,12 +103,18 @@ func TestSchemaToPlan(t *testing.T) {
 					},
 					Fields: []StructField{
 						{
-							Names:     []string{"Count"},
-							JSONNames: []string{"count"},
-							Type:      TypeInfo{Name: "int"},
-							Tag:       `json:"count,omitempty"`,
+							Name:     "Count",
+							JSONName: "count",
+							Type: TypeInfo{
+								GoPath:  "github.com/jwilner/jsonschema2go/boxed",
+								Name:    "Int64",
+								valPath: "Int64",
+							},
+							Tag: `json:"count"`,
 						},
 					},
+					Traits: []Trait{&boxedEncodingTrait{}},
+					required: map[string]bool{},
 				},
 			},
 		},
@@ -145,12 +158,18 @@ func TestSchemaToPlan(t *testing.T) {
 					Comment: "i am bob",
 					Fields: []StructField{
 						{
-							Names:     []string{"Count"},
-							JSONNames: []string{"count"},
-							Type:      TypeInfo{Name: "int"},
-							Tag:       `json:"count,omitempty"`,
+							Name:     "Count",
+							JSONName: "count",
+							Type: TypeInfo{
+								GoPath:  "github.com/jwilner/jsonschema2go/boxed",
+								Name:    "Int64",
+								valPath: "Int64",
+							},
+							Tag: `json:"count"`,
 						},
 					},
+					Traits: []Trait{&boxedEncodingTrait{}},
+					required: map[string]bool{},
 				},
 				&StructPlan{
 					typeInfo: TypeInfo{
@@ -159,10 +178,14 @@ func TestSchemaToPlan(t *testing.T) {
 					},
 					Fields: []StructField{
 						{
-							Names:     []string{"ID"},
-							JSONNames: []string{"id"},
-							Type:      TypeInfo{Name: "int"},
-							Tag:       `json:"id,omitempty"`,
+							Name:     "ID",
+							JSONName: "id",
+							Type: TypeInfo{
+								GoPath:  "github.com/jwilner/jsonschema2go/boxed",
+								Name:    "Int64",
+								valPath: "Int64",
+							},
+							Tag: `json:"id"`,
 						},
 						{
 							Type: TypeInfo{
@@ -171,6 +194,8 @@ func TestSchemaToPlan(t *testing.T) {
 							},
 						},
 					},
+					required: nil,
+					Traits: []Trait{&boxedEncodingTrait{}},
 				},
 			},
 		},
@@ -226,12 +251,13 @@ func TestSchemaToPlan(t *testing.T) {
 					},
 					Fields: []StructField{
 						{
-							Names:     []string{"Bob"},
-							JSONNames: []string{"bob"},
-							Type:      TypeInfo{Name: "int", Pointer: true},
-							Tag:       `json:"bob,omitempty"`,
+							Name:     "Bob",
+							JSONName: "bob",
+							Type:     TypeInfo{Name: "int64", Pointer: true},
+							Tag:      `json:"bob,omitempty"`,
 						},
 					},
+					required: map[string]bool{},
 				},
 			},
 		},

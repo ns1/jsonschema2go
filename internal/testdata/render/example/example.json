@@ -12,5 +12,6 @@
       "type": "integer",
       "minimum": 3
     }
-  }
+  },
+  "required": ["baz"]
 }

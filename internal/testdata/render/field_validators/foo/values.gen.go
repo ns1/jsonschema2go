@@ -4,18 +4,19 @@ package foo
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/jwilner/jsonschema2go/boxed"
 	"regexp"
 )
 
 // Bar gives you some dumb info
 // generated from https://example.com/testdata/render/field_validators/foo/bar.json
 type Bar struct {
-	Array       BarArray `json:"array,omitempty"`
-	ExclInteger int      `json:"exclInteger,omitempty"`
-	ExclNumber  float64  `json:"exclNumber,omitempty"`
-	Integer     int      `json:"integer,omitempty"`
-	Number      float64  `json:"number,omitempty"`
-	String      string   `json:"string,omitempty"`
+	Array       BarArray      `json:"array,omitempty"`
+	ExclInteger boxed.Int64   `json:"exclInteger"`
+	ExclNumber  boxed.Float64 `json:"exclNumber"`
+	Integer     boxed.Int64   `json:"integer"`
+	Number      boxed.Float64 `json:"number"`
+	String      boxed.String  `json:"string"`
 }
 
 var (
@@ -23,106 +24,143 @@ var (
 )
 
 func (m *Bar) Validate() error {
+	if !m.String.Set {
+		return &BarValidationError{
+			errType:   "required",
+			jsonField: "string",
+			field:     "String",
+			message:   "field required",
+		}
+	}
 	if err := m.Array.Validate(); err != nil {
 		return err
 	}
-	if m.ExclInteger >= 1 {
+	if m.ExclInteger.Set && m.ExclInteger.Int64 >= 1 {
 		return &BarValidationError{
 			errType:   "maximumExclusive",
 			jsonField: "exclInteger",
 			field:     "ExclInteger",
-			message:   fmt.Sprintf("must be less than 1 but was %v", m.ExclInteger),
+			message:   fmt.Sprintf("must be less than 1 but was %v", m.ExclInteger.Int64),
 		}
 	}
-	if m.ExclInteger <= 1 {
+	if m.ExclInteger.Set && m.ExclInteger.Int64 <= 1 {
 		return &BarValidationError{
 			errType:   "minimumExclusive",
 			jsonField: "exclInteger",
 			field:     "ExclInteger",
-			message:   fmt.Sprintf("must be greater than 1 but was %v", m.ExclInteger),
+			message:   fmt.Sprintf("must be greater than 1 but was %v", m.ExclInteger.Int64),
 		}
 	}
-	if m.ExclNumber >= 1 {
+	if m.ExclNumber.Set && m.ExclNumber.Float64 >= 1 {
 		return &BarValidationError{
 			errType:   "maximumExclusive",
 			jsonField: "exclNumber",
 			field:     "ExclNumber",
-			message:   fmt.Sprintf("must be less than 1 but was %v", m.ExclNumber),
+			message:   fmt.Sprintf("must be less than 1 but was %v", m.ExclNumber.Float64),
 		}
 	}
-	if m.ExclNumber <= 1 {
+	if m.ExclNumber.Set && m.ExclNumber.Float64 <= 1 {
 		return &BarValidationError{
 			errType:   "minimumExclusive",
 			jsonField: "exclNumber",
 			field:     "ExclNumber",
-			message:   fmt.Sprintf("must be greater than 1 but was %v", m.ExclNumber),
+			message:   fmt.Sprintf("must be greater than 1 but was %v", m.ExclNumber.Float64),
 		}
 	}
-	if m.Integer > 1 {
+	if m.Integer.Set && m.Integer.Int64 > 1 {
 		return &BarValidationError{
 			errType:   "maximum",
 			jsonField: "integer",
 			field:     "Integer",
-			message:   fmt.Sprintf("must be less than or equal to 1 but was %v", m.Integer),
+			message:   fmt.Sprintf("must be less than or equal to 1 but was %v", m.Integer.Int64),
 		}
 	}
-	if m.Integer < 1 {
+	if m.Integer.Set && m.Integer.Int64 < 1 {
 		return &BarValidationError{
 			errType:   "minimum",
 			jsonField: "integer",
 			field:     "Integer",
-			message:   fmt.Sprintf("must be greater than or equal to 1 but was %v", m.Integer),
+			message:   fmt.Sprintf("must be greater than or equal to 1 but was %v", m.Integer.Int64),
 		}
 	}
-	if m.Integer%3 != 0 {
+	if m.Integer.Set && m.Integer.Int64%3 != 0 {
 		return &BarValidationError{
 			errType:   "multipleOf",
 			jsonField: "integer",
 			field:     "Integer",
-			message:   fmt.Sprintf("must be a multiple of 3 but was %d", m.Integer),
+			message:   fmt.Sprintf("must be a multiple of 3 but was %d", m.Integer.Int64),
 		}
 	}
-	if m.Number > 1 {
+	if m.Number.Set && m.Number.Float64 > 1 {
 		return &BarValidationError{
 			errType:   "maximum",
 			jsonField: "number",
 			field:     "Number",
-			message:   fmt.Sprintf("must be less than or equal to 1 but was %v", m.Number),
+			message:   fmt.Sprintf("must be less than or equal to 1 but was %v", m.Number.Float64),
 		}
 	}
-	if m.Number < 1 {
+	if m.Number.Set && m.Number.Float64 < 1 {
 		return &BarValidationError{
 			errType:   "minimum",
 			jsonField: "number",
 			field:     "Number",
-			message:   fmt.Sprintf("must be greater than or equal to 1 but was %v", m.Number),
+			message:   fmt.Sprintf("must be greater than or equal to 1 but was %v", m.Number.Float64),
 		}
 	}
-	if len(m.String) > 10 {
+	if len(m.String.String) > 10 {
 		return &BarValidationError{
 			errType:   "maxLength",
 			jsonField: "string",
 			field:     "String",
-			message:   fmt.Sprintf("must have length less than 10 but was %d", len(m.String)),
+			message:   fmt.Sprintf("must have length less than 10 but was %d", len(m.String.String)),
 		}
 	}
-	if len(m.String) < 3 {
+	if len(m.String.String) < 3 {
 		return &BarValidationError{
 			errType:   "minLength",
 			jsonField: "string",
 			field:     "String",
-			message:   fmt.Sprintf("must have length greater than 3 but was %d", len(m.String)),
+			message:   fmt.Sprintf("must have length greater than 3 but was %d", len(m.String.String)),
 		}
 	}
-	if !barStringPattern.MatchString(m.String) {
+	if !barStringPattern.MatchString(m.String.String) {
 		return &BarValidationError{
 			errType:   "pattern",
 			jsonField: "string",
 			field:     "String",
-			message:   fmt.Sprintf("must match '^(123|456)$' but got %q", m.String),
+			message:   fmt.Sprintf("must match '^(123|456)$' but got %q", m.String.String),
 		}
 	}
 	return nil
+}
+
+func (m *Bar) MarshalJSON() ([]byte, error) {
+	inner := struct {
+		Array       BarArray `json:"array,omitempty"`
+		ExclInteger *int64   `json:"exclInteger,omitempty"`
+		ExclNumber  *float64 `json:"exclNumber,omitempty"`
+		Integer     *int64   `json:"integer,omitempty"`
+		Number      *float64 `json:"number,omitempty"`
+		String      *string  `json:"string,omitempty"`
+	}{
+		Array: m.Array,
+	}
+	if m.ExclInteger.Set {
+		inner.ExclInteger = &m.ExclInteger.Int64
+	}
+	if m.ExclNumber.Set {
+		inner.ExclNumber = &m.ExclNumber.Float64
+	}
+	if m.Integer.Set {
+		inner.Integer = &m.Integer.Int64
+	}
+	if m.Number.Set {
+		inner.Number = &m.Number.Float64
+	}
+	if m.String.Set {
+		inner.String = &m.String.String
+	}
+	return json.Marshal(inner)
 }
 
 type BarValidationError struct {

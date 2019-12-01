@@ -143,43 +143,48 @@ func (m {{ .Type.Name }}) Validate() error {
 {{ end -}}
 type {{ .Type.Name }} struct {
 {{ range .Fields -}}
-    {{ range $Index, $Element := .Names -}}{{ if $Index -}}, {{ end -}}{{ . }}{{ end }} {{ if .Type.Array -}}[]{{ end -}}{{ if .Type.Pointer -}}*{{ end -}}{{ $.QualName .Type }} {{ if .Tag }}` + "`" + `{{ .Tag }}` + "`" + `{{ end }}
+	{{ .Name }} {{ if .Type.Pointer -}}*{{ end -}}{{ $.QualName .Type }} {{ if .Tag }}` + "`" + `{{ .Tag }}` + "`" + `{{ end }}
 {{ end }}
 }
-
 
 {{ if .ValidateInitialize }}
 var (
 {{ range $Field := .Fields -}}
-{{ range $Name := .Names -}}
 {{ range $Field.Validators -}}
-{{ with $v := .VarExpr (.NameSpace $.Type.Name $Name) -}}
-	{{ $v }}
-{{ end -}}
-{{ end -}}
+	{{ .VarExpr (.NameSpace $.Type.Name $Field.Name) }}
 {{ end -}}
 {{ end -}}
 )
 {{ end -}}
 
 func (m *{{ $.Type.Name }}) Validate() error {
-{{ range $Field := .Fields -}}
-{{ range $Index, $Name := .Names -}}
-{{ range $Field.Validators -}}
-{{ if eq .Name "subschema" -}}
-    if err := m.{{ $Name }}.Validate(); err != nil {
-        return err
-	}
-{{ else -}}
-    if {{ .TestExpr (.NameSpace $.Type.Name $Name) (printf "m.%s" $Name) }} {
+{{ range .Fields -}}
+{{ if $.Required .JSONName -}}
+	if !m.{{ .Name }}.Set {
 		return &{{ $.Type.Name }}ValidationError{
-    		errType: "{{ .Name }}",
-			jsonField: "{{ index $Field.JSONNames $Index }}",
-			field: "{{ $Name }}",
-			message: fmt.Sprintf({{ .Sprintf (.NameSpace $.Type.Name $Name) (printf "m.%s" $Name) }}),
+			errType: "required",
+			jsonField: "{{ .JSONName }}",
+			field: "{{ .Name }}",
+			message: "field required",
 		}
 	}
 {{ end -}}
+{{ end -}}
+{{ range $Field := .Fields -}}
+{{ range $Field.Validators -}}
+{{ if eq .Name "subschema" -}}
+    if err := m.{{ $Field.Name }}.Validate(); err != nil {
+        return err
+	}
+{{ else -}}
+    if {{ if not ($.Required $Field.JSONName) -}}m.{{ $Field.Name }}.Set &&{{ end -}}{{ .TestExpr (.NameSpace $.Type.Name $Field.Name) (printf "m.%s%s" $Field.Name $Field.Type.ValPath) }} {
+		return &{{ $.Type.Name }}ValidationError{
+    		errType: "{{ .Name }}",
+			jsonField: "{{ $Field.JSONName }}",
+			field: "{{ $Field.Name }}",
+			message: fmt.Sprintf({{ .Sprintf (.NameSpace $.Type.Name $Field.Name) (printf "m.%s%s" $Field.Name $Field.Type.ValPath) }}),
+		}
+	}
 {{ end -}}
 {{ end -}}
 {{ end -}}
@@ -187,34 +192,61 @@ func (m *{{ $.Type.Name }}) Validate() error {
 }
 
 {{ range $t := .Traits -}}
-{{ if eq .Template "discriminator.tmpl" }}
+{{ if eq .Template "boxed.tmpl" }}
+func (m *{{ $.Type.Name }}) MarshalJSON() ([]byte, error) {
+    inner := struct {
+{{ range $.Fields -}}
+{{ if eq .Type.GoPath "github.com/jwilner/jsonschema2go/boxed" -}}
+		{{ .Name }} *{{ $t.Primitive .Type }} ` + "`" + `json:"{{ .JSONName }},omitempty"` + "`" + `
+{{ else -}}
+		{{ .Name }} {{ $.QualName .Type }} ` + "`" + `json:"{{ .JSONName }},omitempty"` + "`" + `
+{{ end -}}
+{{ end -}}
+	} {
+{{ range $.Fields -}}
+{{ if ne .Type.GoPath "github.com/jwilner/jsonschema2go/boxed" -}}
+		{{ .FieldReference }}: m.{{ .FieldReference }},
+{{ end -}}
+{{ end -}}
+	}
+{{ range $.Fields -}}
+{{ if eq .Type.GoPath "github.com/jwilner/jsonschema2go/boxed" -}}
+    if m.{{ .Name }}.Set {
+        inner.{{ .Name }} = &m.{{ .Name }}{{ .Type.ValPath }}
+	}
+{{ end -}}
+{{ end -}}
+	return json.Marshal(inner)
+}
+
+{{ else if eq .Template "discriminator.tmpl" }}
 func (m *{{ $.Type.Name }}) UnmarshalJSON(data []byte) error {
 	var discrim struct {
     {{ with .StructField -}}
-        {{ index .Names 0 }} {{ if .Type.Pointer -}}*{{ end -}}{{ $.QualName .Type }} {{ if .Tag }}` + "`" + `{{ .Tag }}` + "`" + `{{ end }}
+        {{ .Name }} {{ if .Type.Pointer -}}*{{ end -}}{{ $.QualName .Type }} {{ if .Tag }}` + "`" + `{{ .Tag }}` + "`" + `{{ end }}
 	{{ end }}
 	}
 	if err := json.Unmarshal(data, &discrim); err != nil {
 		return err
 	}
-	switch discrim.{{ index .StructField.Names 0 }} {
+	switch discrim.{{ $t.StructField.Name }} {
 	{{ range .Cases -}}
 	case "{{ .Value }}":
-		m.{{ index $t.StructField.Names 0 }} = new({{ $.QualName .TypeInfo }})
+		m.{{ $t.StructField.Name }} = new({{ $.QualName .TypeInfo }})
 	{{ end -}}
     {{ with .Default -}}
 	default:
-        m.{{ index $t.StructField.Names 0}} = new({{ $.QualName .TypeInfo }})
+        m.{{ $t.StructField.Name }} = new({{ $.QualName .TypeInfo }})
 	{{ else -}}
 	default:
-		return fmt.Errorf("unknown discriminator: %v", discrim.{{ index .StructField.Names 0 }})
+		return fmt.Errorf("unknown discriminator: %v", discrim.{{ $t.StructField.Name }})
 	{{ end -}}
 	}
-	return json.Unmarshal(data, m.{{ index .StructField.Names 0 }})
+	return json.Unmarshal(data, m.{{ .StructField.Name }})
 }
 
 func (m *{{ $.Type.Name }}) MarshalJSON() ([]byte, error) {
-	return json.Marshal(m.{{ index .StructField.Names 0 }})
+	return json.Marshal(m.{{ .StructField.Name }})
 }
 {{ end }}
 {{ end }}
