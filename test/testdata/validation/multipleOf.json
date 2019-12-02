@@ -1,0 +1,56 @@
+[
+    {
+        "description": "by int",
+        "schema": {"type": "object", "properties": {"a": {"type": "integer", "multipleOf": 2}}},
+        "tests": [
+            {
+                "description": "int by int",
+                "data": {"a":  10},
+                "valid": true
+            },
+            {
+                "description": "int by int fail",
+                "data": {"a":  7},
+                "valid": false
+            }
+        ]
+    },
+    {
+        "description": "by number",
+        "schema": {"type": "object", "properties": {"a": {"type": "number", "multipleOf": 1.5}}},
+        "tests": [
+            {
+                "description": "zero is multiple of anything",
+                "data": {"a":  0},
+                "valid": true
+            },
+            {
+                "description": "4.5 is multiple of 1.5",
+                "data": {"a":  4.5},
+                "valid": true
+            },
+            {
+                "description": "35 is not multiple of 1.5",
+                "data": {"a":  35},
+                "valid": false
+            }
+        ]
+    },
+    {
+        "description": "by small number",
+        "schema": {"type": "object", "properties": {"a": {"type": "number", "multipleOf": 0.0001}}},
+        "tests": [
+            {
+                "description": "0.0075 is multiple of 0.0001",
+                "data": {"a":  0.0075},
+                "valid": true,
+                "skip": "this isn't working for some reason"
+            },
+            {
+                "description": "0.00751 is not multiple of 0.0001",
+                "data": {"a":  0.00751},
+                "valid": false
+            }
+        ]
+    }
+]

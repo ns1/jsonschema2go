@@ -20,8 +20,8 @@ func (m *Bar) Validate() error {
 
 func (m *Bar) MarshalJSON() ([]byte, error) {
 	inner := struct {
-		Name        *string `json:"name,omitempty"`
-		foobar.Blob `json:",omitempty"`
+		Name *string `json:"name,omitempty"`
+		foobar.Blob
 	}{
 		Blob: m.Blob,
 	}

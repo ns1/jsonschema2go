@@ -138,7 +138,7 @@ func (c *cachingLoader) fetch(ctx context.Context, rawURL string) schemaResult {
 	case "file":
 		var err error
 		if r, err = os.Open(u.Path); err != nil {
-			return schemaResult{nil, fmt.Errorf("unable to open %q: %w", u.Path, err)}
+			return schemaResult{nil, fmt.Errorf("unable to open %q from %q: %w", u.Path, rawURL, err)}
 		}
 	case "http", "https":
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)

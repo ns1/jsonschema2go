@@ -160,7 +160,7 @@ var (
 func (m *{{ $.Type.Name }}) Validate() error {
 {{ range .Fields -}}
 {{ if $.Required .JSONName -}}
-	if !m.{{ .Name }}.Set {
+	if {{ if ne .Type.Name "interface{}" -}}!m.{{ .Name }}.Set{{ else -}}m.{{ .Name }} == nil{{ end }} {
 		return &{{ $.Type.Name }}ValidationError{
 			errType: "required",
 			jsonField: "{{ .JSONName }}",
@@ -177,7 +177,7 @@ func (m *{{ $.Type.Name }}) Validate() error {
         return err
 	}
 {{ else -}}
-    if {{ if not ($.Required $Field.JSONName) -}}m.{{ $Field.Name }}.Set &&{{ end -}}{{ .TestExpr (.NameSpace $.Type.Name $Field.Name) (printf "m.%s%s" $Field.Name $Field.Type.ValPath) }} {
+    if {{ if not ($.Required $Field.JSONName) -}}{{ if ne $Field.Type.Name "interface{}" -}}m.{{ $Field.Name }}.Set{{ else -}}m.{{ $Field.Name }} != nil{{ end }} &&{{ end -}}{{ .TestExpr (.NameSpace $.Type.Name $Field.Name) (printf "m.%s%s" $Field.Name $Field.Type.ValPath) }} {
 		return &{{ $.Type.Name }}ValidationError{
     		errType: "{{ .Name }}",
 			jsonField: "{{ $Field.JSONName }}",
@@ -199,7 +199,7 @@ func (m *{{ $.Type.Name }}) MarshalJSON() ([]byte, error) {
 {{ if eq .Type.GoPath "github.com/jwilner/jsonschema2go/boxed" -}}
 		{{ .Name }} *{{ $t.Primitive .Type }} ` + "`" + `json:"{{ .JSONName }},omitempty"` + "`" + `
 {{ else -}}
-		{{ .Name }} {{ $.QualName .Type }} ` + "`" + `json:"{{ .JSONName }},omitempty"` + "`" + `
+		{{ .Name }} {{ $.QualName .Type }} {{ if .Name -}}` + "`" + `json:"{{ .JSONName }},omitempty"` + "`" + `{{ end }}
 {{ end -}}
 {{ end -}}
 	} {

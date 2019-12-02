@@ -5,25 +5,34 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/jwilner/jsonschema2go/boxed"
+	"regexp"
 )
 
 // Bar gives you some dumb info
 type Bar struct {
 	Name boxed.String `json:"name"`
-	Blob
 }
 
+var (
+	barNamePattern = regexp.MustCompile(`^[0-9]+$`)
+)
+
 func (m *Bar) Validate() error {
+	if m.Name.Set && !barNamePattern.MatchString(m.Name.String) {
+		return &BarValidationError{
+			errType:   "pattern",
+			jsonField: "name",
+			field:     "Name",
+			message:   fmt.Sprintf("must match '^[0-9]+$' but got %q", m.Name.String),
+		}
+	}
 	return nil
 }
 
 func (m *Bar) MarshalJSON() ([]byte, error) {
 	inner := struct {
 		Name *string `json:"name,omitempty"`
-		Blob
-	}{
-		Blob: m.Blob,
-	}
+	}{}
 	if m.Name.Set {
 		inner.Name = &m.Name.String
 	}
@@ -51,47 +60,5 @@ func (e *BarValidationError) Message() string {
 }
 
 func (e *BarValidationError) Error() string {
-	return fmt.Sprintf("%v: %v", e.field, e.message)
-}
-
-type Blob struct {
-	Count boxed.Int64 `json:"count"`
-}
-
-func (m *Blob) Validate() error {
-	return nil
-}
-
-func (m *Blob) MarshalJSON() ([]byte, error) {
-	inner := struct {
-		Count *int64 `json:"count,omitempty"`
-	}{}
-	if m.Count.Set {
-		inner.Count = &m.Count.Int64
-	}
-	return json.Marshal(inner)
-}
-
-type BlobValidationError struct {
-	errType, jsonField, field, message string
-}
-
-func (e *BlobValidationError) ErrType() string {
-	return e.errType
-}
-
-func (e *BlobValidationError) JSONField() string {
-	return e.jsonField
-}
-
-func (e *BlobValidationError) Field() string {
-	return e.field
-}
-
-func (e *BlobValidationError) Message() string {
-	return e.message
-}
-
-func (e *BlobValidationError) Error() string {
 	return fmt.Sprintf("%v: %v", e.field, e.message)
 }

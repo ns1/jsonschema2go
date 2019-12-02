@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/jwilner/jsonschema2go/boxed"
+	"math"
 	"regexp"
 )
 
@@ -88,7 +89,7 @@ func (m *Bar) Validate() error {
 			errType:   "multipleOf",
 			jsonField: "integer",
 			field:     "Integer",
-			message:   fmt.Sprintf("must be a multiple of 3 but was %d", m.Integer.Int64),
+			message:   fmt.Sprintf("must be a multiple of 3 but was %v", m.Integer.Int64),
 		}
 	}
 	if m.Number.Set && m.Number.Float64 > 1 {
@@ -105,6 +106,14 @@ func (m *Bar) Validate() error {
 			jsonField: "number",
 			field:     "Number",
 			message:   fmt.Sprintf("must be greater than or equal to 1 but was %v", m.Number.Float64),
+		}
+	}
+	if m.Number.Set && math.Mod(m.Number.Float64, 3.2) != 0 {
+		return &BarValidationError{
+			errType:   "multipleOf",
+			jsonField: "number",
+			field:     "Number",
+			message:   fmt.Sprintf("must be a multiple of 3.2 but was %v", m.Number.Float64),
 		}
 	}
 	if len(m.String.String) > 10 {

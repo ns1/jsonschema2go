@@ -17,7 +17,10 @@ import (
 	"errors"
 )
 
-var ErrMarshalUnset = errors.New("marshalling unset var")
+var (
+	ErrMarshalUnset = errors.New("marshalling unset var")
+	ErrNullInvalid  = errors.New("null is invalid")
+)
 
 {{ range . -}}
 type {{ .WrapperName }} struct {
@@ -33,7 +36,14 @@ func (m {{ .WrapperName }}) MarshalJSON() ([]byte, error) {
 }
 
 func (m *{{ .WrapperName }}) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &m.{{ .WrapperName }})
+	if string(data) == "null" {
+		return ErrNullInvalid
+	}
+	if err := json.Unmarshal(data, &m.{{ .WrapperName }}); err != nil {
+		return err
+	}
+	m.Set = true
+	return nil
 }
 {{ end -}}
 `))
