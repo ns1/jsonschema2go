@@ -15,6 +15,7 @@
     "number": {
       "type": "number",
       "minimum": 1.0,
+      "multipleOf": 3.2,
       "maximum": 10.2
     },
     "integer": {

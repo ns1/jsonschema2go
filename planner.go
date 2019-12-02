@@ -2,6 +2,7 @@ package jsonschema2go
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -280,7 +281,7 @@ func planSimpleObject(ctx context.Context, helper *PlanningHelper, schema *Schem
 }
 
 func planSimpleArray(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
-	if schema.ChooseType() != Array || schema.Items == nil || schema.Items.Items == nil {
+	if schema.ChooseType() != Array {
 		return nil, nil
 	}
 	tInfo := helper.TypeInfo(schema)
@@ -288,16 +289,23 @@ func planSimpleArray(ctx context.Context, helper *PlanningHelper, schema *Schema
 		return nil, nil
 	}
 
-	itemSchema, err := schema.Items.Items.Resolve(ctx, schema, helper)
-	if err != nil {
-		return nil, err
+	var itemSchema *Schema
+	if schema.Items != nil && schema.Items.Items != nil {
+		var err error
+		if itemSchema, err = schema.Items.Items.Resolve(ctx, schema, helper); err != nil {
+			return nil, err
+		}
 	}
 	a := &ArrayPlan{typeInfo: tInfo, id: schema.CalcID}
 	a.Comment = schema.Annotations.GetString("description")
-	if a.ItemType = helper.TypeInfo(itemSchema); a.ItemType.Unknown() {
-		return nil, nil
+	if itemSchema != nil {
+		if a.ItemType = helper.TypeInfo(itemSchema); a.ItemType.Unknown() {
+			return nil, nil
+		}
+	} else {
+		a.ItemType = TypeInfo{Name: "interface{}"}
 	}
-	if !a.ItemType.BuiltIn() {
+	if !a.ItemType.BuiltIn() && itemSchema != nil {
 		if err := helper.Dep(ctx, itemSchema); err != nil {
 			return nil, err
 		}
@@ -323,9 +331,14 @@ func planSimpleArray(ctx context.Context, helper *PlanningHelper, schema *Schema
 		})
 	}
 	if schema.UniqueItems {
+		if a.ItemType.Name == "interface{}" {
+			return nil, errors.New("cannot take unique items of unhashable type")
+		}
 		a.validators = append(a.validators, Validator{Name: "uniqueItems"})
 	}
-	a.itemValidators = validators(itemSchema)
+	if itemSchema != nil {
+		a.itemValidators = validators(itemSchema)
+	}
 	return a, nil
 }
 
@@ -453,17 +466,24 @@ func validators(schema *Schema) (styles []Validator) {
 				),
 			})
 		}
-	case Integer:
+	case Integer, Number:
 		if schema.MultipleOf != nil {
-			multipleOf := strconv.FormatInt(int64(*schema.MultipleOf), 10)
+			multipleOf := fmt.Sprintf("%v", *schema.MultipleOf)
+
+			var deps []TypeInfo
+			expr := templateStr(`{{ .QualifiedName }}%` + multipleOf + ` != 0`)
+			if schema.ChooseType() == Number {
+				deps = []TypeInfo{{GoPath: "math", Name: "Mod"}}
+				expr = templateStr(`math.Mod({{ .QualifiedName }}, ` + multipleOf + `) != 0`)
+			}
+
 			styles = append(styles, Validator{
 				Name:        "multipleOf",
-				testExpr:    templateStr(`{{ .QualifiedName }}%` + multipleOf + ` != 0`),
-				sprintfExpr: templateStr(`"must be a multiple of ` + multipleOf + ` but was %d", {{ .QualifiedName }}`),
+				testExpr:    expr,
+				sprintfExpr: templateStr(`"must be a multiple of ` + multipleOf + ` but was %v", {{ .QualifiedName }}`),
+				Deps:        deps,
 			})
 		}
-		fallthrough
-	case Number:
 		numValidator := func(name, comparator, english string, limit float64, exclusive bool) {
 			if exclusive {
 				name += "Exclusive"

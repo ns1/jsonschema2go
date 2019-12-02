@@ -1,0 +1,468 @@
+[
+    {
+        "description": "integer type matches integers",
+        "schema": {"type": "object", "properties": {"a": {"type": "integer"}}},
+        "tests": [
+            {
+                "description": "an integer is an integer",
+                "data": {"a":  1},
+                "valid": true
+            },
+            {
+                "description": "a float is not an integer",
+                "data": {"a":  1.1},
+                "valid": false
+            },
+            {
+                "description": "a string is not an integer",
+                "data": {"a":  "foo"},
+                "valid": false
+            },
+            {
+                "description": "a string is still not an integer, even if it looks like one",
+                "data": {"a":  "1"},
+                "valid": false
+            },
+            {
+                "description": "an object is not an integer",
+                "data": {"a":  {}},
+                "valid": false
+            },
+            {
+                "description": "an array is not an integer",
+                "data": {"a":  []},
+                "valid": false
+            },
+            {
+                "description": "a boolean is not an integer",
+                "data": {"a":  true},
+                "valid": false
+            },
+            {
+                "description": "null is not an integer",
+                "data": {"a":  null},
+                "valid": false
+            }
+        ]
+    },
+    {
+        "description": "number type matches numbers",
+        "schema": {"type": "object", "properties": {"a": {"type": "number"}}},
+        "tests": [
+            {
+                "description": "an integer is a number",
+                "data": {"a":  1},
+                "valid": true
+            },
+            {
+                "description": "a float is a number",
+                "data": {"a":  1.1},
+                "valid": true
+            },
+            {
+                "description": "a string is not a number",
+                "data": {"a":  "foo"},
+                "valid": false
+            },
+            {
+                "description": "a string is still not a number, even if it looks like one",
+                "data": {"a":  "1"},
+                "valid": false
+            },
+            {
+                "description": "an object is not a number",
+                "data": {"a":  {}},
+                "valid": false
+            },
+            {
+                "description": "an array is not a number",
+                "data": {"a":  []},
+                "valid": false
+            },
+            {
+                "description": "a boolean is not a number",
+                "data": {"a":  true},
+                "valid": false
+            },
+            {
+                "description": "null is not a number",
+                "data": {"a":  null},
+                "valid": false
+            }
+        ]
+    },
+    {
+        "description": "string type matches strings",
+        "schema": {"type": "object", "properties": {"a": {"type": "string"}}},
+        "tests": [
+            {
+                "description": "1 is not a string",
+                "data": {"a":  1},
+                "valid": false
+            },
+            {
+                "description": "a float is not a string",
+                "data": {"a":  1.1},
+                "valid": false
+            },
+            {
+                "description": "a string is a string",
+                "data": {"a":  "foo"},
+                "valid": true
+            },
+            {
+                "description": "a string is still a string, even if it looks like a number",
+                "data": {"a":  "1"},
+                "valid": true
+            },
+            {
+                "description": "an empty string is still a string",
+                "data": {"a":  ""},
+                "valid": true
+            },
+            {
+                "description": "an object is not a string",
+                "data": {"a":  {}},
+                "valid": false
+            },
+            {
+                "description": "an array is not a string",
+                "data": {"a":  []},
+                "valid": false
+            },
+            {
+                "description": "a boolean is not a string",
+                "data": {"a":  true},
+                "valid": false
+            },
+            {
+                "description": "null is not a string",
+                "data": {"a":  null},
+                "valid": false
+            }
+        ]
+    },
+    {
+        "description": "object type matches objects",
+        "schema": {"type": "object", "properties": {"b": {"type": "object"}}},
+        "tests": [
+            {
+                "description": "an integer is not an object",
+                "data": {"b":  1},
+                "valid": false
+            },
+            {
+                "description": "a float is not an object",
+                "data": {"b":  1.1},
+                "valid": false
+            },
+            {
+                "description": "a string is not an object",
+                "data": {"b":  "foo"},
+                "valid": false
+            },
+            {
+                "description": "an object is an object",
+                "data": {"b":  {}},
+                "valid": true
+            },
+            {
+                "description": "an array is not an object",
+                "data": {"b":  []},
+                "valid": false
+            },
+            {
+                "description": "a boolean is not an object",
+                "data": {"b":  true},
+                "valid": false
+            },
+            {
+                "description": "null is not an object",
+                "data": {"b":  null},
+                "valid": false,
+                "skip": "we permit null as an object"
+            }
+        ]
+    },
+    {
+        "description": "array type matches arrays",
+        "schema": {"type": "array"},
+        "tests": [
+            {
+                "description": "an integer is not an array",
+                "data": 1,
+                "valid": false
+            },
+            {
+                "description": "a float is not an array",
+                "data": 1.1,
+                "valid": false
+            },
+            {
+                "description": "a string is not an array",
+                "data": "foo",
+                "valid": false
+            },
+            {
+                "description": "an object is not an array",
+                "data": {},
+                "valid": false
+            },
+            {
+                "description": "an array is an array",
+                "data": [],
+                "valid": true
+            },
+            {
+                "description": "a boolean is not an array",
+                "data": true,
+                "valid": false
+            },
+            {
+                "description": "null is not an array",
+                "data": null,
+                "valid": false,
+                "skip": "we permit null as an array"
+            }
+        ]
+    },
+    {
+        "description": "boolean type matches booleans",
+        "schema": {"type":  "object", "properties": {"a": {"type": "boolean"}}},
+        "tests": [
+            {
+                "description": "an integer is not a boolean",
+                "data": {"a":  1},
+                "valid": false
+            },
+            {
+                "description": "zero is not a boolean",
+                "data": {"a":  0},
+                "valid": false
+            },
+            {
+                "description": "a float is not a boolean",
+                "data": {"a":  1.1},
+                "valid": false
+            },
+            {
+                "description": "a string is not a boolean",
+                "data": {"a":  "foo"},
+                "valid": false
+            },
+            {
+                "description": "an empty string is not a boolean",
+                "data": {"a":  ""},
+                "valid": false
+            },
+            {
+                "description": "an object is not a boolean",
+                "data": {"a":  {}},
+                "valid": false
+            },
+            {
+                "description": "an array is not a boolean",
+                "data": {"a":  []},
+                "valid": false
+            },
+            {
+                "description": "true is a boolean",
+                "data": {"a":  true},
+                "valid": true
+            },
+            {
+                "description": "false is a boolean",
+                "data": {"a":  false},
+                "valid": true
+            },
+            {
+                "description": "null is not a boolean",
+                "data": {"a":  null},
+                "valid": false
+            }
+        ]
+    },
+    {
+        "description": "null type matches only the null object",
+        "schema": {"type": "object", "properties": {"a": {"type": "null"}}},
+        "skip": "we currently represent a null field with the empty interface",
+        "tests": [
+            {
+                "description": "an integer is not null",
+                "data": {"a":  1},
+                "valid": false
+            },
+            {
+                "description": "a float is not null",
+                "data": {"a":  1.1},
+                "valid": false
+            },
+            {
+                "description": "zero is not null",
+                "data": {"a":  0},
+                "valid": false
+            },
+            {
+                "description": "a string is not null",
+                "data": {"a":  "foo"},
+                "valid": false
+            },
+            {
+                "description": "an empty string is not null",
+                "data": {"a":  ""},
+                "valid": false
+            },
+            {
+                "description": "an object is not null",
+                "data": {"a":  {}},
+                "valid": false
+            },
+            {
+                "description": "an array is not null",
+                "data": {"a":  []},
+                "valid": false
+            },
+            {
+                "description": "true is not null",
+                "data": {"a":  true},
+                "valid": false
+            },
+            {
+                "description": "false is not null",
+                "data": {"a":  false},
+                "valid": false
+            },
+            {
+                "description": "null is null",
+                "data": {"a":  null},
+                "valid": true
+            }
+        ]
+    },
+    {
+        "description": "multiple types can be specified in an array",
+        "schema": {"type": ["integer", "string"]},
+        "skip": "we do not currently support ors in type",
+        "tests": [
+            {
+                "description": "an integer is valid",
+                "data": 1,
+                "valid": true
+            },
+            {
+                "description": "a string is valid",
+                "data": "foo",
+                "valid": true
+            },
+            {
+                "description": "a float is invalid",
+                "data": 1.1,
+                "valid": false
+            },
+            {
+                "description": "an object is invalid",
+                "data": {},
+                "valid": false
+            },
+            {
+                "description": "an array is invalid",
+                "data": [],
+                "valid": false
+            },
+            {
+                "description": "a boolean is invalid",
+                "data": true,
+                "valid": false
+            },
+            {
+                "description": "null is invalid",
+                "data": null,
+                "valid": false
+            }
+        ]
+    },
+    {
+        "description": "type as array with one item",
+        "schema": {"type":  "object", "properties": {"a": {"type": ["string"]}}},
+        "tests": [
+            {
+                "description": "string is valid",
+                "data": {"a":  "foo"},
+                "valid": true
+            },
+            {
+                "description": "number is invalid",
+                "data": {"a":  123},
+                "valid": false
+            }
+        ]
+    },
+    {
+        "description": "type: array or object",
+        "schema": {
+            "type": ["array", "object"]
+        },
+        "skip": "we do not currently support ors in types",
+        "tests": [
+            {
+                "description": "array is valid",
+                "data": [1,2,3],
+                "valid": true
+            },
+            {
+                "description": "object is valid",
+                "data": {"foo": 123},
+                "valid": true
+            },
+            {
+                "description": "number is invalid",
+                "data": 123,
+                "valid": false
+            },
+            {
+                "description": "string is invalid",
+                "data": "foo",
+                "valid": false
+            },
+            {
+                "description": "null is invalid",
+                "data": null,
+                "valid": false
+            }
+        ]
+    },
+    {
+        "description": "type: array, object or null",
+        "schema": {
+            "type": ["array", "object", "null"]
+        },
+        "skip": "we do not currently support ors in type",
+        "tests": [
+            {
+                "description": "array is valid",
+                "data": [1,2,3],
+                "valid": true
+            },
+            {
+                "description": "object is valid",
+                "data": {"foo": 123},
+                "valid": true
+            },
+            {
+                "description": "null is valid",
+                "data": null,
+                "valid": true
+            },
+            {
+                "description": "number is invalid",
+                "data": 123,
+                "valid": false
+            },
+            {
+                "description": "string is invalid",
+                "data": "foo",
+                "valid": false
+            }
+        ]
+    }
+]

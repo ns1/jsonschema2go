@@ -5,7 +5,10 @@ import (
 	"errors"
 )
 
-var ErrMarshalUnset = errors.New("marshalling unset var")
+var (
+	ErrMarshalUnset = errors.New("marshalling unset var")
+	ErrNullInvalid  = errors.New("null is invalid")
+)
 
 type Int64 struct {
 	Int64 int64
@@ -20,7 +23,14 @@ func (m Int64) MarshalJSON() ([]byte, error) {
 }
 
 func (m *Int64) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &m.Int64)
+	if string(data) == "null" {
+		return ErrNullInvalid
+	}
+	if err := json.Unmarshal(data, &m.Int64); err != nil {
+		return err
+	}
+	m.Set = true
+	return nil
 }
 
 type Float64 struct {
@@ -36,7 +46,14 @@ func (m Float64) MarshalJSON() ([]byte, error) {
 }
 
 func (m *Float64) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &m.Float64)
+	if string(data) == "null" {
+		return ErrNullInvalid
+	}
+	if err := json.Unmarshal(data, &m.Float64); err != nil {
+		return err
+	}
+	m.Set = true
+	return nil
 }
 
 type String struct {
@@ -52,7 +69,14 @@ func (m String) MarshalJSON() ([]byte, error) {
 }
 
 func (m *String) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &m.String)
+	if string(data) == "null" {
+		return ErrNullInvalid
+	}
+	if err := json.Unmarshal(data, &m.String); err != nil {
+		return err
+	}
+	m.Set = true
+	return nil
 }
 
 type Bool struct {
@@ -68,5 +92,32 @@ func (m Bool) MarshalJSON() ([]byte, error) {
 }
 
 func (m *Bool) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &m.Bool)
+	if string(data) == "null" {
+		return ErrNullInvalid
+	}
+	if err := json.Unmarshal(data, &m.Bool); err != nil {
+		return err
+	}
+	m.Set = true
+	return nil
+}
+
+type Any struct {
+	Any interface{}
+	Set bool
+}
+
+func (m Any) MarshalJSON() ([]byte, error) {
+	if !m.Set {
+		return nil, ErrMarshalUnset
+	}
+	return json.Marshal(m.Any)
+}
+
+func (m *Any) UnmarshalJSON(data []byte) error {
+	if err := json.Unmarshal(data, &m.Any); err != nil {
+		return err
+	}
+	m.Set = true
+	return nil
 }
