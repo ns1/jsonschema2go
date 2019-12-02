@@ -101,23 +101,3 @@ func (m *Bool) UnmarshalJSON(data []byte) error {
 	m.Set = true
 	return nil
 }
-
-type Any struct {
-	Any interface{}
-	Set bool
-}
-
-func (m Any) MarshalJSON() ([]byte, error) {
-	if !m.Set {
-		return nil, ErrMarshalUnset
-	}
-	return json.Marshal(m.Any)
-}
-
-func (m *Any) UnmarshalJSON(data []byte) error {
-	if err := json.Unmarshal(data, &m.Any); err != nil {
-		return err
-	}
-	m.Set = true
-	return nil
-}
