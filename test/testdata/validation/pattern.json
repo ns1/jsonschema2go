@@ -1,0 +1,29 @@
+[
+    {
+        "description": "pattern validation",
+        "schema": {"type": "object", "properties": {"a": {"type": "string", "pattern": "^a*$"}}},
+        "tests": [
+            {
+                "description": "a matching pattern is valid",
+                "data": {"a":  "aaa"},
+                "valid": true
+            },
+            {
+                "description": "a non-matching pattern is invalid",
+                "data": {"a":  "abc"},
+                "valid": false
+            }
+        ]
+    },
+    {
+        "description": "pattern is not anchored",
+        "schema": {"type": "object", "properties": {"a": {"pattern": "a+"}}},
+        "tests": [
+            {
+                "description": "matches a substring",
+                "data": {"a":  "xxaayy"},
+                "valid": true
+            }
+        ]
+    }
+]

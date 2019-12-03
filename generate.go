@@ -158,7 +158,7 @@ func print(
 			if err := func() error {
 				path := mapper(k)
 				if path == "" {
-					return fmt.Errorf("unable to map go path: %q", k[0])
+					return fmt.Errorf("unable to map go path: %q", k)
 				}
 				if err := os.MkdirAll(path, 0755); err != nil {
 					return fmt.Errorf("unable to create dir %q: %w", path, err)
