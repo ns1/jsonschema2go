@@ -24,45 +24,45 @@ var (
 func (m Bar) Validate() error {
 	for i := range m {
 		if len(m[i]) < 3 {
-			return &BarValidationError{
-				"minLength",
-				fmt.Sprintf("%d", i),
-				fmt.Sprintf("%d", i),
-				fmt.Sprintf("must have length greater than 3 but was %d", len(m[i])),
+			return &validationError{
+				errType:   "minLength",
+				jsonField: fmt.Sprintf("%d", i),
+				field:     fmt.Sprintf("%d", i),
+				message:   fmt.Sprintf("must have length greater than 3 but was %d", len(m[i])),
 			}
 		}
 		if !barItemsPattern.MatchString(m[i]) {
-			return &BarValidationError{
-				"pattern",
-				fmt.Sprintf("%d", i),
-				fmt.Sprintf("%d", i),
-				fmt.Sprintf("must match '^[a-z]{10}$' but got %q", m[i]),
+			return &validationError{
+				errType:   "pattern",
+				jsonField: fmt.Sprintf("%d", i),
+				field:     fmt.Sprintf("%d", i),
+				message:   fmt.Sprintf("must match '^[a-z]{10}$' but got %q", m[i]),
 			}
 		}
 	}
 	return nil
 }
 
-type BarValidationError struct {
+type validationError struct {
 	errType, jsonField, field, message string
 }
 
-func (e *BarValidationError) ErrType() string {
+func (e *validationError) ErrType() string {
 	return e.errType
 }
 
-func (e *BarValidationError) JSONField() string {
+func (e *validationError) JSONField() string {
 	return e.jsonField
 }
 
-func (e *BarValidationError) Field() string {
+func (e *validationError) Field() string {
 	return e.field
 }
 
-func (e *BarValidationError) Message() string {
+func (e *validationError) Message() string {
 	return e.message
 }
 
-func (e *BarValidationError) Error() string {
+func (e *validationError) Error() string {
 	return fmt.Sprintf("%v: %v", e.field, e.message)
 }

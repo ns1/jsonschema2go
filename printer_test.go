@@ -132,27 +132,27 @@ func (m *Bob) Validate() error {
 	return nil
 }
 
-type BobValidationError struct {
+type validationError struct {
 	errType, jsonField, field, message string
 }
 
-func (e *BobValidationError) ErrType() string {
+func (e *validationError) ErrType() string {
 	return e.errType
 }
 
-func (e *BobValidationError) JSONField() string {
+func (e *validationError) JSONField() string {
 	return e.jsonField
 }
 
-func (e *BobValidationError) Field() string {
+func (e *validationError) Field() string {
 	return e.field
 }
 
-func (e *BobValidationError) Message() string {
+func (e *validationError) Message() string {
 	return e.message
 }
 
-func (e *BobValidationError) Error() string {
+func (e *validationError) Error() string {
 	return fmt.Sprintf("%v: %v", e.field, e.message)
 }
 
@@ -199,27 +199,27 @@ func (m *Bob) Validate() error {
 	return nil
 }
 
-type BobValidationError struct {
+type validationError struct {
 	errType, jsonField, field, message string
 }
 
-func (e *BobValidationError) ErrType() string {
+func (e *validationError) ErrType() string {
 	return e.errType
 }
 
-func (e *BobValidationError) JSONField() string {
+func (e *validationError) JSONField() string {
 	return e.jsonField
 }
 
-func (e *BobValidationError) Field() string {
+func (e *validationError) Field() string {
 	return e.field
 }
 
-func (e *BobValidationError) Message() string {
+func (e *validationError) Message() string {
 	return e.message
 }
 
-func (e *BobValidationError) Error() string {
+func (e *validationError) Error() string {
 	return fmt.Sprintf("%v: %v", e.field, e.message)
 }
 
@@ -277,27 +277,27 @@ func (m *Bob) Validate() error {
 	return nil
 }
 
-type BobValidationError struct {
+type validationError struct {
 	errType, jsonField, field, message string
 }
 
-func (e *BobValidationError) ErrType() string {
+func (e *validationError) ErrType() string {
 	return e.errType
 }
 
-func (e *BobValidationError) JSONField() string {
+func (e *validationError) JSONField() string {
 	return e.jsonField
 }
 
-func (e *BobValidationError) Field() string {
+func (e *validationError) Field() string {
 	return e.field
 }
 
-func (e *BobValidationError) Message() string {
+func (e *validationError) Message() string {
 	return e.message
 }
 
-func (e *BobValidationError) Error() string {
+func (e *validationError) Error() string {
 	return fmt.Sprintf("%v: %v", e.field, e.message)
 }
 
@@ -340,27 +340,27 @@ func (m *Bob) Validate() error {
 	return nil
 }
 
-type BobValidationError struct {
+type validationError struct {
 	errType, jsonField, field, message string
 }
 
-func (e *BobValidationError) ErrType() string {
+func (e *validationError) ErrType() string {
 	return e.errType
 }
 
-func (e *BobValidationError) JSONField() string {
+func (e *validationError) JSONField() string {
 	return e.jsonField
 }
 
-func (e *BobValidationError) Field() string {
+func (e *validationError) Field() string {
 	return e.field
 }
 
-func (e *BobValidationError) Message() string {
+func (e *validationError) Message() string {
 	return e.message
 }
 
-func (e *BobValidationError) Error() string {
+func (e *validationError) Error() string {
 	return fmt.Sprintf("%v: %v", e.field, e.message)
 }
 
@@ -411,30 +411,6 @@ func (m *Bob) Validate() error {
 	return nil
 }
 
-type BobValidationError struct {
-	errType, jsonField, field, message string
-}
-
-func (e *BobValidationError) ErrType() string {
-	return e.errType
-}
-
-func (e *BobValidationError) JSONField() string {
-	return e.jsonField
-}
-
-func (e *BobValidationError) Field() string {
-	return e.field
-}
-
-func (e *BobValidationError) Message() string {
-	return e.message
-}
-
-func (e *BobValidationError) Error() string {
-	return fmt.Sprintf("%v: %v", e.field, e.message)
-}
-
 // OtherType does lots of cool things
 type OtherType struct {
 	Count int ` + "`" + `json:"count,omitempty"` + "`" + `
@@ -444,27 +420,27 @@ func (m *OtherType) Validate() error {
 	return nil
 }
 
-type OtherTypeValidationError struct {
+type validationError struct {
 	errType, jsonField, field, message string
 }
 
-func (e *OtherTypeValidationError) ErrType() string {
+func (e *validationError) ErrType() string {
 	return e.errType
 }
 
-func (e *OtherTypeValidationError) JSONField() string {
+func (e *validationError) JSONField() string {
 	return e.jsonField
 }
 
-func (e *OtherTypeValidationError) Field() string {
+func (e *validationError) Field() string {
 	return e.field
 }
 
-func (e *OtherTypeValidationError) Message() string {
+func (e *validationError) Message() string {
 	return e.message
 }
 
-func (e *OtherTypeValidationError) Error() string {
+func (e *validationError) Error() string {
 	return fmt.Sprintf("%v: %v", e.field, e.message)
 }
 
@@ -512,30 +488,6 @@ func (m *OtherType) Validate() error {
 	return nil
 }
 
-type OtherTypeValidationError struct {
-	errType, jsonField, field, message string
-}
-
-func (e *OtherTypeValidationError) ErrType() string {
-	return e.errType
-}
-
-func (e *OtherTypeValidationError) JSONField() string {
-	return e.jsonField
-}
-
-func (e *OtherTypeValidationError) Field() string {
-	return e.field
-}
-
-func (e *OtherTypeValidationError) Message() string {
-	return e.message
-}
-
-func (e *OtherTypeValidationError) Error() string {
-	return fmt.Sprintf("%v: %v", e.field, e.message)
-}
-
 // Bob does lots of cool things
 type Bob []OtherType
 
@@ -550,27 +502,27 @@ func (m Bob) Validate() error {
 	return nil
 }
 
-type BobValidationError struct {
+type validationError struct {
 	errType, jsonField, field, message string
 }
 
-func (e *BobValidationError) ErrType() string {
+func (e *validationError) ErrType() string {
 	return e.errType
 }
 
-func (e *BobValidationError) JSONField() string {
+func (e *validationError) JSONField() string {
 	return e.jsonField
 }
 
-func (e *BobValidationError) Field() string {
+func (e *validationError) Field() string {
 	return e.field
 }
 
-func (e *BobValidationError) Message() string {
+func (e *validationError) Message() string {
 	return e.message
 }
 
-func (e *BobValidationError) Error() string {
+func (e *validationError) Error() string {
 	return fmt.Sprintf("%v: %v", e.field, e.message)
 }
 

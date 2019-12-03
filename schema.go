@@ -344,24 +344,6 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (s *Schema) Meta() SchemaMeta {
-	return SchemaMeta{
-		ID:          s.ID,
-		CalcID:      s.CalcID,
-		BestType:    s.ChooseType(),
-		Annotations: s.Annotations,
-		Flags:       s.Config,
-	}
-}
-
-type SchemaMeta struct {
-	ID          string
-	BestType    SimpleType
-	Annotations TagMap
-	Flags       config
-	CalcID      *url.URL
-}
-
 type Loader interface {
 	Load(ctx context.Context, u *url.URL) (*Schema, error)
 }

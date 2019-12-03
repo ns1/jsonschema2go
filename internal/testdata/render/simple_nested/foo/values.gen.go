@@ -16,26 +16,26 @@ func (m *A) Validate() error {
 	return nil
 }
 
-type AValidationError struct {
+type validationError struct {
 	errType, jsonField, field, message string
 }
 
-func (e *AValidationError) ErrType() string {
+func (e *validationError) ErrType() string {
 	return e.errType
 }
 
-func (e *AValidationError) JSONField() string {
+func (e *validationError) JSONField() string {
 	return e.jsonField
 }
 
-func (e *AValidationError) Field() string {
+func (e *validationError) Field() string {
 	return e.field
 }
 
-func (e *AValidationError) Message() string {
+func (e *validationError) Message() string {
 	return e.message
 }
 
-func (e *AValidationError) Error() string {
+func (e *validationError) Error() string {
 	return fmt.Sprintf("%v: %v", e.field, e.message)
 }

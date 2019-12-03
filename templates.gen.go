@@ -41,7 +41,7 @@ func (m {{ $.Type.Name }}) Validate() error {
     seen := make(map[{{$.QualName $.ItemType}}]bool)
     for _, v := range m {
         if seen[v] {
-            return &{{ $.Type.Name }}ValidationError{
+            return &validationError{
                 errType: "uniqueItems",
                 jsonField: "",
                 field: "",
@@ -52,7 +52,7 @@ func (m {{ $.Type.Name }}) Validate() error {
     }
 {{ else -}}
 	if {{ .TestExpr (.NameSpace $.Type.Name) "m" }} {
-		return &{{ $.Type.Name }}ValidationError{
+		return &validationError{
 			"{{ .Name }}",
 			"",
 			"",
@@ -70,11 +70,11 @@ func (m {{ $.Type.Name }}) Validate() error {
         }
         {{ else -}}
         if {{ .TestExpr (.NameSpace $.Type.Name "Items") "m[i]" }} {
-            return &{{ $.Type.Name }}ValidationError{
-                "{{ .Name }}",
-                fmt.Sprintf("%d", i),
-                fmt.Sprintf("%d", i),
-                fmt.Sprintf({{ .Sprintf (.NameSpace $.Type.Name "Items") "m[i]" }}),
+            return &validationError{
+                errType: "{{ .Name }}",
+                jsonField: fmt.Sprintf("%d", i),
+                field: fmt.Sprintf("%d", i),
+                message: fmt.Sprintf({{ .Sprintf (.NameSpace $.Type.Name "Items") "m[i]" }}),
             }
         }
         {{ end -}}
@@ -82,30 +82,6 @@ func (m {{ $.Type.Name }}) Validate() error {
     }
 {{ end -}}
 	return nil
-}
-
-type {{ .Type.Name }}ValidationError struct {
-    errType, jsonField, field, message string
-}
-
-func (e *{{ .Type.Name }}ValidationError) ErrType() string {
-    return e.errType
-}
-
-func (e *{{ .Type.Name }}ValidationError) JSONField() string {
-    return e.jsonField
-}
-
-func (e *{{ .Type.Name }}ValidationError) Field() string {
-    return e.field
-}
-
-func (e *{{ .Type.Name }}ValidationError) Message() string {
-    return e.message
-}
-
-func (e *{{ .Type.Name }}ValidationError) Error() string {
-    return fmt.Sprintf("%v: %v", e.field, e.message)
 }
 `))
 	valueTmpl = template.Must(valueTmpl.New("enum.tmpl").Parse(`{{/* gotype: github.com/jwilner/jsonschema2go.enumPlanContext */}}
@@ -143,7 +119,7 @@ func (m {{ .Type.Name }}) Validate() error {
 {{ end -}}
 type {{ .Type.Name }} struct {
 {{ range .Fields -}}
-	{{ .Name }} {{ if .Type.Pointer -}}*{{ end -}}{{ $.QualName .Type }} {{ if .Tag }}` + "`" + `{{ .Tag }}` + "`" + `{{ end }}
+	{{ .FieldDecl }}
 {{ end }}
 }
 
@@ -159,9 +135,9 @@ var (
 
 func (m *{{ $.Type.Name }}) Validate() error {
 {{ range .Fields -}}
-{{ if $.Required .JSONName -}}
-	if {{ if ne .Type.Name "interface{}" -}}!m.{{ .Name }}.Set{{ else -}}m.{{ .Name }} == nil{{ end }} {
-		return &{{ $.Type.Name }}ValidationError{
+{{ if .Required -}}
+	if {{ .TestSetExpr false }} {
+		return &validationError{
 			errType: "required",
 			jsonField: "{{ .JSONName }}",
 			field: "{{ .Name }}",
@@ -177,12 +153,12 @@ func (m *{{ $.Type.Name }}) Validate() error {
         return err
 	}
 {{ else -}}
-    if {{ if not ($.Required $Field.JSONName) -}}{{ if ne $Field.Type.Name "interface{}" -}}m.{{ $Field.Name }}.Set{{ else -}}m.{{ $Field.Name }} != nil{{ end }} &&{{ end -}}{{ .TestExpr (.NameSpace $.Type.Name $Field.Name) (printf "m.%s%s" $Field.Name $Field.Type.ValPath) }} {
-		return &{{ $.Type.Name }}ValidationError{
+    if {{ if not $Field.Required -}}{{ $Field.TestSetExpr true }} &&{{ end -}}{{ .TestExpr ($Field.NameSpace) ($Field.DerefExpr) }} {
+		return &validationError{
     		errType: "{{ .Name }}",
 			jsonField: "{{ $Field.JSONName }}",
 			field: "{{ $Field.Name }}",
-			message: fmt.Sprintf({{ .Sprintf (.NameSpace $.Type.Name $Field.Name) (printf "m.%s%s" $Field.Name $Field.Type.ValPath) }}),
+			message: fmt.Sprintf({{ .Sprintf ($Field.NameSpace) ($Field.DerefExpr) }}),
 		}
 	}
 {{ end -}}
@@ -196,24 +172,18 @@ func (m *{{ $.Type.Name }}) Validate() error {
 func (m *{{ $.Type.Name }}) MarshalJSON() ([]byte, error) {
     inner := struct {
 {{ range $.Fields -}}
-{{ if eq .Type.GoPath "github.com/jwilner/jsonschema2go/boxed" -}}
-		{{ .Name }} *{{ $t.Primitive .Type }} ` + "`" + `json:"{{ .JSONName }},omitempty"` + "`" + `
-{{ else -}}
-		{{ .Name }} {{ $.QualName .Type }} {{ if .Name -}}` + "`" + `json:"{{ .JSONName }},omitempty"` + "`" + `{{ end }}
-{{ end -}}
+{{ .InnerFieldDecl }}
 {{ end -}}
 	} {
 {{ range $.Fields -}}
-{{ if ne .Type.GoPath "github.com/jwilner/jsonschema2go/boxed" -}}
-		{{ .FieldReference }}: m.{{ .FieldReference }},
+{{ with .InnerFieldLiteral -}}
+{{ . }}
 {{ end -}}
 {{ end -}}
 	}
 {{ range $.Fields -}}
-{{ if eq .Type.GoPath "github.com/jwilner/jsonschema2go/boxed" -}}
-    if m.{{ .Name }}.Set {
-        inner.{{ .Name }} = &m.{{ .Name }}{{ .Type.ValPath }}
-	}
+{{ with .InnerFieldAssignment -}}
+{{ . }}
 {{ end -}}
 {{ end -}}
 	return json.Marshal(inner)
@@ -251,30 +221,6 @@ func (m *{{ $.Type.Name }}) MarshalJSON() ([]byte, error) {
 {{ end }}
 {{ end }}
 
-type {{ .Type.Name }}ValidationError struct {
-	errType, jsonField, field, message string
-}
-
-func (e *{{ .Type.Name }}ValidationError) ErrType() string {
-	return e.errType
-}
-
-func (e *{{ .Type.Name }}ValidationError) JSONField() string {
-	return e.jsonField
-}
-
-func (e *{{ .Type.Name }}ValidationError) Field() string {
-	return e.field
-}
-
-func (e *{{ .Type.Name }}ValidationError) Message() string {
-	return e.message
-}
-
-func (e *{{ .Type.Name }}ValidationError) Error() string {
-	return fmt.Sprintf("%v: %v", e.field, e.message)
-}
-
 `))
 	valueTmpl = template.Must(valueTmpl.New("values.tmpl").Parse(`{{/* gotype: github.com/jwilner/jsonschema2go.Plans */}}
 // Code generated by jsonschema2go. DO NOT EDIT.
@@ -299,5 +245,29 @@ import (
 {{ range .Enums }}
 {{ template "enum.tmpl" . }}
 {{ end -}}
+
+type validationError struct {
+    errType, jsonField, field, message string
+}
+
+func (e *validationError) ErrType() string {
+    return e.errType
+}
+
+func (e *validationError) JSONField() string {
+    return e.jsonField
+}
+
+func (e *validationError) Field() string {
+    return e.field
+}
+
+func (e *validationError) Message() string {
+    return e.message
+}
+
+func (e *validationError) Error() string {
+    return fmt.Sprintf("%v: %v", e.field, e.message)
+}
 `))
 }

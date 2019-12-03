@@ -19,30 +19,6 @@ func (m *Bar) Validate() error {
 	return nil
 }
 
-type BarValidationError struct {
-	errType, jsonField, field, message string
-}
-
-func (e *BarValidationError) ErrType() string {
-	return e.errType
-}
-
-func (e *BarValidationError) JSONField() string {
-	return e.jsonField
-}
-
-func (e *BarValidationError) Field() string {
-	return e.field
-}
-
-func (e *BarValidationError) Message() string {
-	return e.message
-}
-
-func (e *BarValidationError) Error() string {
-	return fmt.Sprintf("%v: %v", e.field, e.message)
-}
-
 type Foo struct {
 	Name boxed.String `json:"name"`
 }
@@ -61,26 +37,26 @@ func (m *Foo) MarshalJSON() ([]byte, error) {
 	return json.Marshal(inner)
 }
 
-type FooValidationError struct {
+type validationError struct {
 	errType, jsonField, field, message string
 }
 
-func (e *FooValidationError) ErrType() string {
+func (e *validationError) ErrType() string {
 	return e.errType
 }
 
-func (e *FooValidationError) JSONField() string {
+func (e *validationError) JSONField() string {
 	return e.jsonField
 }
 
-func (e *FooValidationError) Field() string {
+func (e *validationError) Field() string {
 	return e.field
 }
 
-func (e *FooValidationError) Message() string {
+func (e *validationError) Message() string {
 	return e.message
 }
 
-func (e *FooValidationError) Error() string {
+func (e *validationError) Error() string {
 	return fmt.Sprintf("%v: %v", e.field, e.message)
 }

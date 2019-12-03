@@ -26,7 +26,7 @@ var (
 
 func (m *Bar) Validate() error {
 	if !m.String.Set {
-		return &BarValidationError{
+		return &validationError{
 			errType:   "required",
 			jsonField: "string",
 			field:     "String",
@@ -37,7 +37,7 @@ func (m *Bar) Validate() error {
 		return err
 	}
 	if m.ExclInteger.Set && m.ExclInteger.Int64 >= 1 {
-		return &BarValidationError{
+		return &validationError{
 			errType:   "maximumExclusive",
 			jsonField: "exclInteger",
 			field:     "ExclInteger",
@@ -45,7 +45,7 @@ func (m *Bar) Validate() error {
 		}
 	}
 	if m.ExclInteger.Set && m.ExclInteger.Int64 <= 1 {
-		return &BarValidationError{
+		return &validationError{
 			errType:   "minimumExclusive",
 			jsonField: "exclInteger",
 			field:     "ExclInteger",
@@ -53,7 +53,7 @@ func (m *Bar) Validate() error {
 		}
 	}
 	if m.ExclNumber.Set && m.ExclNumber.Float64 >= 1 {
-		return &BarValidationError{
+		return &validationError{
 			errType:   "maximumExclusive",
 			jsonField: "exclNumber",
 			field:     "ExclNumber",
@@ -61,7 +61,7 @@ func (m *Bar) Validate() error {
 		}
 	}
 	if m.ExclNumber.Set && m.ExclNumber.Float64 <= 1 {
-		return &BarValidationError{
+		return &validationError{
 			errType:   "minimumExclusive",
 			jsonField: "exclNumber",
 			field:     "ExclNumber",
@@ -69,7 +69,7 @@ func (m *Bar) Validate() error {
 		}
 	}
 	if m.Integer.Set && m.Integer.Int64 > 1 {
-		return &BarValidationError{
+		return &validationError{
 			errType:   "maximum",
 			jsonField: "integer",
 			field:     "Integer",
@@ -77,7 +77,7 @@ func (m *Bar) Validate() error {
 		}
 	}
 	if m.Integer.Set && m.Integer.Int64 < 1 {
-		return &BarValidationError{
+		return &validationError{
 			errType:   "minimum",
 			jsonField: "integer",
 			field:     "Integer",
@@ -85,7 +85,7 @@ func (m *Bar) Validate() error {
 		}
 	}
 	if m.Integer.Set && m.Integer.Int64%3 != 0 {
-		return &BarValidationError{
+		return &validationError{
 			errType:   "multipleOf",
 			jsonField: "integer",
 			field:     "Integer",
@@ -93,7 +93,7 @@ func (m *Bar) Validate() error {
 		}
 	}
 	if m.Number.Set && m.Number.Float64 > 1 {
-		return &BarValidationError{
+		return &validationError{
 			errType:   "maximum",
 			jsonField: "number",
 			field:     "Number",
@@ -101,7 +101,7 @@ func (m *Bar) Validate() error {
 		}
 	}
 	if m.Number.Set && m.Number.Float64 < 1 {
-		return &BarValidationError{
+		return &validationError{
 			errType:   "minimum",
 			jsonField: "number",
 			field:     "Number",
@@ -109,7 +109,7 @@ func (m *Bar) Validate() error {
 		}
 	}
 	if m.Number.Set && math.Mod(m.Number.Float64, 3.2) != 0 {
-		return &BarValidationError{
+		return &validationError{
 			errType:   "multipleOf",
 			jsonField: "number",
 			field:     "Number",
@@ -117,7 +117,7 @@ func (m *Bar) Validate() error {
 		}
 	}
 	if len(m.String.String) > 10 {
-		return &BarValidationError{
+		return &validationError{
 			errType:   "maxLength",
 			jsonField: "string",
 			field:     "String",
@@ -125,7 +125,7 @@ func (m *Bar) Validate() error {
 		}
 	}
 	if len(m.String.String) < 3 {
-		return &BarValidationError{
+		return &validationError{
 			errType:   "minLength",
 			jsonField: "string",
 			field:     "String",
@@ -133,7 +133,7 @@ func (m *Bar) Validate() error {
 		}
 	}
 	if !barStringPattern.MatchString(m.String.String) {
-		return &BarValidationError{
+		return &validationError{
 			errType:   "pattern",
 			jsonField: "string",
 			field:     "String",
@@ -172,30 +172,6 @@ func (m *Bar) MarshalJSON() ([]byte, error) {
 	return json.Marshal(inner)
 }
 
-type BarValidationError struct {
-	errType, jsonField, field, message string
-}
-
-func (e *BarValidationError) ErrType() string {
-	return e.errType
-}
-
-func (e *BarValidationError) JSONField() string {
-	return e.jsonField
-}
-
-func (e *BarValidationError) Field() string {
-	return e.field
-}
-
-func (e *BarValidationError) Message() string {
-	return e.message
-}
-
-func (e *BarValidationError) Error() string {
-	return fmt.Sprintf("%v: %v", e.field, e.message)
-}
-
 // generated from https://example.com/testdata/render/field_validators/foo/bar.json#/properties/array
 type BarArray []string
 
@@ -208,7 +184,7 @@ func (m BarArray) MarshalJSON() ([]byte, error) {
 
 func (m BarArray) Validate() error {
 	if len(m) > 10 {
-		return &BarArrayValidationError{
+		return &validationError{
 			"maxItems",
 			"",
 			"",
@@ -216,7 +192,7 @@ func (m BarArray) Validate() error {
 		}
 	}
 	if len(m) < 1 {
-		return &BarArrayValidationError{
+		return &validationError{
 			"minItems",
 			"",
 			"",
@@ -226,7 +202,7 @@ func (m BarArray) Validate() error {
 	seen := make(map[string]bool)
 	for _, v := range m {
 		if seen[v] {
-			return &BarArrayValidationError{
+			return &validationError{
 				errType:   "uniqueItems",
 				jsonField: "",
 				field:     "",
@@ -238,26 +214,26 @@ func (m BarArray) Validate() error {
 	return nil
 }
 
-type BarArrayValidationError struct {
+type validationError struct {
 	errType, jsonField, field, message string
 }
 
-func (e *BarArrayValidationError) ErrType() string {
+func (e *validationError) ErrType() string {
 	return e.errType
 }
 
-func (e *BarArrayValidationError) JSONField() string {
+func (e *validationError) JSONField() string {
 	return e.jsonField
 }
 
-func (e *BarArrayValidationError) Field() string {
+func (e *validationError) Field() string {
 	return e.field
 }
 
-func (e *BarArrayValidationError) Message() string {
+func (e *validationError) Message() string {
 	return e.message
 }
 
-func (e *BarArrayValidationError) Error() string {
+func (e *validationError) Error() string {
 	return fmt.Sprintf("%v: %v", e.field, e.message)
 }

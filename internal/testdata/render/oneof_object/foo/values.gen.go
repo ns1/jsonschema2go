@@ -38,30 +38,6 @@ func (m *Bar) MarshalJSON() ([]byte, error) {
 	return json.Marshal(m.Direction)
 }
 
-type BarValidationError struct {
-	errType, jsonField, field, message string
-}
-
-func (e *BarValidationError) ErrType() string {
-	return e.errType
-}
-
-func (e *BarValidationError) JSONField() string {
-	return e.jsonField
-}
-
-func (e *BarValidationError) Field() string {
-	return e.field
-}
-
-func (e *BarValidationError) Message() string {
-	return e.message
-}
-
-func (e *BarValidationError) Error() string {
-	return fmt.Sprintf("%v: %v", e.field, e.message)
-}
-
 type Left struct {
 	Direction boxed.String `json:"direction"`
 	Value     boxed.Int64  `json:"value"`
@@ -83,30 +59,6 @@ func (m *Left) MarshalJSON() ([]byte, error) {
 		inner.Value = &m.Value.Int64
 	}
 	return json.Marshal(inner)
-}
-
-type LeftValidationError struct {
-	errType, jsonField, field, message string
-}
-
-func (e *LeftValidationError) ErrType() string {
-	return e.errType
-}
-
-func (e *LeftValidationError) JSONField() string {
-	return e.jsonField
-}
-
-func (e *LeftValidationError) Field() string {
-	return e.field
-}
-
-func (e *LeftValidationError) Message() string {
-	return e.message
-}
-
-func (e *LeftValidationError) Error() string {
-	return fmt.Sprintf("%v: %v", e.field, e.message)
 }
 
 type Right struct {
@@ -132,26 +84,26 @@ func (m *Right) MarshalJSON() ([]byte, error) {
 	return json.Marshal(inner)
 }
 
-type RightValidationError struct {
+type validationError struct {
 	errType, jsonField, field, message string
 }
 
-func (e *RightValidationError) ErrType() string {
+func (e *validationError) ErrType() string {
 	return e.errType
 }
 
-func (e *RightValidationError) JSONField() string {
+func (e *validationError) JSONField() string {
 	return e.jsonField
 }
 
-func (e *RightValidationError) Field() string {
+func (e *validationError) Field() string {
 	return e.field
 }
 
-func (e *RightValidationError) Message() string {
+func (e *validationError) Message() string {
 	return e.message
 }
 
-func (e *RightValidationError) Error() string {
+func (e *validationError) Error() string {
 	return fmt.Sprintf("%v: %v", e.field, e.message)
 }

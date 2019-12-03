@@ -33,26 +33,26 @@ func (m *Bar) MarshalJSON() ([]byte, error) {
 	return json.Marshal(inner)
 }
 
-type BarValidationError struct {
+type validationError struct {
 	errType, jsonField, field, message string
 }
 
-func (e *BarValidationError) ErrType() string {
+func (e *validationError) ErrType() string {
 	return e.errType
 }
 
-func (e *BarValidationError) JSONField() string {
+func (e *validationError) JSONField() string {
 	return e.jsonField
 }
 
-func (e *BarValidationError) Field() string {
+func (e *validationError) Field() string {
 	return e.field
 }
 
-func (e *BarValidationError) Message() string {
+func (e *validationError) Message() string {
 	return e.message
 }
 
-func (e *BarValidationError) Error() string {
+func (e *validationError) Error() string {
 	return fmt.Sprintf("%v: %v", e.field, e.message)
 }

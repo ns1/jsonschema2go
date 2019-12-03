@@ -21,3 +21,27 @@ import (
 {{ range .Enums }}
 {{ template "enum.tmpl" . }}
 {{ end -}}
+
+type validationError struct {
+    errType, jsonField, field, message string
+}
+
+func (e *validationError) ErrType() string {
+    return e.errType
+}
+
+func (e *validationError) JSONField() string {
+    return e.jsonField
+}
+
+func (e *validationError) Field() string {
+    return e.field
+}
+
+func (e *validationError) Message() string {
+    return e.message
+}
+
+func (e *validationError) Error() string {
+    return fmt.Sprintf("%v: %v", e.field, e.message)
+}

@@ -20,7 +20,7 @@ var (
 
 func (m *Bar) Validate() error {
 	if !m.Baz.Set {
-		return &BarValidationError{
+		return &validationError{
 			errType:   "required",
 			jsonField: "baz",
 			field:     "Baz",
@@ -28,7 +28,7 @@ func (m *Bar) Validate() error {
 		}
 	}
 	if !barBazPattern.MatchString(m.Baz.String) {
-		return &BarValidationError{
+		return &validationError{
 			errType:   "pattern",
 			jsonField: "baz",
 			field:     "Baz",
@@ -36,7 +36,7 @@ func (m *Bar) Validate() error {
 		}
 	}
 	if m.Count.Set && m.Count.Int64 < 3 {
-		return &BarValidationError{
+		return &validationError{
 			errType:   "minimum",
 			jsonField: "count",
 			field:     "Count",
@@ -60,26 +60,26 @@ func (m *Bar) MarshalJSON() ([]byte, error) {
 	return json.Marshal(inner)
 }
 
-type BarValidationError struct {
+type validationError struct {
 	errType, jsonField, field, message string
 }
 
-func (e *BarValidationError) ErrType() string {
+func (e *validationError) ErrType() string {
 	return e.errType
 }
 
-func (e *BarValidationError) JSONField() string {
+func (e *validationError) JSONField() string {
 	return e.jsonField
 }
 
-func (e *BarValidationError) Field() string {
+func (e *validationError) Field() string {
 	return e.field
 }
 
-func (e *BarValidationError) Message() string {
+func (e *validationError) Message() string {
 	return e.message
 }
 
-func (e *BarValidationError) Error() string {
+func (e *validationError) Error() string {
 	return fmt.Sprintf("%v: %v", e.field, e.message)
 }

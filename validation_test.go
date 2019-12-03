@@ -95,11 +95,7 @@ type validator struct {
 func (v *validator) Validate(ctx context.Context, msg json.RawMessage) (string, error) {
 	cmd := exec.CommandContext(ctx, v.harnessPath)
 	cmd.Stdin = bytes.NewReader(msg)
-
-	cmd.Stderr = os.Stderr
-
 	out, err := cmd.Output()
-
 	return string(out), err
 }
 

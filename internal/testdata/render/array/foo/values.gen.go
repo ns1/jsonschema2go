@@ -15,30 +15,6 @@ func (m *Bar) Validate() error {
 	return nil
 }
 
-type BarValidationError struct {
-	errType, jsonField, field, message string
-}
-
-func (e *BarValidationError) ErrType() string {
-	return e.errType
-}
-
-func (e *BarValidationError) JSONField() string {
-	return e.jsonField
-}
-
-func (e *BarValidationError) Field() string {
-	return e.field
-}
-
-func (e *BarValidationError) Message() string {
-	return e.message
-}
-
-func (e *BarValidationError) Error() string {
-	return fmt.Sprintf("%v: %v", e.field, e.message)
-}
-
 // Barz gives you lots of dumb info
 type Barz []Bar
 
@@ -58,26 +34,26 @@ func (m Barz) Validate() error {
 	return nil
 }
 
-type BarzValidationError struct {
+type validationError struct {
 	errType, jsonField, field, message string
 }
 
-func (e *BarzValidationError) ErrType() string {
+func (e *validationError) ErrType() string {
 	return e.errType
 }
 
-func (e *BarzValidationError) JSONField() string {
+func (e *validationError) JSONField() string {
 	return e.jsonField
 }
 
-func (e *BarzValidationError) Field() string {
+func (e *validationError) Field() string {
 	return e.field
 }
 
-func (e *BarzValidationError) Message() string {
+func (e *validationError) Message() string {
 	return e.message
 }
 
-func (e *BarzValidationError) Error() string {
+func (e *validationError) Error() string {
 	return fmt.Sprintf("%v: %v", e.field, e.message)
 }

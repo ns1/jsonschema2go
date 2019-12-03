@@ -30,7 +30,7 @@ func (m {{ $.Type.Name }}) Validate() error {
     seen := make(map[{{$.QualName $.ItemType}}]bool)
     for _, v := range m {
         if seen[v] {
-            return &{{ $.Type.Name }}ValidationError{
+            return &validationError{
                 errType: "uniqueItems",
                 jsonField: "",
                 field: "",
@@ -41,7 +41,7 @@ func (m {{ $.Type.Name }}) Validate() error {
     }
 {{ else -}}
 	if {{ .TestExpr (.NameSpace $.Type.Name) "m" }} {
-		return &{{ $.Type.Name }}ValidationError{
+		return &validationError{
 			"{{ .Name }}",
 			"",
 			"",
@@ -59,11 +59,11 @@ func (m {{ $.Type.Name }}) Validate() error {
         }
         {{ else -}}
         if {{ .TestExpr (.NameSpace $.Type.Name "Items") "m[i]" }} {
-            return &{{ $.Type.Name }}ValidationError{
-                "{{ .Name }}",
-                fmt.Sprintf("%d", i),
-                fmt.Sprintf("%d", i),
-                fmt.Sprintf({{ .Sprintf (.NameSpace $.Type.Name "Items") "m[i]" }}),
+            return &validationError{
+                errType: "{{ .Name }}",
+                jsonField: fmt.Sprintf("%d", i),
+                field: fmt.Sprintf("%d", i),
+                message: fmt.Sprintf({{ .Sprintf (.NameSpace $.Type.Name "Items") "m[i]" }}),
             }
         }
         {{ end -}}
@@ -71,28 +71,4 @@ func (m {{ $.Type.Name }}) Validate() error {
     }
 {{ end -}}
 	return nil
-}
-
-type {{ .Type.Name }}ValidationError struct {
-    errType, jsonField, field, message string
-}
-
-func (e *{{ .Type.Name }}ValidationError) ErrType() string {
-    return e.errType
-}
-
-func (e *{{ .Type.Name }}ValidationError) JSONField() string {
-    return e.jsonField
-}
-
-func (e *{{ .Type.Name }}ValidationError) Field() string {
-    return e.field
-}
-
-func (e *{{ .Type.Name }}ValidationError) Message() string {
-    return e.message
-}
-
-func (e *{{ .Type.Name }}ValidationError) Error() string {
-    return fmt.Sprintf("%v: %v", e.field, e.message)
 }

@@ -3,12 +3,12 @@ package jsonschema2go
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"go/format"
 	"io"
 	"path"
 	"sort"
-	"strings"
 	"text/template"
 	"unicode"
 )
@@ -87,16 +87,6 @@ func (i *Imports) QualName(info TypeInfo) string {
 	return fmt.Sprintf("%s.%s", qual, info.Name)
 }
 
-func (*Imports) NameSpace(names ...string) string {
-	name := strings.Join(names, "")
-	if len(name) > 0 {
-		runes := []rune(name)
-		runes[0] = unicode.ToLower(runes[0])
-		name = string(runes)
-	}
-	return name
-}
-
 func newPrinter(tmpl *template.Template) *Printer {
 	if tmpl == nil {
 		tmpl = valueTmpl
@@ -139,10 +129,10 @@ type Plans struct {
 	plans   []Plan
 }
 
-func (ps *Plans) Structs() (structs []structPlanContext) {
+func (ps *Plans) Structs() (structs []*structPlanContext) {
 	for _, p := range ps.plans {
 		if s, ok := p.(*StructPlan); ok {
-			structs = append(structs, structPlanContext{ps.Imports, s})
+			structs = append(structs, &structPlanContext{ps.Imports, s})
 		}
 	}
 	sort.Slice(structs, func(i, j int) bool {
@@ -178,6 +168,121 @@ func (ps *Plans) Enums() (enums []enumPlanContext) {
 type structPlanContext struct {
 	*Imports
 	*StructPlan
+}
+
+type EnrichedStructField struct {
+	StructField
+	StructPlan *StructPlan
+	Imports    *Imports
+}
+
+func (s *structPlanContext) Fields() (fields []EnrichedStructField) {
+	for _, f := range s.StructPlan.Fields {
+		fields = append(fields, EnrichedStructField{
+			StructField: f,
+			StructPlan:  s.StructPlan,
+			Imports:     s.Imports,
+		})
+	}
+	return
+}
+
+func (f *EnrichedStructField) Required() bool {
+	return f.StructPlan.Required(f.JSONName)
+}
+
+func (f *EnrichedStructField) DerefExpr() string {
+	valPath := f.Type.valPath
+	if valPath != "" {
+		valPath = "." + valPath
+	}
+	return fmt.Sprintf("m.%s%s", f.Name, valPath)
+}
+
+func (f *EnrichedStructField) TestSetExpr(pos bool) (string, error) {
+	if f.Type.GoPath == "github.com/jwilner/jsonschema2go/boxed" {
+		op := ""
+		if !pos {
+			op = "!"
+		}
+		return fmt.Sprintf("%sm.%s.Set", op, f.Name), nil
+	}
+	if f.Type.Name == "interface{}" || f.Type.Pointer {
+		op := "!="
+		if !pos {
+			op = "=="
+		}
+		return fmt.Sprintf("m.%s %s nil", f.Name, op), nil
+	}
+	return "", errors.New("no test set expr")
+}
+
+func (f *EnrichedStructField) NameSpace() string {
+	name := fmt.Sprintf("%s%s", f.StructPlan.Type().Name, f.Name)
+	if len(name) > 0 {
+		runes := []rune(name)
+		runes[0] = unicode.ToLower(runes[0])
+		name = string(runes)
+	}
+	return name
+}
+
+func (f *EnrichedStructField) FieldDecl() string {
+	typ := f.Imports.QualName(f.Type)
+	if f.Type.Pointer {
+		typ = "*" + typ
+	}
+	tag := f.Tag
+	if tag != "" {
+		tag = "`" + tag + "`"
+	}
+	return f.Name + " " + typ + tag
+}
+
+func (f *EnrichedStructField) InnerFieldDecl() string {
+	typName := f.Imports.QualName(f.Type)
+	if f.Type.GoPath == "github.com/jwilner/jsonschema2go/boxed" {
+		s := []rune(f.Type.Name)
+		s[0] = unicode.ToLower(s[0])
+
+		typName = "*" + string(s)
+	}
+	tag := ""
+	if f.Name != "" { // not an embedded struct
+		tag = fmt.Sprintf("`json:"+`"%s,omitempty"`+"`", f.JSONName)
+	}
+	return fmt.Sprintf("%s %s %s", f.Name, typName, tag)
+}
+
+func (f *EnrichedStructField) InnerFieldLiteral() string {
+	if f.Type.GoPath == "github.com/jwilner/jsonschema2go/boxed" {
+		return ""
+	}
+	fieldRef := f.Name
+	if fieldRef == "" { // embedded
+		fieldRef = f.Type.Name
+	}
+	return fmt.Sprintf("%s: m.%s,", fieldRef, fieldRef)
+}
+
+var fieldAssignmentTmpl = templateStr(`if m.{{ .Name }}.Set {
+	inner.{{ .Name }} = &m.{{ .Name }}{{ .ValPath }}
+}`)
+
+func (f *EnrichedStructField) InnerFieldAssignment() (string, error) {
+	if f.Type.GoPath != "github.com/jwilner/jsonschema2go/boxed" {
+		return "", nil
+	}
+
+	var w bytes.Buffer
+	err := fieldAssignmentTmpl.Execute(&w, struct {
+		Name    string
+		ValPath string
+	}{
+		Name:    f.Name,
+		ValPath: f.Type.ValPath(),
+	})
+	return w.String(), err
 }
 
 type arrayPlanContext struct {

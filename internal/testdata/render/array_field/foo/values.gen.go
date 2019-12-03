@@ -19,30 +19,6 @@ func (m *Example) Validate() error {
 	return nil
 }
 
-type ExampleValidationError struct {
-	errType, jsonField, field, message string
-}
-
-func (e *ExampleValidationError) ErrType() string {
-	return e.errType
-}
-
-func (e *ExampleValidationError) JSONField() string {
-	return e.jsonField
-}
-
-func (e *ExampleValidationError) Field() string {
-	return e.field
-}
-
-func (e *ExampleValidationError) Message() string {
-	return e.message
-}
-
-func (e *ExampleValidationError) Error() string {
-	return fmt.Sprintf("%v: %v", e.field, e.message)
-}
-
 // generated from https://example.com/testdata/render/array_field/foo/inner.json
 type Inner struct {
 	Name  boxed.String `json:"name"`
@@ -66,30 +42,6 @@ func (m *Inner) MarshalJSON() ([]byte, error) {
 	return json.Marshal(inner)
 }
 
-type InnerValidationError struct {
-	errType, jsonField, field, message string
-}
-
-func (e *InnerValidationError) ErrType() string {
-	return e.errType
-}
-
-func (e *InnerValidationError) JSONField() string {
-	return e.jsonField
-}
-
-func (e *InnerValidationError) Field() string {
-	return e.field
-}
-
-func (e *InnerValidationError) Message() string {
-	return e.message
-}
-
-func (e *InnerValidationError) Error() string {
-	return fmt.Sprintf("%v: %v", e.field, e.message)
-}
-
 // generated from https://example.com/testdata/render/array_field/foo/example.json#/properties/options
 type ExampleOptions []Inner
 
@@ -109,26 +61,26 @@ func (m ExampleOptions) Validate() error {
 	return nil
 }
 
-type ExampleOptionsValidationError struct {
+type validationError struct {
 	errType, jsonField, field, message string
 }
 
-func (e *ExampleOptionsValidationError) ErrType() string {
+func (e *validationError) ErrType() string {
 	return e.errType
 }
 
-func (e *ExampleOptionsValidationError) JSONField() string {
+func (e *validationError) JSONField() string {
 	return e.jsonField
 }
 
-func (e *ExampleOptionsValidationError) Field() string {
+func (e *validationError) Field() string {
 	return e.field
 }
 
-func (e *ExampleOptionsValidationError) Message() string {
+func (e *validationError) Message() string {
 	return e.message
 }
 
-func (e *ExampleOptionsValidationError) Error() string {
+func (e *validationError) Error() string {
 	return fmt.Sprintf("%v: %v", e.field, e.message)
 }
