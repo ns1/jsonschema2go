@@ -41,7 +41,7 @@ var (
 
 func (m *Bar) Validate() error {
 	if !m.Baz.Set {
-		return &BarValidationError{
+		return &validationError{
 			errType:   "required",
 			jsonField: "baz",
 			field:     "Baz",
@@ -49,7 +49,7 @@ func (m *Bar) Validate() error {
 		}
 	}
 	if !barBazPattern.MatchString(m.Baz.String) {
-		return &BarValidationError{
+		return &validationError{
 			errType:   "pattern",
 			jsonField: "baz",
 			field:     "Baz",
@@ -57,7 +57,7 @@ func (m *Bar) Validate() error {
 		}
 	}
 	if m.Count.Set && m.Count.Int64 < 3 {
-		return &BarValidationError{
+		return &validationError{
 			errType:   "minimum",
 			jsonField: "count",
 			field:     "Count",
@@ -66,7 +66,6 @@ func (m *Bar) Validate() error {
 	}
 	return nil
 }
-
 ```
 
 ## Types
