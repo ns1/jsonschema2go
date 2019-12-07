@@ -22,5 +22,8 @@ func (m {{ .Type.Name }}) Validate() error {
 {{ end -}}
     }
 {{ end -}}
-    return fmt.Errorf("unknown {{ .Type.Name }}: %v", m)
+    return &validationError{
+        errType: "unknown_member",
+        message: fmt.Sprintf("unknown value provided for {{ $.Type.Name }}: %v", m),
+    }
 }

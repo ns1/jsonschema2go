@@ -1,0 +1,10 @@
+{
+  "id": "https://example.com/testdata/generate/array_field/foo/inner.json",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "value": {}
+  }
+}

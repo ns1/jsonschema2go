@@ -1,0 +1,24 @@
+{
+  "description": "Bar gives you some dumb info",
+  "type": "object",
+  "x-jsonschema2go": {
+    "gopath": "github.com/jwilner/jsonschema2go/internal/testdata/generate/exclude/foo#Bar"
+  },
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "inner": {
+      "x-jsonschema2go": {
+        "gopath": "github.com/jwilner/jsonschema2go/internal/testdata/generate/exclude/foo#Excluded",
+        "exclude": true
+      },
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

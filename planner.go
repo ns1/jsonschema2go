@@ -11,13 +11,16 @@ import (
 	"unicode"
 )
 
-var Composite = CompositePlanner{
-	plannerFunc(planAllOfObject),
-	plannerFunc(planSimpleObject),
-	plannerFunc(planSimpleArray),
-	plannerFunc(planEnum),
-	plannerFunc(planDiscriminatedOneOfObject),
-}
+var (
+	Composite = CompositePlanner{
+		plannerFunc(planAllOfObject),
+		plannerFunc(planSimpleObject),
+		plannerFunc(planSimpleArray),
+		plannerFunc(planEnum),
+		plannerFunc(planDiscriminatedOneOfObject),
+	}
+	subschemaValidator = Validator{Name: "subschema"}
+)
 
 type Planner interface {
 	Plan(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error)
@@ -215,12 +218,18 @@ func planAllOfObject(ctx context.Context, helper *PlanningHelper, schema *Schema
 		return nil, nil
 	}
 
-	tInfo := helper.TypeInfo(schema)
+	tInfo := helper.TypeInfoHinted(schema, composedTyp)
 	if tInfo.Unknown() {
 		return nil, nil
 	}
 	s := &StructPlan{typeInfo: tInfo, id: schema.CalcID}
 	s.Comment = schema.Annotations.GetString("description")
+
+	fields, err := deriveStructFields(ctx, helper, schema)
+	if err != nil {
+		return nil, err
+	}
+	s.Fields = fields
 
 	for _, subSchema := range schemas {
 		tInfo := helper.TypeInfo(subSchema)
@@ -234,7 +243,7 @@ func planAllOfObject(ctx context.Context, helper *PlanningHelper, schema *Schema
 			continue
 		}
 		// this is a named type, add an embedded field for the subschema type
-		s.Fields = append(s.Fields, StructField{Type: tInfo})
+		s.Fields = append(s.Fields, StructField{Type: tInfo, validators: []Validator{subschemaValidator}})
 		if err := helper.Dep(ctx, subSchema); err != nil {
 			return nil, err
 		}
@@ -265,10 +274,6 @@ func planSimpleObject(ctx context.Context, helper *PlanningHelper, schema *Schem
 		return nil, err
 	}
 	s.Fields = fields
-	s.required = make(map[string]bool)
-	for _, r := range schema.Required {
-		s.required[r] = true
-	}
 
 	for _, f := range fields {
 		if f.Type.GoPath == "github.com/jwilner/jsonschema2go/boxed" {
@@ -433,7 +438,7 @@ func validators(schema *Schema) (styles []Validator) {
 	switch schema.ChooseType() {
 	case Array, Object:
 		if !schema.Config.NoValidate {
-			styles = append(styles, Validator{Name: "subschema"})
+			styles = append(styles, subschemaValidator)
 		}
 	case String:
 		if schema.Pattern != nil {
@@ -525,6 +530,11 @@ func deriveStructFields(
 	helper *PlanningHelper,
 	schema *Schema,
 ) (fields []StructField, _ error) {
+	required := make(map[string]bool, len(schema.Required))
+	for _, k := range schema.Required {
+		required[k] = true
+	}
+
 	var properties []string
 	for k := range schema.Properties {
 		properties = append(properties, k)
@@ -591,6 +601,7 @@ func deriveStructFields(
 				JSONName:   name,
 				Type:       fType,
 				Tag:        tag,
+				Required:   required[name],
 				validators: validators(fieldSchema),
 			},
 		)
@@ -615,14 +626,19 @@ type typer struct {
 }
 
 func (d typer) TypeInfo(s *Schema) TypeInfo {
-	if t := s.ChooseType(); t != Array && t != Object && s.Config.GoPath == "" {
+	t := s.ChooseType()
+	if t != Array && t != Object && s.Config.GoPath == "" {
 		return TypeInfo{Name: d.Primitive(t)}
 	}
+	return d.TypeInfoHinted(s, t)
+}
+
+func (d typer) TypeInfoHinted(s *Schema, t SimpleType) TypeInfo {
 	if f := d.typeFunc(s); f.Name != "" {
 		f.Name = d.namer.JSONPropertyExported(f.Name)
 		return f
 	}
-	return TypeInfo{Name: d.Primitive(s.ChooseType())}
+	return TypeInfo{Name: d.Primitive(t)}
 }
 
 func (d typer) Primitive(s SimpleType) string {

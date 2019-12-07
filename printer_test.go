@@ -94,6 +94,42 @@ func TestImports_QualName(t *testing.T) {
 }
 
 func TestPrintFile(t *testing.T) {
+	errBit := `
+type valErr interface {
+	ErrType() string
+	JSONPath() []interface{}
+	Path() []interface{}
+	Message() string
+}
+
+type validationError struct {
+	errType, message string
+	jsonPath, path   []interface{}
+}
+
+func (e *validationError) ErrType() string {
+	return e.errType
+}
+
+func (e *validationError) JSONPath() []interface{} {
+	return e.jsonPath
+}
+
+func (e *validationError) Path() []interface{} {
+	return e.path
+}
+
+func (e *validationError) Message() string {
+	return e.message
+}
+
+func (e *validationError) Error() string {
+	return fmt.Sprintf("%v: %v", e.path, e.message)
+}
+
+var _ valErr = new(validationError)
+`
+
 	tests := []struct {
 		name    string
 		goPath  string
@@ -131,32 +167,7 @@ type Bob struct {
 func (m *Bob) Validate() error {
 	return nil
 }
-
-type validationError struct {
-	errType, jsonField, field, message string
-}
-
-func (e *validationError) ErrType() string {
-	return e.errType
-}
-
-func (e *validationError) JSONField() string {
-	return e.jsonField
-}
-
-func (e *validationError) Field() string {
-	return e.field
-}
-
-func (e *validationError) Message() string {
-	return e.message
-}
-
-func (e *validationError) Error() string {
-	return fmt.Sprintf("%v: %v", e.field, e.message)
-}
-
-`,
+` + errBit,
 		},
 		{
 			name:   "struct with qualified field",
@@ -199,31 +210,7 @@ func (m *Bob) Validate() error {
 	return nil
 }
 
-type validationError struct {
-	errType, jsonField, field, message string
-}
-
-func (e *validationError) ErrType() string {
-	return e.errType
-}
-
-func (e *validationError) JSONField() string {
-	return e.jsonField
-}
-
-func (e *validationError) Field() string {
-	return e.field
-}
-
-func (e *validationError) Message() string {
-	return e.message
-}
-
-func (e *validationError) Error() string {
-	return fmt.Sprintf("%v: %v", e.field, e.message)
-}
-
-`,
+` + errBit,
 		},
 		{
 			name:   "struct with aliased import",
@@ -277,31 +264,7 @@ func (m *Bob) Validate() error {
 	return nil
 }
 
-type validationError struct {
-	errType, jsonField, field, message string
-}
-
-func (e *validationError) ErrType() string {
-	return e.errType
-}
-
-func (e *validationError) JSONField() string {
-	return e.jsonField
-}
-
-func (e *validationError) Field() string {
-	return e.field
-}
-
-func (e *validationError) Message() string {
-	return e.message
-}
-
-func (e *validationError) Error() string {
-	return fmt.Sprintf("%v: %v", e.field, e.message)
-}
-
-`,
+` + errBit,
 		},
 		{
 			name:   "struct with embedded",
@@ -340,31 +303,7 @@ func (m *Bob) Validate() error {
 	return nil
 }
 
-type validationError struct {
-	errType, jsonField, field, message string
-}
-
-func (e *validationError) ErrType() string {
-	return e.errType
-}
-
-func (e *validationError) JSONField() string {
-	return e.jsonField
-}
-
-func (e *validationError) Field() string {
-	return e.field
-}
-
-func (e *validationError) Message() string {
-	return e.message
-}
-
-func (e *validationError) Error() string {
-	return fmt.Sprintf("%v: %v", e.field, e.message)
-}
-
-`,
+` + errBit,
 		},
 		{
 			name:   "struct with embedded",
@@ -420,31 +359,7 @@ func (m *OtherType) Validate() error {
 	return nil
 }
 
-type validationError struct {
-	errType, jsonField, field, message string
-}
-
-func (e *validationError) ErrType() string {
-	return e.errType
-}
-
-func (e *validationError) JSONField() string {
-	return e.jsonField
-}
-
-func (e *validationError) Field() string {
-	return e.field
-}
-
-func (e *validationError) Message() string {
-	return e.message
-}
-
-func (e *validationError) Error() string {
-	return fmt.Sprintf("%v: %v", e.field, e.message)
-}
-
-`,
+` + errBit,
 		},
 		{
 			name:   "array with struct",
@@ -502,31 +417,7 @@ func (m Bob) Validate() error {
 	return nil
 }
 
-type validationError struct {
-	errType, jsonField, field, message string
-}
-
-func (e *validationError) ErrType() string {
-	return e.errType
-}
-
-func (e *validationError) JSONField() string {
-	return e.jsonField
-}
-
-func (e *validationError) Field() string {
-	return e.field
-}
-
-func (e *validationError) Message() string {
-	return e.message
-}
-
-func (e *validationError) Error() string {
-	return fmt.Sprintf("%v: %v", e.field, e.message)
-}
-
-`,
+` + errBit,
 		},
 	}
 	for _, tt := range tests {

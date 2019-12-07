@@ -39,13 +39,13 @@ func (m {{ $.Type.Name }}) Validate() error {
 {{ range .Validators -}}
 {{ if eq .Name "uniqueItems" -}}
     seen := make(map[{{$.QualName $.ItemType}}]bool)
-    for _, v := range m {
+    for i, v := range m {
         if seen[v] {
             return &validationError{
                 errType: "uniqueItems",
-                jsonField: "",
-                field: "",
                 message: fmt.Sprintf("items must be unique but %v occurs more than once", v),
+                path: []interface{}{i},
+                jsonPath: []interface{}{i},
             }
         }
         seen[v] = true
@@ -53,10 +53,8 @@ func (m {{ $.Type.Name }}) Validate() error {
 {{ else -}}
 	if {{ .TestExpr (.NameSpace $.Type.Name) "m" }} {
 		return &validationError{
-			"{{ .Name }}",
-			"",
-			"",
-			fmt.Sprintf({{ .Sprintf (.NameSpace $.Type.Name) "m" }}),
+			errType: "{{ .Name }}",
+			message: fmt.Sprintf({{ .Sprintf (.NameSpace $.Type.Name) "m" }}),
 		}
 	}
 {{ end -}}
@@ -66,15 +64,23 @@ func (m {{ $.Type.Name }}) Validate() error {
         {{ range . -}}
         {{ if eq .Name "subschema" -}}
         if err := m[i].Validate(); err != nil {
+            if err, ok := err.(valErr); ok {
+                return &validationError{
+                    errType: err.ErrType(),
+                    message: err.Message(),
+                    path: append([]interface{}{i}, err.Path()...),
+                    jsonPath: append([]interface{}{i}, err.JSONPath()...),
+                }
+            }
             return err
         }
         {{ else -}}
         if {{ .TestExpr (.NameSpace $.Type.Name "Items") "m[i]" }} {
             return &validationError{
                 errType: "{{ .Name }}",
-                jsonField: fmt.Sprintf("%d", i),
-                field: fmt.Sprintf("%d", i),
                 message: fmt.Sprintf({{ .Sprintf (.NameSpace $.Type.Name "Items") "m[i]" }}),
+                path: []interface{}{i},
+                jsonPath: []interface{}{i},
             }
         }
         {{ end -}}
@@ -108,7 +114,10 @@ func (m {{ .Type.Name }}) Validate() error {
 {{ end -}}
     }
 {{ end -}}
-    return fmt.Errorf("unknown {{ .Type.Name }}: %v", m)
+    return &validationError{
+        errType: "unknown_member",
+        message: fmt.Sprintf("unknown value provided for {{ $.Type.Name }}: %v", m),
+    }
 }`))
 	valueTmpl = template.Must(valueTmpl.New("struct.tmpl").Parse(`{{/* gotype: github.com/jwilner/jsonschema2go.structPlanContext */}}
 {{ if .Comment -}}
@@ -139,9 +148,9 @@ func (m *{{ $.Type.Name }}) Validate() error {
 	if {{ .TestSetExpr false }} {
 		return &validationError{
 			errType: "required",
-			jsonField: "{{ .JSONName }}",
-			field: "{{ .Name }}",
 			message: "field required",
+			path: []interface{}{"{{ .Name }}"},
+			jsonPath: []interface{}{"{{ .JSONName }}"},
 		}
 	}
 {{ end -}}
@@ -149,15 +158,25 @@ func (m *{{ $.Type.Name }}) Validate() error {
 {{ range $Field := .Fields -}}
 {{ range $Field.Validators -}}
 {{ if eq .Name "subschema" -}}
-    if err := m.{{ $Field.Name }}.Validate(); err != nil {
-        return err
+    if err := m.{{ $Field.FieldRef }}.Validate(); err != nil {
+		{{ if not $Field.Embedded -}}
+		if err, ok := err.(valErr); ok {
+        	return &validationError{
+        		errType: err.ErrType(),
+        		message: err.Message(),
+				path: append([]interface{}{"{{ $Field.Name }}"}, err.Path()...),
+				jsonPath: append([]interface{}{"{{ $Field.JSONName }}"}, err.JSONPath()...),
+			}
+		}
+		{{ end -}}
+		return err
 	}
 {{ else -}}
     if {{ if not $Field.Required -}}{{ $Field.TestSetExpr true }} &&{{ end -}}{{ .TestExpr ($Field.NameSpace) ($Field.DerefExpr) }} {
 		return &validationError{
     		errType: "{{ .Name }}",
-			jsonField: "{{ $Field.JSONName }}",
-			field: "{{ $Field.Name }}",
+			path: []interface{}{"{{ $Field.Name }}"},
+			jsonPath: []interface{}{"{{ $Field.JSONName }}"},
 			message: fmt.Sprintf({{ .Sprintf ($Field.NameSpace) ($Field.DerefExpr) }}),
 		}
 	}
@@ -246,20 +265,28 @@ import (
 {{ template "enum.tmpl" . }}
 {{ end -}}
 
+type valErr interface {
+    ErrType() string
+    JSONPath() []interface{}
+    Path() []interface{}
+    Message() string
+}
+
 type validationError struct {
-    errType, jsonField, field, message string
+    errType, message string
+    jsonPath, path []interface{}
 }
 
 func (e *validationError) ErrType() string {
     return e.errType
 }
 
-func (e *validationError) JSONField() string {
-    return e.jsonField
+func (e *validationError) JSONPath() []interface{} {
+    return e.jsonPath
 }
 
-func (e *validationError) Field() string {
-    return e.field
+func (e *validationError) Path() []interface{} {
+    return e.path
 }
 
 func (e *validationError) Message() string {
@@ -267,7 +294,8 @@ func (e *validationError) Message() string {
 }
 
 func (e *validationError) Error() string {
-    return fmt.Sprintf("%v: %v", e.field, e.message)
+    return fmt.Sprintf("%v: %v", e.path, e.message)
 }
-`))
+
+var _ valErr = new(validationError)`))
 }

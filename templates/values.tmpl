@@ -22,20 +22,28 @@ import (
 {{ template "enum.tmpl" . }}
 {{ end -}}
 
+type valErr interface {
+    ErrType() string
+    JSONPath() []interface{}
+    Path() []interface{}
+    Message() string
+}
+
 type validationError struct {
-    errType, jsonField, field, message string
+    errType, message string
+    jsonPath, path []interface{}
 }
 
 func (e *validationError) ErrType() string {
     return e.errType
 }
 
-func (e *validationError) JSONField() string {
-    return e.jsonField
+func (e *validationError) JSONPath() []interface{} {
+    return e.jsonPath
 }
 
-func (e *validationError) Field() string {
-    return e.field
+func (e *validationError) Path() []interface{} {
+    return e.path
 }
 
 func (e *validationError) Message() string {
@@ -43,5 +51,7 @@ func (e *validationError) Message() string {
 }
 
 func (e *validationError) Error() string {
-    return fmt.Sprintf("%v: %v", e.field, e.message)
+    return fmt.Sprintf("%v: %v", e.path, e.message)
 }
+
+var _ valErr = new(validationError)

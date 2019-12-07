@@ -1,7 +1,6 @@
 [
     {
         "description": "allOf",
-        "skip": "allOf not yet fully supported",
         "schema": {
             "allOf": [
                 {
@@ -43,7 +42,6 @@
     },
     {
         "description": "allOf with base schema",
-        "skip": "allOf not yet fully supported",
         "schema": {
             "properties": {"bar": {"type": "integer"}},
             "required": ["bar"],
@@ -56,7 +54,7 @@
                 },
                 {
                     "properties": {
-                        "baz": {"type": "null"}
+                        "baz": {"type": "number"}
                     },
                     "required": ["baz"]
                 }
@@ -65,17 +63,17 @@
         "tests": [
             {
                 "description": "valid",
-                "data": {"foo": "quux", "bar": 2, "baz": null},
+                "data": {"foo": "quux", "bar": 2, "baz": 3.1},
                 "valid": true
             },
             {
                 "description": "mismatch base schema",
-                "data": {"foo": "quux", "baz": null},
+                "data": {"foo": "quux", "baz": 3.2},
                 "valid": false
             },
             {
                 "description": "mismatch first allOf",
-                "data": {"bar": 2, "baz": null},
+                "data": {"bar": 2, "baz": 3.3},
                 "valid": false
             },
             {
@@ -86,105 +84,6 @@
             {
                 "description": "mismatch both",
                 "data": {"bar": 2},
-                "valid": false
-            }
-        ]
-    },
-    {
-        "skip": "allOf not fully supported",
-        "description": "allOf simple types",
-        "schema": {
-            "allOf": [
-                {"maximum": 30},
-                {"minimum": 20}
-            ]
-        },
-        "tests": [
-            {
-                "description": "valid",
-                "data": 25,
-                "valid": true
-            },
-            {
-                "description": "mismatch one",
-                "data": 35,
-                "valid": false
-            }
-        ]
-    },
-    {
-        "skip": "allOf not fully supported",
-        "description": "allOf with one empty schema",
-        "schema": {
-            "allOf": [
-                {}
-            ]
-        },
-        "tests": [
-            {
-                "description": "any data is valid",
-                "data": 1,
-                "valid": true
-            }
-        ]
-    },
-    {
-        "skip": "allOf not fully supported",
-        "description": "allOf with two empty schemas",
-        "schema": {
-            "allOf": [
-                {},
-                {}
-            ]
-        },
-        "tests": [
-            {
-                "description": "any data is valid",
-                "data": 1,
-                "valid": true
-            }
-        ]
-    },
-    {
-        "skip": "allOf not fully supported",
-        "description": "allOf with the first empty schema",
-        "schema": {
-            "allOf": [
-                {},
-                { "type": "number" }
-            ]
-        },
-        "tests": [
-            {
-                "description": "number is valid",
-                "data": 1,
-                "valid": true
-            },
-            {
-                "description": "string is invalid",
-                "data": "foo",
-                "valid": false
-            }
-        ]
-    },
-    {
-        "skip": "allOf not fully supported",
-        "description": "allOf with the last empty schema",
-        "schema": {
-            "allOf": [
-                { "type": "number" },
-                {}
-            ]
-        },
-        "tests": [
-            {
-                "description": "number is valid",
-                "data": 1,
-                "valid": true
-            },
-            {
-                "description": "string is invalid",
-                "data": "foo",
                 "valid": false
             }
         ]

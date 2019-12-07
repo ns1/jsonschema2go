@@ -48,6 +48,7 @@ type StructField struct {
 	JSONName   string
 	Type       TypeInfo
 	Tag        string
+	Required   bool
 	validators []Validator
 }
 
@@ -118,7 +119,7 @@ type Plan interface {
 	ID() string
 }
 
-type boxedEncodingTrait struct {}
+type boxedEncodingTrait struct{}
 
 func (boxedEncodingTrait) Template() string {
 	return "boxed.tmpl"
@@ -138,14 +139,9 @@ type StructPlan struct {
 	typeInfo TypeInfo
 	id       *url.URL
 
-	Comment  string
-	Fields   []StructField
-	Traits   []Trait
-	required map[string]bool
-}
-
-func (s *StructPlan) Required(fieldName string) bool {
-	return s.required[fieldName]
+	Comment string
+	Fields  []StructField
+	Traits  []Trait
 }
 
 func (s *StructPlan) Type() TypeInfo {

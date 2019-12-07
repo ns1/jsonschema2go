@@ -52,12 +52,12 @@ func Test_mapPath(t *testing.T) {
 	}
 }
 
-func TestRender(t *testing.T) {
+func TestGenerate(t *testing.T) {
 	testDataDir, err := filepath.Abs("internal/testdata")
 	if err != nil {
 		t.Fatal(err)
 	}
-	root, err := filepath.Abs("internal/testdata/render")
+	root, err := filepath.Abs("internal/testdata/generate")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +87,6 @@ func TestRender(t *testing.T) {
 				}
 				paths = append(paths, "file:"+path.Join(testDir, a))
 			}
-
 
 			dirName, err := ioutil.TempDir("", e.Name())
 			r.NoError(err)

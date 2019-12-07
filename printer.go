@@ -187,10 +187,6 @@ func (s *structPlanContext) Fields() (fields []EnrichedStructField) {
 	return
 }
 
-func (f *EnrichedStructField) Required() bool {
-	return f.StructPlan.Required(f.JSONName)
-}
-
 func (f *EnrichedStructField) DerefExpr() string {
 	valPath := f.Type.valPath
 	if valPath != "" {
@@ -252,6 +248,17 @@ func (f *EnrichedStructField) InnerFieldDecl() string {
 		tag = fmt.Sprintf("`json:"+`"%s,omitempty"`+"`", f.JSONName)
 	}
 	return fmt.Sprintf("%s %s %s", f.Name, typName, tag)
+}
+
+func (f *EnrichedStructField) Embedded() bool {
+	return f.Name == ""
+}
+
+func (f *EnrichedStructField) FieldRef() string {
+	if f.Name != "" {
+		return f.Name
+	}
+	return f.Type.Name // embedded
 }
 
 func (f *EnrichedStructField) InnerFieldLiteral() string {

@@ -28,13 +28,13 @@ func (m {{ $.Type.Name }}) Validate() error {
 {{ range .Validators -}}
 {{ if eq .Name "uniqueItems" -}}
     seen := make(map[{{$.QualName $.ItemType}}]bool)
-    for _, v := range m {
+    for i, v := range m {
         if seen[v] {
             return &validationError{
                 errType: "uniqueItems",
-                jsonField: "",
-                field: "",
                 message: fmt.Sprintf("items must be unique but %v occurs more than once", v),
+                path: []interface{}{i},
+                jsonPath: []interface{}{i},
             }
         }
         seen[v] = true
@@ -42,10 +42,8 @@ func (m {{ $.Type.Name }}) Validate() error {
 {{ else -}}
 	if {{ .TestExpr (.NameSpace $.Type.Name) "m" }} {
 		return &validationError{
-			"{{ .Name }}",
-			"",
-			"",
-			fmt.Sprintf({{ .Sprintf (.NameSpace $.Type.Name) "m" }}),
+			errType: "{{ .Name }}",
+			message: fmt.Sprintf({{ .Sprintf (.NameSpace $.Type.Name) "m" }}),
 		}
 	}
 {{ end -}}
@@ -55,15 +53,23 @@ func (m {{ $.Type.Name }}) Validate() error {
         {{ range . -}}
         {{ if eq .Name "subschema" -}}
         if err := m[i].Validate(); err != nil {
+            if err, ok := err.(valErr); ok {
+                return &validationError{
+                    errType: err.ErrType(),
+                    message: err.Message(),
+                    path: append([]interface{}{i}, err.Path()...),
+                    jsonPath: append([]interface{}{i}, err.JSONPath()...),
+                }
+            }
             return err
         }
         {{ else -}}
         if {{ .TestExpr (.NameSpace $.Type.Name "Items") "m[i]" }} {
             return &validationError{
                 errType: "{{ .Name }}",
-                jsonField: fmt.Sprintf("%d", i),
-                field: fmt.Sprintf("%d", i),
                 message: fmt.Sprintf({{ .Sprintf (.NameSpace $.Type.Name "Items") "m[i]" }}),
+                path: []interface{}{i},
+                jsonPath: []interface{}{i},
             }
         }
         {{ end -}}

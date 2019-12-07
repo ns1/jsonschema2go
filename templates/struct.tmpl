@@ -27,9 +27,9 @@ func (m *{{ $.Type.Name }}) Validate() error {
 	if {{ .TestSetExpr false }} {
 		return &validationError{
 			errType: "required",
-			jsonField: "{{ .JSONName }}",
-			field: "{{ .Name }}",
 			message: "field required",
+			path: []interface{}{"{{ .Name }}"},
+			jsonPath: []interface{}{"{{ .JSONName }}"},
 		}
 	}
 {{ end -}}
@@ -37,15 +37,25 @@ func (m *{{ $.Type.Name }}) Validate() error {
 {{ range $Field := .Fields -}}
 {{ range $Field.Validators -}}
 {{ if eq .Name "subschema" -}}
-    if err := m.{{ $Field.Name }}.Validate(); err != nil {
-        return err
+    if err := m.{{ $Field.FieldRef }}.Validate(); err != nil {
+		{{ if not $Field.Embedded -}}
+		if err, ok := err.(valErr); ok {
+        	return &validationError{
+        		errType: err.ErrType(),
+        		message: err.Message(),
+				path: append([]interface{}{"{{ $Field.Name }}"}, err.Path()...),
+				jsonPath: append([]interface{}{"{{ $Field.JSONName }}"}, err.JSONPath()...),
+			}
+		}
+		{{ end -}}
+		return err
 	}
 {{ else -}}
     if {{ if not $Field.Required -}}{{ $Field.TestSetExpr true }} &&{{ end -}}{{ .TestExpr ($Field.NameSpace) ($Field.DerefExpr) }} {
 		return &validationError{
     		errType: "{{ .Name }}",
-			jsonField: "{{ $Field.JSONName }}",
-			field: "{{ $Field.Name }}",
+			path: []interface{}{"{{ $Field.Name }}"},
+			jsonPath: []interface{}{"{{ $Field.JSONName }}"},
 			message: fmt.Sprintf({{ .Sprintf ($Field.NameSpace) ($Field.DerefExpr) }}),
 		}
 	}

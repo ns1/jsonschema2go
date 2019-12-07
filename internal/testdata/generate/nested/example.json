@@ -1,0 +1,12 @@
+{
+  "description": "Bar gives you some dumb info",
+  "type": "object",
+  "x-jsonschema2go": {
+    "gopath": "github.com/jwilner/jsonschema2go/internal/testdata/generate/nested/foo#Bar"
+  },
+  "properties": {
+    "foo": {
+      "$ref": "foo.json"
+    }
+  }
+}

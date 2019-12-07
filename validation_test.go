@@ -54,7 +54,6 @@ func TestValidation(t *testing.T) {
 
 				return json.NewDecoder(f).Decode(&cases)
 			}())
-
 			for _, sc := range cases {
 				t.Run(sc.Description, func(t *testing.T) {
 					if sc.Skip != "" {
@@ -69,13 +68,13 @@ func TestValidation(t *testing.T) {
 								t.Skip(tc.Skip)
 							}
 							r := require.New(t)
-							res, err := v.Validate(ctx, tc.Data)
+							res, errS, err := v.Validate(ctx, tc.Data)
 							r.NoError(err)
 
 							f, _ := ioutil.ReadFile(v.valuesPath)
 
 							if tc.Valid {
-								r.Equal("valid", res, string(f))
+								r.Equal("valid", res, "got this: "+errS+string(f))
 								return
 							}
 
@@ -92,11 +91,14 @@ type validator struct {
 	workDir, harnessPath, valuesPath string
 }
 
-func (v *validator) Validate(ctx context.Context, msg json.RawMessage) (string, error) {
+func (v *validator) Validate(ctx context.Context, msg json.RawMessage) (string, string, error) {
 	cmd := exec.CommandContext(ctx, v.harnessPath)
 	cmd.Stdin = bytes.NewReader(msg)
-	out, err := cmd.Output()
-	return string(out), err
+	var out, errB bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &errB
+	err := cmd.Run()
+	return string(out.Bytes()), string(errB.Bytes()), err
 }
 
 func (v *validator) Close() error {
@@ -139,6 +141,9 @@ func compileValidator(ctx context.Context, r *require.Assertions, schema json.Ra
 		jsonschema2go.PrefixMap("main", dirName),
 	))
 
+	_, err = os.Stat(path.Join(dirName, "values.gen.go"))
+	r.NoError(err)
+
 	main, err := os.Create(path.Join(dirName, "main.go"))
 	r.NoError(err)
 
@@ -179,8 +184,9 @@ func main() {
 		valuesPath,
 	)
 	cmd.Stderr = os.Stderr
+	f, _ := ioutil.ReadFile(valuesPath)
 	if err := cmd.Run(); err != nil {
-		r.NoError(err, dirName)
+		r.NoError(err, f)
 	}
 	return &validator{workDir: dirName, harnessPath: harnessPath, valuesPath: valuesPath}
 }

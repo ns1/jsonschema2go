@@ -49,7 +49,6 @@ func TestSchemaToPlan(t *testing.T) {
 						},
 					},
 					Traits: []Trait{&boxedEncodingTrait{}},
-					required: map[string]bool{},
 				},
 			},
 		},
@@ -94,7 +93,6 @@ func TestSchemaToPlan(t *testing.T) {
 							validators: []Validator{{Name: "subschema"}},
 						},
 					},
-					required: map[string]bool{},
 				},
 				&StructPlan{
 					typeInfo: TypeInfo{
@@ -114,7 +112,6 @@ func TestSchemaToPlan(t *testing.T) {
 						},
 					},
 					Traits: []Trait{&boxedEncodingTrait{}},
-					required: map[string]bool{},
 				},
 			},
 		},
@@ -169,7 +166,6 @@ func TestSchemaToPlan(t *testing.T) {
 						},
 					},
 					Traits: []Trait{&boxedEncodingTrait{}},
-					required: map[string]bool{},
 				},
 				&StructPlan{
 					typeInfo: TypeInfo{
@@ -192,9 +188,9 @@ func TestSchemaToPlan(t *testing.T) {
 								GoPath: "github.com/jwilner/jsonschema2go/example",
 								Name:   "Awesome",
 							},
+							validators: []Validator{subschemaValidator},
 						},
 					},
-					required: nil,
 					Traits: []Trait{&boxedEncodingTrait{}},
 				},
 			},
@@ -257,7 +253,6 @@ func TestSchemaToPlan(t *testing.T) {
 							Tag:      `json:"bob,omitempty"`,
 						},
 					},
-					required: map[string]bool{},
 				},
 			},
 		},
