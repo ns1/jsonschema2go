@@ -139,6 +139,7 @@ func compileValidator(ctx context.Context, r *require.Assertions, schema json.Ra
 			return jsonschema2go.TypeInfo{GoPath: "main", Name: names[schema]}
 		}),
 		jsonschema2go.PrefixMap("main", dirName),
+		jsonschema2go.Debug(true),
 	))
 
 	_, err = os.Stat(path.Join(dirName, "values.gen.go"))

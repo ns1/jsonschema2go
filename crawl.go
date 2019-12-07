@@ -3,6 +3,7 @@ package jsonschema2go
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/url"
 	"sync"
 	"sync/atomic"
@@ -132,14 +133,23 @@ func crawl(
 			case s := <-helper.Schemas():
 				t := helper.TypeInfo(s)
 				if seen[t] {
+					if isDebug(ctx) {
+						log.Printf("crawler: skipping %v -- already seen", t)
+					}
 					continue
 				}
 				seen[t] = true
 
 				if s.Config.Exclude {
+					if isDebug(ctx) {
+						log.Printf("crawler: excluding %v by request", t)
+					}
 					continue
 				}
 
+				if isDebug(ctx) {
+					log.Printf("crawler: planning %v", t)
+				}
 				inFlight++
 				wg.Add(1)
 				go func() {

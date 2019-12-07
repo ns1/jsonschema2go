@@ -3,6 +3,7 @@ package jsonschema2go
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -21,12 +22,20 @@ type settings struct {
 	planner  Planner
 	printer  *Printer
 	loader   Loader
+	debug    bool
 }
 
 func PrefixMap(pairs ...string) Option {
 	prefixes := prefixPairs(pairs)
 	return func(s *settings) {
 		s.prefixes = prefixes
+	}
+}
+
+// Debug enables debug logging
+func Debug(opt bool) Option {
+	return func(s *settings) {
+		s.debug = opt
 	}
 }
 
@@ -122,7 +131,7 @@ func Generate(ctx context.Context, fileNames []string, options ...Option) error 
 	}
 
 	if s.loader == nil {
-		c := newCachingLoader()
+		c := newCachingLoader(s.debug)
 		defer func() {
 			_ = c.Close()
 		}()
@@ -131,12 +140,27 @@ func Generate(ctx context.Context, fileNames []string, options ...Option) error 
 	ctx, cncl := context.WithCancel(ctx)
 	defer cncl()
 
+	if s.debug {
+		ctx = context.WithValue(ctx, debugCtxKey, true)
+	}
+
 	grouped, err := doCrawl(ctx, s.planner, s.loader, s.typer, fileNames)
 	if err != nil {
 		return err
 	}
 
 	return print(ctx, s.printer, grouped, s.prefixes)
+}
+
+type ctxKey int
+
+const (
+	debugCtxKey ctxKey = iota
+)
+
+func isDebug(ctx context.Context) bool {
+	b, ok := ctx.Value(debugCtxKey).(bool)
+	return ok && b
 }
 
 func print(
@@ -164,7 +188,9 @@ func print(
 					return fmt.Errorf("unable to create dir %q: %w", path, err)
 				}
 
-				f, err := os.Create(filepath.Join(path, "values.gen.go"))
+				p := filepath.Join(path, "values.gen.go")
+
+				f, err := os.Create(p)
 				if err != nil {
 					return fmt.Errorf("unable to open: %w", err)
 				}
@@ -172,6 +198,9 @@ func print(
 
 				if err := printer.Print(ctx, f, k, group); err != nil {
 					return fmt.Errorf("unable to print: %w", err)
+				}
+				if isDebug(ctx) {
+					log.Printf("printer: successfully printed %d plans to %v", len(group), p)
 				}
 				return nil
 			}(); err != nil {

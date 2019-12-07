@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -23,8 +24,8 @@ type schemaResult struct {
 }
 
 type schemaRequest struct {
-	url string
-	c   chan<- schemaResult
+	url   string
+	c     chan<- schemaResult
 }
 
 type cachingLoader struct {
@@ -33,13 +34,13 @@ type cachingLoader struct {
 	closeC   chan chan<- error
 }
 
-func newCachingLoader() *cachingLoader {
+func newCachingLoader(debug bool) *cachingLoader {
 	c := &cachingLoader{
 		requests: make(chan schemaRequest),
 		client:   http.DefaultClient,
 		closeC:   make(chan chan<- error),
 	}
-	go c.run()
+	go c.run(debug)
 	return c
 }
 
@@ -49,7 +50,7 @@ func (c *cachingLoader) Close() error {
 	return <-errC
 }
 
-func (c *cachingLoader) run() {
+func (c *cachingLoader) run(debug bool) {
 	type uriSchemaResult struct {
 		schemaResult
 		url string
@@ -99,6 +100,9 @@ func (c *cachingLoader) run() {
 
 		case req := <-c.requests:
 			if schema, ok := cache[req.url]; ok {
+				if debug {
+					log.Printf("loader: cache hit for %v", req.url)
+				}
 				respond(childRoutines, schemaResult{schema, nil}, req.c)
 				continue
 			}
@@ -106,6 +110,9 @@ func (c *cachingLoader) run() {
 			activeReqs[req.url] = append(activeReqs[req.url], req.c)
 
 			if len(activeReqs[req.url]) == 1 { // this is the first req, so start a fetch
+				if debug {
+					log.Printf("loader: initiating fetch for %v", req.url)
+				}
 				fetch(childRoutines, fetches, req.url)
 				continue
 			}
@@ -113,6 +120,10 @@ func (c *cachingLoader) run() {
 		case fet := <-fetches:
 			reqs := activeReqs[fet.url]
 			delete(activeReqs, fet.url)
+
+			if debug {
+				log.Printf("loader: serving %v for %d requests", fet.url, len(reqs))
+			}
 
 			for _, r := range reqs {
 				respond(childRoutines, fet.schemaResult, r)

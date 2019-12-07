@@ -97,6 +97,7 @@ func TestGenerate(t *testing.T) {
 				paths,
 				PrefixMap("github.com/jwilner/jsonschema2go/internal/testdata", dirName),
 				TypeFromID("https://example.com/testdata", "github.com/jwilner/jsonschema2go/internal/testdata"),
+				Debug(true),
 			))
 			results, err := listAllFiles(dirName, ".gen.go")
 			r.NoError(err)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -12,7 +13,8 @@ import (
 )
 
 var (
-	Composite = CompositePlanner{
+	ErrContinue = errors.New("continue")
+	Composite   = CompositePlanner{
 		plannerFunc(planAllOfObject),
 		plannerFunc(planSimpleObject),
 		plannerFunc(planSimpleArray),
@@ -29,14 +31,21 @@ type Planner interface {
 type CompositePlanner []Planner
 
 func (c CompositePlanner) Plan(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
-	for _, p := range c {
+	for i, p := range c {
 		pl, err := p.Plan(ctx, helper, schema)
+		if i != len(c)-1 && errors.Is(err, ErrContinue) {
+			if isDebug(ctx) {
+				log.Printf("planner: skipping planner %d: %v", i, err)
+			}
+			continue
+		}
 		if err != nil {
 			return nil, err
 		}
 		if pl != nil {
 			return pl, nil
 		}
+		return nil, fmt.Errorf("planner %d returned nil for plan", i)
 	}
 	// we require types for objects and arrays
 	if t := schema.ChooseType(); t == Object || t == Array {
@@ -84,19 +93,22 @@ func (p *PlanningHelper) Dep(ctx context.Context, schemas ...*Schema) error {
 func planDiscriminatedOneOfObject(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
 	discrim := schema.Config.Discriminator
 	if !discrim.isSet() {
-		return nil, nil
+		return nil, fmt.Errorf("discriminator is not set: %w", ErrContinue)
 	}
 	composedTyp, schemas, err := loadSchemaList(ctx, helper, schema, schema.OneOf)
 	if err != nil {
 		return nil, err
 	}
-	if len(schemas) == 0 || composedTyp != Object {
-		return nil, nil
+	if len(schemas) == 0 {
+		return nil, fmt.Errorf("no schemas: %w", ErrContinue)
+	}
+	if composedTyp != Object {
+		return nil, fmt.Errorf("composed type is not object: %w", ErrContinue)
 	}
 
 	tInfo := helper.TypeInfo(schema)
 	if tInfo.Unknown() {
-		return nil, nil
+		return nil, fmt.Errorf("schema type is unknown: %w", ErrContinue)
 	}
 
 	typeToNames := make(map[string][]string)
@@ -214,14 +226,18 @@ func planAllOfObject(ctx context.Context, helper *PlanningHelper, schema *Schema
 	if err != nil {
 		return nil, err
 	}
-	if len(schemas) == 0 || composedTyp != Object {
-		return nil, nil
+	if len(schemas) == 0 {
+		return nil, fmt.Errorf("no allOf schemas: %w", ErrContinue)
 	}
-
+	if composedTyp != Object {
+		return nil, fmt.Errorf("not an object: %w", ErrContinue)
+	}
 	tInfo := helper.TypeInfoHinted(schema, composedTyp)
 	if tInfo.Unknown() {
-		return nil, nil
+		return nil, fmt.Errorf("type unknown: %w", ErrContinue)
 	}
+	// we've matched
+
 	s := &StructPlan{typeInfo: tInfo, id: schema.CalcID}
 	s.Comment = schema.Annotations.GetString("description")
 
@@ -261,12 +277,14 @@ func planAllOfObject(ctx context.Context, helper *PlanningHelper, schema *Schema
 
 func planSimpleObject(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
 	if schema.ChooseType() != Object {
-		return nil, nil
+		return nil, fmt.Errorf("not an object: %w", ErrContinue)
 	}
 	tInfo := helper.TypeInfo(schema)
 	if tInfo.Unknown() {
-		return nil, nil
+		return nil, fmt.Errorf("type unknown: %w", ErrContinue)
 	}
+	// matched
+
 	s := &StructPlan{typeInfo: tInfo, id: schema.CalcID}
 	s.Comment = schema.Annotations.GetString("description")
 	fields, err := deriveStructFields(ctx, helper, schema)
@@ -287,13 +305,14 @@ func planSimpleObject(ctx context.Context, helper *PlanningHelper, schema *Schem
 
 func planSimpleArray(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
 	if schema.ChooseType() != Array {
-		return nil, nil
+		return nil, fmt.Errorf("not an array: %w", ErrContinue)
 	}
 	tInfo := helper.TypeInfo(schema)
 	if tInfo.Unknown() {
-		return nil, nil
+		return nil, fmt.Errorf("type unknown: %w", ErrContinue)
 	}
 
+	// we've matched
 	var itemSchema *Schema
 	if schema.Items != nil && schema.Items.Items != nil {
 		var err error
@@ -349,12 +368,12 @@ func planSimpleArray(ctx context.Context, helper *PlanningHelper, schema *Schema
 
 func planEnum(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
 	if len(schema.Enum) == 0 {
-		return nil, nil
+		return nil, fmt.Errorf("no enum values: %w", ErrContinue)
 	}
 
 	tInfo := helper.TypeInfo(schema)
 	if tInfo.Unknown() {
-		return nil, nil
+		return nil, fmt.Errorf("type unknown: %w", ErrContinue)
 	}
 
 	e := &EnumPlan{typeInfo: tInfo, id: schema.CalcID}
