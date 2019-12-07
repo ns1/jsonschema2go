@@ -42,26 +42,26 @@ var (
 func (m *Bar) Validate() error {
 	if !m.Baz.Set {
 		return &validationError{
-			errType:   "required",
-			jsonField: "baz",
-			field:     "Baz",
-			message:   "field required",
+			errType:  "required",
+			message:  "field required",
+			path:     []interface{}{"Baz"},
+			jsonPath: []interface{}{"baz"},
 		}
 	}
 	if !barBazPattern.MatchString(m.Baz.String) {
 		return &validationError{
-			errType:   "pattern",
-			jsonField: "baz",
-			field:     "Baz",
-			message:   fmt.Sprintf("must match '^[0-9a-fA-F]{10}$' but got %q", m.Baz.String),
+			errType:  "pattern",
+			path:     []interface{}{"Baz"},
+			jsonPath: []interface{}{"baz"},
+			message:  fmt.Sprintf("must match '^[0-9a-fA-F]{10}$' but got %q", m.Baz.String),
 		}
 	}
 	if m.Count.Set && m.Count.Int64 < 3 {
 		return &validationError{
-			errType:   "minimum",
-			jsonField: "count",
-			field:     "Count",
-			message:   fmt.Sprintf("must be greater than or equal to 3 but was %v", m.Count.Int64),
+			errType:  "minimum",
+			path:     []interface{}{"Count"},
+			jsonPath: []interface{}{"count"},
+			message:  fmt.Sprintf("must be greater than or equal to 3 but was %v", m.Count.Int64),
 		}
 	}
 	return nil
