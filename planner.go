@@ -439,10 +439,16 @@ func planTuple(ctx context.Context, helper *PlanningHelper, schema *Schema) (Pla
 	}
 
 	var items []*TupleItem
-	for i, s := range schemas {
+	for _, s := range schemas {
 		t := helper.TypeInfo(s)
 		if t.Unknown() {
-			return nil, fmt.Errorf("type for position %d unknown: %w", i, ErrContinue)
+			t.Name = "interface{}"
+			items = append(items, &TupleItem{
+				Comment:    s.Annotations.GetString("description"),
+				Type:       t,
+				validators: []Validator{subschemaValidator},
+			})
+			continue
 		}
 		if !t.BuiltIn() {
 			if err := helper.Dep(ctx, s); err != nil {
