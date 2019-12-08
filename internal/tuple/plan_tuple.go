@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/jwilner/jsonschema2go/internal/templates"
 	"github.com/jwilner/jsonschema2go/internal/validator"
 	"github.com/jwilner/jsonschema2go/pkg/generate"
 	sch "github.com/jwilner/jsonschema2go/pkg/schema"
@@ -23,7 +22,7 @@ type TuplePlan struct {
 //go:generate go run ../cmd/embedtmpl/embedtmpl.go tuple tuple.tmpl tmpl.gen.go
 func (t *TuplePlan) Execute(imports *generate.Imports) (string, error) {
 	var w bytes.Buffer
-	err := templates.Template.ExecuteTemplate(&w, "tuple.tmpl", &TuplePlanContext{imports, t})
+	err := tmpl.Execute(&w, &TuplePlanContext{imports, t})
 	return w.String(), err
 }
 

@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jwilner/jsonschema2go/internal/templates"
 	"github.com/jwilner/jsonschema2go/internal/validator"
 	"github.com/jwilner/jsonschema2go/pkg/generate"
 	sch "github.com/jwilner/jsonschema2go/pkg/schema"
@@ -133,6 +132,6 @@ type slicePlanContext struct {
 
 func (s *SlicePlan) Execute(imp *generate.Imports) (string, error) {
 	var w bytes.Buffer
-	err := templates.Template.ExecuteTemplate(&w, "slice.tmpl", slicePlanContext{imp, s})
+	err := tmpl.Execute(&w, slicePlanContext{imp, s})
 	return w.String(), err
 }

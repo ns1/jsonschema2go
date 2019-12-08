@@ -31,7 +31,6 @@ var (
 
 type CompositePlanner []generate.Planner
 
-//go:generate go run ../cmd/embedtmpl/embedtmpl.go planning values.tmpl tmpl.gen.go
 func (c CompositePlanner) Plan(ctx context.Context, helper generate.Helper, schema *sch.Schema) (generate.Plan, error) {
 	for i, p := range c {
 		name := strconv.Itoa(i)
