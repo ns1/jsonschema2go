@@ -1,9 +1,10 @@
-package jsonschema2go
+package cachingloader
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/jwilner/jsonschema2go/pkg/schema"
 	"io"
 	"log"
 	"net/http"
@@ -19,7 +20,7 @@ type HTTPDoer interface {
 var _ HTTPDoer = http.DefaultClient
 
 type schemaResult struct {
-	schema *Schema
+	schema *schema.Schema
 	error  error
 }
 
@@ -34,7 +35,7 @@ type cachingLoader struct {
 	closeC   chan chan<- error
 }
 
-func newCachingLoader(debug bool) *cachingLoader {
+func New(debug bool) *cachingLoader {
 	c := &cachingLoader{
 		requests: make(chan schemaRequest),
 		client:   http.DefaultClient,
@@ -87,7 +88,7 @@ func (c *cachingLoader) run(debug bool) {
 		childRoutines = new(sync.WaitGroup)
 		activeReqs    = make(map[string][]chan<- schemaResult)
 		fetches       = make(chan uriSchemaResult)
-		cache         = make(map[string]*Schema)
+		cache         = make(map[string]*schema.Schema)
 	)
 
 	for {
@@ -99,11 +100,11 @@ func (c *cachingLoader) run(debug bool) {
 			return
 
 		case req := <-c.requests:
-			if schema, ok := cache[req.url]; ok {
+			if s, ok := cache[req.url]; ok {
 				if debug {
 					log.Printf("loader: cache hit for %v", req.url)
 				}
-				respond(childRoutines, schemaResult{schema, nil}, req.c)
+				respond(childRoutines, schemaResult{s, nil}, req.c)
 				continue
 			}
 
@@ -168,17 +169,15 @@ func (c *cachingLoader) fetch(ctx context.Context, rawURL string) schemaResult {
 		_ = r.Close()
 	}()
 
-	var sch Schema
-	if err := json.NewDecoder(r).Decode(&sch); err != nil {
+	var s schema.Schema
+	if err := json.NewDecoder(r).Decode(&s); err != nil {
 		return schemaResult{nil, fmt.Errorf("unable to decode %q: %w", u.Path, err)}
 	}
-
-	schema := &sch
-	schema.setLoc(u)
-	return schemaResult{schema, nil}
+	s.SetLoc(u)
+	return schemaResult{&s, nil}
 }
 
-func (c *cachingLoader) Load(ctx context.Context, u *url.URL) (*Schema, error) {
+func (c *cachingLoader) Load(ctx context.Context, u *url.URL) (*schema.Schema, error) {
 	req := make(chan schemaResult)
 	select {
 	case c.requests <- schemaRequest{u.String(), req}:

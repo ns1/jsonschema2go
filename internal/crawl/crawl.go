@@ -1,8 +1,12 @@
-package jsonschema2go
+package crawl
 
 import (
 	"context"
 	"fmt"
+	"github.com/jwilner/jsonschema2go/internal/planning"
+	"github.com/jwilner/jsonschema2go/pkg/ctxflags"
+	gen "github.com/jwilner/jsonschema2go/pkg/generate"
+	"github.com/jwilner/jsonschema2go/pkg/schema"
 	"log"
 	"net/url"
 	"sync"
@@ -10,17 +14,17 @@ import (
 )
 
 type CrawlResult struct {
-	Plan Plan
+	Plan gen.Plan
 	Err  error
 }
 
-func doCrawl(
+func Crawl(
 	ctx context.Context,
-	planner Planner,
-	loader Loader,
-	typer typer,
+	planner gen.Planner,
+	loader schema.Loader,
+	typer planning.Typer,
 	fileNames []string,
-) (map[string][]Plan, error) {
+) (map[string][]gen.Plan, error) {
 	var childRoutines sync.WaitGroup
 	defer childRoutines.Wait()
 
@@ -34,11 +38,11 @@ func doCrawl(
 func initialLoad(
 	ctx context.Context,
 	wg *sync.WaitGroup,
-	loader Loader,
+	loader schema.Loader,
 	fileNames []string,
-) (<-chan *Schema, <-chan error) {
+) (<-chan *schema.Schema, <-chan error) {
 	// load all initial schemas concurrently
-	loaded := make(chan *Schema)
+	loaded := make(chan *schema.Schema)
 	errC := make(chan error, 1)
 	var sent int64 // used to track completion of tasks
 	for _, fileName := range fileNames {
@@ -69,29 +73,14 @@ func initialLoad(
 	return loaded, errC
 }
 
-func newPlanningHelper(
-	ctx context.Context,
-	loader Loader,
-	typer typer,
-	schemas <-chan *Schema,
-) *PlanningHelper {
-	// allSchemas represents the merged stream of explicitly requested schemas and their children; it is
-	// in essence the queue which powers a breadth-first search of the object graph
-	allSchemas := make(chan *Schema)
-	// puts all schemas on merged and puts a signal on noMoreComing when no more coming
-	noMoreComing := copyAndSignal(ctx, schemas, allSchemas)
-
-	return &PlanningHelper{loader, typer, allSchemas, noMoreComing}
-}
-
 func crawl(
 	ctx context.Context,
-	planner Planner,
-	loader Loader,
-	typer typer,
-	schemas <-chan *Schema,
+	planner gen.Planner,
+	loader schema.Loader,
+	typer planning.Typer,
+	schemas <-chan *schema.Schema,
 ) <-chan CrawlResult {
-	helper := newPlanningHelper(ctx, loader, typer, schemas)
+	helper := planning.NewHelper(ctx, loader, typer, schemas)
 
 	results := make(chan CrawlResult)
 
@@ -107,7 +96,7 @@ func crawl(
 
 		defer wg.Wait()
 
-		derivePlan := func(s *Schema) {
+		derivePlan := func(s *schema.Schema) {
 			plan, err := planner.Plan(ctx, helper, s)
 			select {
 			case innerResults <- CrawlResult{plan, err}:
@@ -123,7 +112,7 @@ func crawl(
 			}
 		}
 
-		seen := make(map[TypeInfo]bool)
+		seen := make(map[gen.TypeInfo]bool)
 		for {
 			if allCopied && inFlight == 0 {
 				return
@@ -133,7 +122,7 @@ func crawl(
 			case s := <-helper.Schemas():
 				t := helper.TypeInfo(s)
 				if seen[t] {
-					if isDebug(ctx) {
+					if ctxflags.IsDebug(ctx) {
 						log.Printf("crawler: skipping %v -- already seen", t)
 					}
 					continue
@@ -141,13 +130,13 @@ func crawl(
 				seen[t] = true
 
 				if s.Config.Exclude {
-					if isDebug(ctx) {
+					if ctxflags.IsDebug(ctx) {
 						log.Printf("crawler: excluding %v by request", t)
 					}
 					continue
 				}
 
-				if isDebug(ctx) {
+				if ctxflags.IsDebug(ctx) {
 					log.Printf("crawler: planning %v", t)
 				}
 				inFlight++
@@ -178,35 +167,9 @@ func crawl(
 	return results
 }
 
-func copyAndSignal(ctx context.Context, schemas <-chan *Schema, merged chan<- *Schema) <-chan struct{} {
-	schemasDone := make(chan struct{})
-	go func() {
-		for {
-			select {
-			case s, ok := <-schemas:
-				if !ok {
-					select {
-					case schemasDone <- struct{}{}:
-					case <-ctx.Done():
-					}
-					return
-				}
-				select {
-				case merged <- s:
-				case <-ctx.Done():
-					return
-				}
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-	return schemasDone
-}
-
-func group(ctx context.Context, results <-chan CrawlResult, errC <-chan error) (map[string][]Plan, error) {
+func group(ctx context.Context, results <-chan CrawlResult, errC <-chan error) (map[string][]gen.Plan, error) {
 	// group together results
-	grouped := make(map[string][]Plan)
+	grouped := make(map[string][]gen.Plan)
 	for {
 		select {
 		case err := <-errC:

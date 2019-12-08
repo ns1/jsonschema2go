@@ -1,4 +1,4 @@
-package jsonschema2go
+package schema
 
 import (
 	"bytes"
@@ -118,6 +118,10 @@ func (t TagMap) Unmarshal(k string, val interface{}) (bool, error) {
 	return true, err
 }
 
+func NewRefOrSchema(s *Schema, ref *string) *RefOrSchema {
+	return &RefOrSchema{ref: ref, schema: s}
+}
+
 type RefOrSchema struct {
 	ref    *string
 	schema *Schema
@@ -200,8 +204,8 @@ type Schema struct {
 	OneOf []*RefOrSchema `json:"oneOf,omitempty"`
 	Not   *RefOrSchema   `json:"not,omitempty"`
 
-	// jsonschema2go config
-	Config config `json:"x-jsonschema2go"`
+	// jsonschema2go Config
+	Config Config `json:"x-jsonschema2go"`
 
 	// user extensible
 	Annotations TagMap `json:"-"`
@@ -212,23 +216,23 @@ type Schema struct {
 	CalcID *url.URL `json:"-"`
 }
 
-type config struct {
+type Config struct {
 	GoPath        string        `json:"gopath"`
 	Exclude       bool          `json:"exclude"`
-	Discriminator discriminator `json:"discriminator"`
+	Discriminator Discriminator `json:"Discriminator"`
 	NoValidate    bool          `json:"noValidate"`
 }
 
-type discriminator struct {
+type Discriminator struct {
 	PropertyName string            `json:"propertyName"`
 	Mapping      map[string]string `json:"mapping"`
 }
 
-func (d *discriminator) isSet() bool {
+func (d *Discriminator) IsSet() bool {
 	return d.PropertyName != ""
 }
 
-func (s *Schema) setLoc(loc *url.URL) {
+func (s *Schema) SetLoc(loc *url.URL) {
 	type urlSchema struct {
 		*url.URL
 		*Schema

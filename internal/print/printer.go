@@ -1,122 +1,52 @@
-package jsonschema2go
+package print
 
 import (
 	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jwilner/jsonschema2go/internal/planning"
+	"github.com/jwilner/jsonschema2go/pkg/ctxflags"
+	"github.com/jwilner/jsonschema2go/pkg/generate"
 	"go/format"
 	"io"
-	"path"
 	"sort"
 	"text/template"
 	"unicode"
 )
 
-//go:generate go run internal/cmd/gentmpl/gentmpl.go
-
-type Import struct {
-	GoPath, Alias string
+type Printer interface {
+	Print(ctx context.Context, w io.Writer, goPath string, plans []generate.Plan) error
 }
 
-type Imports struct {
-	currentGoPath string
-	aliases       map[string]string
-}
-
-func newImports(currentGoPath string, importGoPaths []string) *Imports {
-	baseName := make(map[string]map[string]bool)
-	for _, i := range importGoPaths {
-		if i != "" && i != currentGoPath {
-			pkg := path.Base(i)
-			if _, ok := baseName[pkg]; !ok {
-				baseName[pkg] = make(map[string]bool)
-			}
-			baseName[pkg][i] = true
-		}
-	}
-
-	aliases := make(map[string]string)
-	for k, v := range baseName {
-		if len(v) == 1 {
-			for i := range v {
-				aliases[i] = ""
-			}
-			continue
-		}
-		imps := make([]string, 0, len(v))
-		for i := range v {
-			imps = append(imps, i)
-		}
-		sort.Strings(imps)
-
-		for i, path := range imps {
-			if i == 0 {
-				aliases[path] = ""
-				continue
-			}
-			aliases[path] = fmt.Sprintf("%s%d", k, i+1)
-		}
-	}
-
-	return &Imports{currentGoPath, aliases}
-}
-
-func (i *Imports) CurPackage() string {
-	return path.Base(i.currentGoPath)
-}
-
-func (i *Imports) List() (imports []Import) {
-	for path, alias := range i.aliases {
-		imports = append(imports, Import{path, alias})
-	}
-	sort.Slice(imports, func(i, j int) bool {
-		return imports[i].GoPath < imports[j].GoPath
-	})
-	return
-}
-
-func (i *Imports) QualName(info TypeInfo) string {
-	if info.BuiltIn() || info.GoPath == i.currentGoPath {
-		return info.Name
-	}
-	qual := path.Base(info.GoPath)
-	if alias := i.aliases[info.GoPath]; alias != "" {
-		qual = alias
-	}
-	return fmt.Sprintf("%s.%s", qual, info.Name)
-}
-
-func newPrinter(tmpl *template.Template) *Printer {
+func New(tmpl *template.Template) Printer {
 	if tmpl == nil {
 		tmpl = valueTmpl
 	}
-	return &Printer{valueTmpl}
+	return &printer{valueTmpl}
 }
 
-type Printer struct {
+type printer struct {
 	tmpl *template.Template
 }
 
-func (p *Printer) Print(ctx context.Context, w io.Writer, goPath string, plans []Plan) error {
-	var imports *Imports
-	{
-		var depPaths []string
-		for _, pl := range plans {
-			for _, d := range pl.Deps() {
-				depPaths = append(depPaths, d.GoPath)
-			}
+func (p *printer) Print(ctx context.Context, w io.Writer, goPath string, plans []generate.Plan) error {
+	var depPaths []string
+	for _, pl := range plans {
+		for _, d := range pl.Deps() {
+			depPaths = append(depPaths, d.GoPath)
 		}
-		imports = newImports(goPath, depPaths)
 	}
 
 	var buf bytes.Buffer
-	if err := valueTmpl.Execute(&buf, &Plans{imports, plans}); err != nil {
+	if err := valueTmpl.Execute(&buf, &Plans{generate.NewImports(goPath, depPaths), plans}); err != nil {
 		return fmt.Errorf("unable to execute tmpl: %w", err)
 	}
 	formatted, err := format.Source(buf.Bytes())
 	if err != nil {
-		_, _ = w.Write(buf.Bytes()) // write unformatted for debugging
+		if ctxflags.IsDebug(ctx) {
+			_, _ = w.Write(buf.Bytes()) // write unformatted for debugging
+		}
 		return fmt.Errorf("unable to format: %w", err)
 	}
 
@@ -125,13 +55,13 @@ func (p *Printer) Print(ctx context.Context, w io.Writer, goPath string, plans [
 }
 
 type Plans struct {
-	Imports *Imports
-	plans   []Plan
+	Imports *generate.Imports
+	plans   []generate.Plan
 }
 
 func (ps *Plans) Structs() (structs []*structPlanContext) {
 	for _, p := range ps.plans {
-		if s, ok := p.(*StructPlan); ok {
+		if s, ok := p.(*planning.StructPlan); ok {
 			structs = append(structs, &structPlanContext{ps.Imports, s})
 		}
 	}
@@ -143,7 +73,7 @@ func (ps *Plans) Structs() (structs []*structPlanContext) {
 
 func (ps *Plans) Slices() (slices []*slicePlanContext) {
 	for _, p := range ps.plans {
-		if a, ok := p.(*SlicePlan); ok {
+		if a, ok := p.(*planning.SlicePlan); ok {
 			slices = append(slices, &slicePlanContext{ps.Imports, a})
 		}
 	}
@@ -155,7 +85,7 @@ func (ps *Plans) Slices() (slices []*slicePlanContext) {
 
 func (ps *Plans) Tuples() (tuples []*tuplePlanContext) {
 	for _, p := range ps.plans {
-		if a, ok := p.(*TuplePlan); ok {
+		if a, ok := p.(*planning.TuplePlan); ok {
 			tuples = append(tuples, &tuplePlanContext{ps.Imports, a})
 		}
 	}
@@ -167,7 +97,7 @@ func (ps *Plans) Tuples() (tuples []*tuplePlanContext) {
 
 func (ps *Plans) Enums() (enums []enumPlanContext) {
 	for _, p := range ps.plans {
-		if e, ok := p.(*EnumPlan); ok {
+		if e, ok := p.(*planning.EnumPlan); ok {
 			enums = append(enums, enumPlanContext{ps.Imports, e})
 		}
 	}
@@ -178,14 +108,14 @@ func (ps *Plans) Enums() (enums []enumPlanContext) {
 }
 
 type structPlanContext struct {
-	*Imports
-	*StructPlan
+	*generate.Imports
+	*planning.StructPlan
 }
 
 type EnrichedStructField struct {
-	StructField
-	StructPlan *StructPlan
-	Imports    *Imports
+	planning.StructField
+	StructPlan *planning.StructPlan
+	Imports    *generate.Imports
 }
 
 func (s *structPlanContext) Fields() (fields []EnrichedStructField) {
@@ -200,9 +130,9 @@ func (s *structPlanContext) Fields() (fields []EnrichedStructField) {
 }
 
 func (f *EnrichedStructField) DerefExpr() string {
-	valPath := f.Type.valPath
-	if valPath != "" {
-		valPath = "." + valPath
+	valPath := ""
+	if f.Type.ValPath != "" {
+		valPath = "." + f.Type.ValPath
 	}
 	return fmt.Sprintf("m.%s%s", f.Name, valPath)
 }
@@ -284,7 +214,7 @@ func (f *EnrichedStructField) InnerFieldLiteral() string {
 	return fmt.Sprintf("%s: m.%s,", fieldRef, fieldRef)
 }
 
-var fieldAssignmentTmpl = templateStr(`if m.{{ .Name }}.Set {
+var fieldAssignmentTmpl = planning.TemplateStr(`if m.{{ .Name }}.Set {
 	inner.{{ .Name }} = &m.{{ .Name }}{{ .ValPath }}
 }`)
 
@@ -293,36 +223,41 @@ func (f *EnrichedStructField) InnerFieldAssignment() (string, error) {
 		return "", nil
 	}
 
+	valPath := ""
+	if f.Type.ValPath != "" {
+		valPath = "." + f.Type.ValPath
+	}
+
 	var w bytes.Buffer
 	err := fieldAssignmentTmpl.Execute(&w, struct {
 		Name    string
 		ValPath string
 	}{
 		Name:    f.Name,
-		ValPath: f.Type.ValPath(),
+		ValPath: valPath,
 	})
 	return w.String(), err
 }
 
 type slicePlanContext struct {
-	*Imports
-	*SlicePlan
+	*generate.Imports
+	*planning.SlicePlan
 }
 
 type enumPlanContext struct {
-	*Imports
-	*EnumPlan
+	*generate.Imports
+	*planning.EnumPlan
 }
 
 type tuplePlanContext struct {
-	*Imports
-	*TuplePlan
+	*generate.Imports
+	*planning.TuplePlan
 }
 
 type enrichedTupleItem struct {
 	TuplePlan *tuplePlanContext
 	idx       int
-	*TupleItem
+	*planning.TupleItem
 }
 
 func (e *enrichedTupleItem) NameSpace() string {

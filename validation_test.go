@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/jwilner/jsonschema2go"
+	"github.com/jwilner/jsonschema2go/pkg/generate"
+	schema2 "github.com/jwilner/jsonschema2go/pkg/schema"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
@@ -117,17 +119,17 @@ func compileValidator(ctx context.Context, r *require.Assertions, schema json.Ra
 	r.NoError(err)
 
 	var (
-		names = make(map[*jsonschema2go.Schema]string)
+		names = make(map[*schema2.Schema]string)
 		mux   sync.Mutex
 	)
 
 	r.NoError(jsonschema2go.Generate(
 		ctx,
 		[]string{"file:" + src},
-		jsonschema2go.CustomTypeFunc(func(schema *jsonschema2go.Schema) jsonschema2go.TypeInfo {
+		jsonschema2go.CustomTypeFunc(func(schema *schema2.Schema) generate.TypeInfo {
 			if schema.Config.GoPath != "" {
 				parts := strings.SplitN(schema.Config.GoPath, "#", 2)
-				return jsonschema2go.TypeInfo{GoPath: parts[0], Name: parts[1]}
+				return generate.TypeInfo{GoPath: parts[0], Name: parts[1]}
 			}
 			mux.Lock()
 			defer mux.Unlock()
@@ -136,7 +138,7 @@ func compileValidator(ctx context.Context, r *require.Assertions, schema json.Ra
 				names[schema] = string('a' + len(names))
 			}
 
-			return jsonschema2go.TypeInfo{GoPath: "main", Name: names[schema]}
+			return generate.TypeInfo{GoPath: "main", Name: names[schema]}
 		}),
 		jsonschema2go.PrefixMap("main", dirName),
 		jsonschema2go.Debug(true),

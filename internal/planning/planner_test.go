@@ -1,6 +1,8 @@
-package jsonschema2go
+package planning
 
-import "testing"
+import (
+	"testing"
+)
 
 func Test_jsonPropertyToExportedName(t *testing.T) {
 	tests := []struct {
@@ -41,7 +43,7 @@ func Test_jsonPropertyToExportedName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := defaultTyper.JSONPropertyExported(tt.input); got != tt.want {
+			if got := DefaultTyper.JSONPropertyExported(tt.input); got != tt.want {
 				t.Errorf("jsonPropertyToExportedName() = %v, want %v", got, tt.want)
 			}
 		})

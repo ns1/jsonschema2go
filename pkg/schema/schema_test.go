@@ -1,25 +1,10 @@
-package jsonschema2go
+package schema
 
 import (
-	"context"
-	"fmt"
+	"encoding/json"
 	"github.com/stretchr/testify/require"
-	"net/url"
 	"testing"
 )
-
-type mockLoader map[string]*Schema
-
-func (m mockLoader) Load(ctx context.Context, u *url.URL) (*Schema, error) {
-	if u.Scheme != "file" || u.Host != "" {
-		return nil, fmt.Errorf("expected \"file\" scheme and no host but got %q and %q: %q", u.Scheme, u.Host, u)
-	}
-	v, ok := m[u.Path]
-	if !ok {
-		return nil, fmt.Errorf("%q not found", u)
-	}
-	return v, nil
-}
 
 func Test_getJSONFieldNames(t *testing.T) {
 	tests := []struct {
@@ -218,4 +203,12 @@ func schema(s Schema) *RefOrSchema {
 
 func ref(s string) *RefOrSchema {
 	return &RefOrSchema{ref: &s}
+}
+
+func annos(annos map[string]string) TagMap {
+	m := make(map[string]json.RawMessage)
+	for k, v := range annos {
+		m[k], _ = json.Marshal(v)
+	}
+	return m
 }

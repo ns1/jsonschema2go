@@ -1,8 +1,10 @@
-package jsonschema2go
+package print
 
 import (
 	"bytes"
 	"context"
+	"github.com/jwilner/jsonschema2go/internal/planning"
+	"github.com/jwilner/jsonschema2go/pkg/generate"
 	"github.com/stretchr/testify/require"
 	"go/format"
 	"testing"
@@ -13,7 +15,7 @@ func TestImports_List(t *testing.T) {
 		name          string
 		currentGoPath string
 		importGoPaths []string
-		wantImports   []Import
+		wantImports   []generate.Import
 	}{
 		{
 			"empty",
@@ -28,7 +30,7 @@ func TestImports_List(t *testing.T) {
 				"github.com/jwilner/jsonschema2go/example",
 				"github.com/jwilner/jsonschema2go/foo/example",
 			},
-			[]Import{
+			[]generate.Import{
 				{"github.com/jwilner/jsonschema2go/example", ""},
 				{"github.com/jwilner/jsonschema2go/foo/example", "example2"},
 			},
@@ -37,14 +39,14 @@ func TestImports_List(t *testing.T) {
 			"multiple",
 			"github.com/jwilner/jsonschema2go",
 			[]string{"encoding/json", "encoding/json"},
-			[]Import{
+			[]generate.Import{
 				{"encoding/json", ""},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.wantImports, newImports(tt.currentGoPath, tt.importGoPaths).List())
+			require.Equal(t, tt.wantImports, generate.NewImports(tt.currentGoPath, tt.importGoPaths).List())
 		})
 	}
 }
@@ -54,41 +56,41 @@ func TestImports_QualName(t *testing.T) {
 		name          string
 		currentGoPath string
 		importGoPaths []string
-		typeInfo      TypeInfo
+		typeInfo      generate.TypeInfo
 		want          string
 	}{
 		{
 			"builtin",
 			"github.com/jwilner/jsonschema2go",
 			[]string{"github.com/jwilner/jsonschema2go/example", "github.com/jwilner/jsonschema2go/foo/example"},
-			TypeInfo{Name: "int"},
+			generate.TypeInfo{Name: "int"},
 			"int",
 		},
 		{
 			"external",
 			"github.com/jwilner/jsonschema2go",
 			[]string{"github.com/jwilner/jsonschema2go/example", "github.com/jwilner/jsonschema2go/foo/example"},
-			TypeInfo{GoPath: "github.com/jwilner/jsonschema2go", Name: "Bob"},
+			generate.TypeInfo{GoPath: "github.com/jwilner/jsonschema2go", Name: "Bob"},
 			"Bob",
 		},
 		{
 			"external",
 			"github.com/jwilner/jsonschema2go",
 			[]string{"github.com/jwilner/jsonschema2go/example", "github.com/jwilner/jsonschema2go/foo/example"},
-			TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/example", Name: "Bob"},
+			generate.TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/example", Name: "Bob"},
 			"example.Bob",
 		},
 		{
 			"external with alias",
 			"github.com/jwilner/jsonschema2go",
 			[]string{"github.com/jwilner/jsonschema2go/example", "github.com/jwilner/jsonschema2go/foo/example"},
-			TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/foo/example", Name: "Bob"},
+			generate.TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/foo/example", Name: "Bob"},
 			"example2.Bob",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.want, newImports(tt.currentGoPath, tt.importGoPaths).QualName(tt.typeInfo))
+			require.Equal(t, tt.want, generate.NewImports(tt.currentGoPath, tt.importGoPaths).QualName(tt.typeInfo))
 		})
 	}
 }
@@ -133,20 +135,20 @@ var _ valErr = new(validationError)
 	tests := []struct {
 		name    string
 		goPath  string
-		plans   []Plan
+		plans   []generate.Plan
 		wantW   string
 		wantErr bool
 	}{
 		{
 			name:   "simple struct",
 			goPath: "github.com/jwilner/jsonschema2go",
-			plans: []Plan{
-				&StructPlan{
+			plans: []generate.Plan{
+				&planning.StructPlan{
 					Comment: "Bob does lots of cool things",
-					Fields: []StructField{
-						{Name: "Count", Type: TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
+					Fields: []planning.StructField{
+						{Name: "Count", Type: generate.TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
 					},
-					typeInfo: TypeInfo{
+					TypeInfo: generate.TypeInfo{
 						Name: "Bob",
 					},
 				},
@@ -172,21 +174,21 @@ func (m *Bob) Validate() error {
 		{
 			name:   "struct with qualified field",
 			goPath: "github.com/jwilner/jsonschema2go",
-			plans: []Plan{
-				&StructPlan{
+			plans: []generate.Plan{
+				&planning.StructPlan{
 					Comment: "Bob does lots of cool things",
-					Fields: []StructField{
-						{Name: "Count", Type: TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
+					Fields: []planning.StructField{
+						{Name: "Count", Type: generate.TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
 						{
 							Name: "Other",
-							Type: TypeInfo{
+							Type: generate.TypeInfo{
 								GoPath: "github.com/jwilner/jsonschema2go/blah",
 								Name:   "OtherType",
 							},
 							Tag: `json:"other,omitempty"`,
 						},
 					},
-					typeInfo: TypeInfo{
+					TypeInfo: generate.TypeInfo{
 						Name: "Bob",
 					},
 				},
@@ -215,14 +217,14 @@ func (m *Bob) Validate() error {
 		{
 			name:   "struct with aliased import",
 			goPath: "github.com/jwilner/jsonschema2go",
-			plans: []Plan{
-				&StructPlan{
+			plans: []generate.Plan{
+				&planning.StructPlan{
 					Comment: "Bob does lots of cool things",
-					Fields: []StructField{
-						{Name: "Count", Type: TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
+					Fields: []planning.StructField{
+						{Name: "Count", Type: generate.TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
 						{
 							Name: "Other",
-							Type: TypeInfo{
+							Type: generate.TypeInfo{
 								GoPath:  "github.com/jwilner/jsonschema2go/blah",
 								Name:    "OtherType",
 								Pointer: true,
@@ -231,14 +233,14 @@ func (m *Bob) Validate() error {
 						},
 						{
 							Name: "OtherOther",
-							Type: TypeInfo{
+							Type: generate.TypeInfo{
 								GoPath: "github.com/jwilner/jsonschema2go/bob/blah",
 								Name:   "AnotherType",
 							},
 							Tag: `json:"another,omitempty"`,
 						},
 					},
-					typeInfo: TypeInfo{
+					TypeInfo: generate.TypeInfo{
 						Name: "Bob",
 					},
 				},
@@ -269,18 +271,18 @@ func (m *Bob) Validate() error {
 		{
 			name:   "struct with embedded",
 			goPath: "github.com/jwilner/jsonschema2go",
-			plans: []Plan{
-				&StructPlan{
+			plans: []generate.Plan{
+				&planning.StructPlan{
 					Comment: "Bob does lots of cool things",
-					Fields: []StructField{
+					Fields: []planning.StructField{
 						{
-							Type: TypeInfo{
+							Type: generate.TypeInfo{
 								GoPath: "github.com/jwilner/jsonschema2go/blah",
 								Name:   "OtherType",
 							},
 						},
 					},
-					typeInfo: TypeInfo{
+					TypeInfo: generate.TypeInfo{
 						Name: "Bob",
 					},
 				},
@@ -308,27 +310,27 @@ func (m *Bob) Validate() error {
 		{
 			name:   "struct with embedded",
 			goPath: "github.com/jwilner/jsonschema2go",
-			plans: []Plan{
-				&StructPlan{
+			plans: []generate.Plan{
+				&planning.StructPlan{
 					Comment: "Bob does lots of cool things",
-					Fields: []StructField{
+					Fields: []planning.StructField{
 						{
-							Type: TypeInfo{
+							Type: generate.TypeInfo{
 								GoPath: "github.com/jwilner/jsonschema2go",
 								Name:   "OtherType",
 							},
 						},
 					},
-					typeInfo: TypeInfo{
+					TypeInfo: generate.TypeInfo{
 						Name: "Bob",
 					},
 				},
-				&StructPlan{
+				&planning.StructPlan{
 					Comment: "OtherType does lots of cool things",
-					Fields: []StructField{
-						{Type: TypeInfo{Name: "int"}, Name: "Count", Tag: `json:"count,omitempty"`},
+					Fields: []planning.StructField{
+						{Type: generate.TypeInfo{Name: "int"}, Name: "Count", Tag: `json:"count,omitempty"`},
 					},
-					typeInfo: TypeInfo{
+					TypeInfo: generate.TypeInfo{
 						Name: "OtherType",
 					},
 				},
@@ -364,23 +366,23 @@ func (m *OtherType) Validate() error {
 		{
 			name:   "array with struct",
 			goPath: "github.com/jwilner/jsonschema2go",
-			plans: []Plan{
-				&SlicePlan{
-					typeInfo: TypeInfo{
+			plans: []generate.Plan{
+				&planning.SlicePlan{
+					TypeInfo: generate.TypeInfo{
 						Name: "Bob",
 					},
 					Comment: "Bob does lots of cool things",
-					ItemType: TypeInfo{
+					ItemType: generate.TypeInfo{
 						GoPath: "github.com/jwilner/jsonschema2go",
 						Name:   "OtherType",
 					},
 				},
-				&StructPlan{
+				&planning.StructPlan{
 					Comment: "OtherType does lots of cool things",
-					Fields: []StructField{
-						{Type: TypeInfo{Name: "int"}, Name: "Count", Tag: `json:"count,omitempty"`},
+					Fields: []planning.StructField{
+						{Type: generate.TypeInfo{Name: "int"}, Name: "Count", Tag: `json:"count,omitempty"`},
 					},
-					typeInfo: TypeInfo{
+					TypeInfo: generate.TypeInfo{
 						Name: "OtherType",
 					},
 				},
@@ -423,7 +425,7 @@ func (m Bob) Validate() error {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var w bytes.Buffer
-			err := newPrinter(nil).Print(context.Background(), &w, tt.goPath, tt.plans)
+			err := New(nil).Print(context.Background(), &w, tt.goPath, tt.plans)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("printStruct() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -436,6 +438,107 @@ func (m Bob) Validate() error {
 				t.Fatalf("unable to format wanted: %v", err)
 			}
 			require.Equal(t, string(formattedWant), string(formatted))
+		})
+	}
+}
+
+func Test_mapPath(t *testing.T) {
+	tests := []struct {
+		name     string
+		path     string
+		prefixes [][2]string
+		want     string
+	}{
+		{"empty", "blah", nil, "blah"},
+		{"one", "github.com/jsonschema2go/foo/bar", [][2]string{{"github.com/jsonschema2go", "code"}}, "code/foo/bar"},
+		{
+			"greater",
+			"github.com/jsonschema2go/foo/bar",
+			[][2]string{{"github.com/jsonschema2go", "code"}, {"github.com/otherpath", "blob"}},
+			"code/foo/bar",
+		},
+		{
+			"less",
+			"github.com/jsonschema2go/foo/bar",
+			[][2]string{{"github.com/a", "other"}, {"github.com/jsonschema2go", "code"}},
+			"code/foo/bar",
+		},
+		{
+			"takes longest",
+			"github.com/jsonschema2go/foo/bar",
+			[][2]string{{"github.com/", "other"}, {"github.com/jsonschema2go", "code"}},
+			"code/foo/bar",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := PathMapper(tt.prefixes)(tt.path); got != tt.want {
+				t.Errorf("mapPath() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_typeFromID(t *testing.T) {
+	for _, tt := range []struct {
+		name                   string
+		pairs                  [][2]string
+		id, wantPath, wantName string
+	}{
+		{
+			name:     "maps",
+			pairs:    [][2]string{{"https://example.com/v1/", "github.com/example/"}},
+			id:       "https://example.com/v1/blah/bar.json",
+			wantPath: "github.com/example/blah",
+			wantName: "bar",
+		},
+		{
+			name:     "maps no extension",
+			pairs:    [][2]string{{"https://example.com/v1/", "github.com/example/"}},
+			id:       "https://example.com/v1/blah/bar",
+			wantPath: "github.com/example/blah",
+			wantName: "bar",
+		},
+		{
+			name:     "maps no pairs",
+			pairs:    [][2]string{},
+			id:       "https://example.com/v1/blah/bar",
+			wantPath: "example.com/v1/blah",
+			wantName: "bar",
+		},
+		{
+			name:     "maps no scheme",
+			pairs:    [][2]string{},
+			id:       "example.com/v1/blah/bar",
+			wantPath: "example.com/v1/blah",
+			wantName: "bar",
+		},
+		{
+			name:     "maps empty fragment",
+			pairs:    [][2]string{{"https://example.com/v1/", "github.com/example/"}},
+			id:       "https://example.com/v1/blah/bar.json#",
+			wantPath: "github.com/example/blah",
+			wantName: "bar",
+		},
+		{
+			name:     "maps properties fragment",
+			pairs:    [][2]string{{"https://example.com/v1/", "github.com/example/"}},
+			id:       "https://example.com/v1/blah/bar.json#/properties/baz",
+			wantPath: "github.com/example/blah",
+			wantName: "barBaz",
+		},
+		{
+			name:     "maps extended fragment",
+			pairs:    [][2]string{{"https://example.com/v1/", "github.com/example/"}},
+			id:       "https://example.com/v1/blah/bar.json#/properties/baz/items/2/properties/hello",
+			wantPath: "github.com/example/blah",
+			wantName: "barBazItems2Hello",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			if path, name := TypeFromId(tt.pairs)(tt.id); tt.wantName != name || tt.wantPath != path {
+				t.Errorf("wanted (%q, %q) got (%q, %q)", tt.wantPath, tt.wantName, path, name)
+			}
 		})
 	}
 }
