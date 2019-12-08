@@ -24,8 +24,8 @@ type schemaResult struct {
 }
 
 type schemaRequest struct {
-	url   string
-	c     chan<- schemaResult
+	url string
+	c   chan<- schemaResult
 }
 
 type cachingLoader struct {

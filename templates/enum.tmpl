@@ -9,7 +9,7 @@ type {{ .Type.Name }} {{ $.QualName .BaseType }}
 
 const (
 {{ range .Members -}}
-    {{ $.Type.Name }}{{ .Name }} {{ $.Type.Name }}= {{ $.Literal .Field }}
+    {{ $.Type.Name }}{{ .Name }} {{ $.Type.Name }}= {{ printf "%#v" .Field }}
 {{ end }}
 )
 

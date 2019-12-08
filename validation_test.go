@@ -187,7 +187,7 @@ func main() {
 	cmd.Stderr = os.Stderr
 	f, _ := ioutil.ReadFile(valuesPath)
 	if err := cmd.Run(); err != nil {
-		r.NoError(err, f)
+		r.NoError(err, string(f))
 	}
 	return &validator{workDir: dirName, harnessPath: harnessPath, valuesPath: valuesPath}
 }

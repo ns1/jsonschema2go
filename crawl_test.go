@@ -90,7 +90,7 @@ func TestSchemaToPlan(t *testing.T) {
 								Name:   "NestedType",
 							},
 							Tag:        `json:"nested,omitempty"`,
-							validators: []Validator{{Name: "subschema"}},
+							validators: []Validator{subschemaValidator},
 						},
 					},
 				},

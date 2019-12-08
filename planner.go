@@ -20,8 +20,9 @@ var (
 		plannerFunc(planSimpleArray),
 		plannerFunc(planEnum),
 		plannerFunc(planDiscriminatedOneOfObject),
+		plannerFunc(planOneOfDiffTypes),
 	}
-	subschemaValidator = Validator{Name: "subschema"}
+	subschemaValidator = Validator{Name: "subschema", ImpliedType: "interface { Validate() error }"}
 )
 
 type Planner interface {
@@ -33,7 +34,7 @@ type CompositePlanner []Planner
 func (c CompositePlanner) Plan(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
 	for i, p := range c {
 		pl, err := p.Plan(ctx, helper, schema)
-		if i != len(c)-1 && errors.Is(err, ErrContinue) {
+		if errors.Is(err, ErrContinue) {
 			if isDebug(ctx) {
 				log.Printf("planner: skipping planner %d: %v", i, err)
 			}
@@ -152,6 +153,100 @@ func planDiscriminatedOneOfObject(ctx context.Context, helper *PlanningHelper, s
 	)
 
 	return s, nil
+}
+
+func planOneOfDiffTypes(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
+	_, schemas, err := loadSchemaList(ctx, helper, schema, schema.OneOf)
+	if err != nil {
+		return nil, err
+	}
+	if len(schemas) == 0 {
+		return nil, fmt.Errorf("no oneOf schemas: %w", ErrContinue)
+	}
+	seen := make(map[SimpleType]bool)
+	for _, s := range schemas {
+		typ := s.ChooseType()
+		if typ == Integer {
+			typ = Number // we cannot be guaranteed to distinguish between floats and ints, so treat same
+		}
+		if seen[typ] {
+			return nil, fmt.Errorf("type %v seen too many times: %w", typ, ErrContinue)
+		}
+		seen[typ] = true
+	}
+	tInfo := helper.TypeInfoHinted(schema, Object)
+	if tInfo.Unknown() {
+		return nil, fmt.Errorf("schema type is unknown: %w", ErrContinue)
+	}
+
+	s := &StructPlan{typeInfo: tInfo, id: schema.CalcID}
+	s.Comment = schema.Annotations.GetString("description")
+
+	f := StructField{Name: "Value", Type: TypeInfo{Name: "interface{}"}}
+
+	var (
+		trait            marshalOneOfTrait
+		checkedSubSchema bool
+	)
+	for _, subSchema := range schemas {
+		info := helper.TypeInfo(subSchema)
+		if !info.BuiltIn() {
+			if err := helper.Dep(ctx, subSchema); err != nil {
+				return nil, err
+			}
+		}
+
+		switch subSchema.ChooseType() {
+		case Object:
+			trait.Object = info
+		case Array:
+			trait.Array = info
+		case String:
+			trait.Primitives = append(trait.Primitives, "string")
+		case Number:
+			trait.Primitives = append(trait.Primitives, "float64")
+		case Integer:
+			trait.Primitives = append(trait.Primitives, "int64")
+		case Boolean:
+			trait.Primitives = append(trait.Primitives, "bool")
+		case Null:
+			trait.Nil = true
+		}
+
+		for _, v := range validators(subSchema) {
+			if v.Name == subschemaValidator.Name {
+				if checkedSubSchema {
+					continue
+				}
+				checkedSubSchema = true
+			}
+			f.validators = append(f.validators, v)
+		}
+	}
+	s.Traits = []Trait{trait}
+	s.Fields = []StructField{f}
+	return s, nil
+}
+
+type marshalOneOfTrait struct {
+	Object     TypeInfo
+	Array      TypeInfo
+	Primitives []string
+	Nil        bool
+}
+
+func (m marshalOneOfTrait) Template() string {
+	return "oneOf"
+}
+
+func (m marshalOneOfTrait) Deps() []TypeInfo {
+	return []TypeInfo{
+		{GoPath: "encoding/json", Name: "NewEncoder"},
+		{GoPath: "encoding/json", Name: "Marshal"},
+		{GoPath: "encoding/json", Name: "Delim"},
+		{GoPath: "fmt", Name: "Errorf"},
+		{GoPath: "bytes", Name: "NewReader"},
+	}
 }
 
 type discriminatorMarshalTrait struct {
@@ -454,7 +549,7 @@ func templateStr(str string) *template.Template {
 }
 
 func validators(schema *Schema) (styles []Validator) {
-	switch schema.ChooseType() {
+	switch typ := schema.ChooseType(); typ {
 	case Array, Object:
 		if !schema.Config.NoValidate {
 			styles = append(styles, subschemaValidator)
@@ -468,6 +563,7 @@ func validators(schema *Schema) (styles []Validator) {
 				testExpr:    templateStr("!{{ .NameSpace }}Pattern.MatchString({{ .QualifiedName }})"),
 				sprintfExpr: templateStr(`"must match '` + pattern + `' but got %q", {{ .QualifiedName }}`),
 				Deps:        []TypeInfo{{GoPath: "regexp", Name: "MustCompile"}},
+				ImpliedType: "string",
 			})
 		}
 		if schema.MinLength != 0 {
@@ -478,6 +574,7 @@ func validators(schema *Schema) (styles []Validator) {
 				sprintfExpr: templateStr(
 					`"must have length greater than ` + lenStr + ` but was %d", len({{ .QualifiedName }})`,
 				),
+				ImpliedType: "string",
 			})
 		}
 		if schema.MaxLength != nil {
@@ -488,9 +585,14 @@ func validators(schema *Schema) (styles []Validator) {
 				sprintfExpr: templateStr(
 					`"must have length less than ` + lenStr + ` but was %d", len({{ .QualifiedName }})`,
 				),
+				ImpliedType: "string",
 			})
 		}
 	case Integer, Number:
+		impliedType := "int64"
+		if typ == Number {
+			impliedType = "float64"
+		}
 		if schema.MultipleOf != nil {
 			multipleOf := fmt.Sprintf("%v", *schema.MultipleOf)
 
@@ -506,6 +608,7 @@ func validators(schema *Schema) (styles []Validator) {
 				testExpr:    expr,
 				sprintfExpr: templateStr(`"must be a multiple of ` + multipleOf + ` but was %v", {{ .QualifiedName }}`),
 				Deps:        deps,
+				ImpliedType: impliedType,
 			})
 		}
 		numValidator := func(name, comparator, english string, limit float64, exclusive bool) {
@@ -520,6 +623,7 @@ func validators(schema *Schema) (styles []Validator) {
 				Name:        name,
 				testExpr:    templateStr(`{{ .QualifiedName }} ` + comparator + sLimit),
 				sprintfExpr: templateStr(`"must be ` + english + ` ` + sLimit + ` but was %v", {{ .QualifiedName }}`),
+				ImpliedType: impliedType,
 			})
 		}
 		if schema.Minimum != nil {

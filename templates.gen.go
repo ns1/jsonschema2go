@@ -101,7 +101,7 @@ type {{ .Type.Name }} {{ $.QualName .BaseType }}
 
 const (
 {{ range .Members -}}
-    {{ $.Type.Name }}{{ .Name }} {{ $.Type.Name }}= {{ $.Literal .Field }}
+    {{ $.Type.Name }}{{ .Name }} {{ $.Type.Name }}= {{ printf "%#v" .Field }}
 {{ end }}
 )
 
@@ -156,6 +156,7 @@ func (m *{{ $.Type.Name }}) Validate() error {
 {{ end -}}
 {{ end -}}
 {{ range $Field := .Fields -}}
+{{ if ne .Type.Name "interface{}" -}}
 {{ range $Field.Validators -}}
 {{ if eq .Name "subschema" -}}
     if err := m.{{ $Field.FieldRef }}.Validate(); err != nil {
@@ -180,6 +181,26 @@ func (m *{{ $.Type.Name }}) Validate() error {
 			message: fmt.Sprintf({{ .Sprintf ($Field.NameSpace) ($Field.DerefExpr) }}),
 		}
 	}
+{{ end -}}
+{{ end -}}
+{{ else -}}
+{{ range $Field.Validators -}}
+{{ if eq .Name "subschema" -}}
+	if v, ok := m.{{ $Field.FieldRef }}.(interface { Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return err
+		}
+    }
+{{ else -}}
+	if v, ok := m.{{ $Field.FieldRef }}.({{ .ImpliedType }}); ok {
+		if {{ .TestExpr ($Field.NameSpace) "v" }} {
+			return &validationError{
+				errType: "{{ .Name }}",
+				message: fmt.Sprintf({{ .Sprintf ($Field.NameSpace) "v" }}),
+			}
+		}
+	}
+{{ end -}}
 {{ end -}}
 {{ end -}}
 {{ end -}}
@@ -237,8 +258,86 @@ func (m *{{ $.Type.Name }}) UnmarshalJSON(data []byte) error {
 func (m *{{ $.Type.Name }}) MarshalJSON() ([]byte, error) {
 	return json.Marshal(m.{{ .StructField.Name }})
 }
-{{ end }}
-{{ end }}
+{{ else if eq .Template "oneOf" }}
+func (m *{{ $.Type.Name }}) UnmarshalJSON(data []byte) error {
+	tok, err := json.NewDecoder(bytes.NewReader(data)).Token()
+	if err != nil {
+		return err
+	}
+	switch {{ if or .Array.Name .Object.Name -}}t :={{ end -}} tok.(type) {
+{{- /*gotype: github.com/jwilner/jsonschema2go.marshalOneOfTrait */ -}}
+{{ if or .Array.Name .Object.Name -}}
+	case json.Delim:
+{{ if .Object.Name -}}
+		if t == '{' {
+			var obj {{ $.QualName .Object }}
+			if err := json.Unmarshal(data, &obj); err != nil {
+				return err
+			}
+			m.Value = obj
+			return nil
+		}
+{{ end -}}
+{{ if .Array.Name -}}
+		if t == '[' {
+			var arr {{ $.QualName .Array }}
+			if err := json.Unmarshal(data, &arr); err != nil {
+				return err
+			}
+			m.Value = arr
+			return nil
+		}
+{{ end -}}
+{{ end -}}
+{{ range .Primitives -}}
+{{ if eq . "string" -}}
+	case string:
+		var s string
+		if err := json.Unmarshal(data, &s); err != nil {
+			return err
+		}
+		m.Value = s
+    	return nil
+{{ else if eq . "int64" -}}
+	case float64:
+		var i int64
+		if err := json.Unmarshal(data, &i); err != nil {
+			return err
+		}
+		m.Value = i
+		return nil
+{{ else if eq . "float64" -}}
+	case float64:
+		var f float64
+		if err := json.Unmarshal(data, &f); err != nil {
+			return err
+		}
+		m.Value = f
+		return nil
+{{ else if eq . "bool" -}}
+	case bool:
+		var b bool
+		if err := json.Unmarshal(data, &b); err != nil {
+        	return err
+		}
+		m.Value = b
+    	return nil
+{{ end -}}
+{{ end -}}
+    }
+{{ if .Nil -}}
+	if tok == nil {
+		return nil
+	}
+{{ end -}}
+	return fmt.Errorf("unsupported type: %T", tok)
+}
+
+func (m *{{ $.Type.Name }}) MarshalJSON() ([]byte, error) {
+	return json.Marshal(m.Value)
+}
+{{ end -}}
+{{ end -}}
 
 `))
 	valueTmpl = template.Must(valueTmpl.New("values.tmpl").Parse(`{{/* gotype: github.com/jwilner/jsonschema2go.Plans */}}

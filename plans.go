@@ -2,10 +2,8 @@ package jsonschema2go
 
 import (
 	"bytes"
-	"fmt"
 	"net/url"
 	"sort"
-	"strconv"
 	"strings"
 	"text/template"
 	"unicode"
@@ -15,7 +13,6 @@ type TypeInfo struct {
 	GoPath  string
 	Name    string
 	Pointer bool
-	Array   bool
 	valPath string
 }
 
@@ -52,13 +49,6 @@ type StructField struct {
 	validators []Validator
 }
 
-func (s *StructField) FieldReference() string {
-	if s.Name == "" {
-		return s.Type.Name
-	}
-	return s.Name
-}
-
 func (s StructField) Validators() []Validator {
 	sort.Slice(s.validators, func(i, j int) bool {
 		return s.validators[i].Name < s.validators[j].Name
@@ -70,6 +60,7 @@ type Validator struct {
 	Name                           string
 	varExpr, testExpr, sprintfExpr *template.Template
 	Deps                           []TypeInfo
+	ImpliedType                    string
 }
 
 func tmplString(tmpl *template.Template, v interface{}) (string, error) {
@@ -127,12 +118,6 @@ func (boxedEncodingTrait) Template() string {
 
 func (boxedEncodingTrait) Deps() []TypeInfo {
 	return []TypeInfo{{GoPath: "encoding/json", Name: "Marshal"}}
-}
-
-func (boxedEncodingTrait) Primitive(t TypeInfo) string {
-	s := []rune(t.Name)
-	s[0] = unicode.ToLower(s[0])
-	return string(s)
 }
 
 type StructPlan struct {
@@ -249,17 +234,6 @@ func (e *EnumPlan) ID() string {
 type EnumMember struct {
 	Name  string
 	Field interface{}
-}
-
-func (e *EnumPlan) Literal(val interface{}) string {
-	switch t := val.(type) {
-	case bool:
-		return strconv.FormatBool(t)
-	case string:
-		return fmt.Sprintf("%q", t)
-	default:
-		return fmt.Sprintf("%d", t)
-	}
 }
 
 func (e *EnumPlan) Type() TypeInfo {
