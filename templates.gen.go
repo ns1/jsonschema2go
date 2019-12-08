@@ -9,7 +9,36 @@ var valueTmpl *template.Template
 
 func init() {
 	valueTmpl = template.New("")
-	valueTmpl = template.Must(valueTmpl.New("array.tmpl").Parse(`{{/* gotype: github.com/jwilner/jsonschema2go.arrayPlanContext */}}
+	valueTmpl = template.Must(valueTmpl.New("enum.tmpl").Parse(`{{/* gotype: github.com/jwilner/jsonschema2go.enumPlanContext */}}
+{{ if .Comment -}}
+// {{ .Comment }}
+{{ end -}}
+{{ if .ID -}}
+// generated from {{ .ID }}
+{{ end -}}
+type {{ .Type.Name }} {{ $.QualName .BaseType }}
+
+const (
+{{ range .Members -}}
+    {{ $.Type.Name }}{{ .Name }} {{ $.Type.Name }}= {{ printf "%#v" .Field }}
+{{ end }}
+)
+
+func (m {{ .Type.Name }}) Validate() error {
+{{ if .Members -}}
+    switch m {
+{{ range .Members -}}
+    case {{ $.Type.Name }}{{ .Name }}:
+        return nil
+{{ end -}}
+    }
+{{ end -}}
+    return &validationError{
+        errType: "unknown_member",
+        message: fmt.Sprintf("unknown value provided for {{ $.Type.Name }}: %v", m),
+    }
+}`))
+	valueTmpl = template.Must(valueTmpl.New("slice.tmpl").Parse(`{{/* gotype: github.com/jwilner/jsonschema2go.slicePlanContext */}}
 {{ if .Comment -}}
 // {{ .Comment }}
 {{ end -}}
@@ -90,35 +119,6 @@ func (m {{ $.Type.Name }}) Validate() error {
 	return nil
 }
 `))
-	valueTmpl = template.Must(valueTmpl.New("enum.tmpl").Parse(`{{/* gotype: github.com/jwilner/jsonschema2go.enumPlanContext */}}
-{{ if .Comment -}}
-// {{ .Comment }}
-{{ end -}}
-{{ if .ID -}}
-// generated from {{ .ID }}
-{{ end -}}
-type {{ .Type.Name }} {{ $.QualName .BaseType }}
-
-const (
-{{ range .Members -}}
-    {{ $.Type.Name }}{{ .Name }} {{ $.Type.Name }}= {{ printf "%#v" .Field }}
-{{ end }}
-)
-
-func (m {{ .Type.Name }}) Validate() error {
-{{ if .Members -}}
-    switch m {
-{{ range .Members -}}
-    case {{ $.Type.Name }}{{ .Name }}:
-        return nil
-{{ end -}}
-    }
-{{ end -}}
-    return &validationError{
-        errType: "unknown_member",
-        message: fmt.Sprintf("unknown value provided for {{ $.Type.Name }}: %v", m),
-    }
-}`))
 	valueTmpl = template.Must(valueTmpl.New("struct.tmpl").Parse(`{{/* gotype: github.com/jwilner/jsonschema2go.structPlanContext */}}
 {{ if .Comment -}}
 // {{ .Comment }}
@@ -208,7 +208,7 @@ func (m *{{ $.Type.Name }}) Validate() error {
 }
 
 {{ range $t := .Traits -}}
-{{ if eq .Template "boxed.tmpl" }}
+{{ if eq .Template "boxed" }}
 func (m *{{ $.Type.Name }}) MarshalJSON() ([]byte, error) {
     inner := struct {
 {{ range $.Fields -}}
@@ -229,7 +229,7 @@ func (m *{{ $.Type.Name }}) MarshalJSON() ([]byte, error) {
 	return json.Marshal(inner)
 }
 
-{{ else if eq .Template "discriminator.tmpl" }}
+{{ else if eq .Template "discriminator" }}
 func (m *{{ $.Type.Name }}) UnmarshalJSON(data []byte) error {
 	var discrim struct {
     {{ with .StructField -}}
@@ -340,6 +340,73 @@ func (m *{{ $.Type.Name }}) MarshalJSON() ([]byte, error) {
 {{ end -}}
 
 `))
+	valueTmpl = template.Must(valueTmpl.New("tuple.tmpl").Parse(`{{/* gotype: github.com/jwilner/jsonschema2go.tuplePlanContext */}}
+{{ if .Comment -}}
+// {{ .Comment }}
+{{ end -}}
+{{ if .ID -}}
+// generated from {{ .ID }}
+{{ end -}}
+type {{ .Type.Name }} [{{ .ArrayLength }}]interface{}
+
+{{ if .ValidateInitialize }}
+    var (
+{{ range $idx, $item := .Items -}}
+{{ range $item.Validators -}}
+        {{ .VarExpr (.NameSpace $.Type.Name $idx) }}
+{{ end -}}
+{{ end -}}
+    )
+{{ end -}}
+
+func (t *{{ .Type.Name }}) Validate() error {
+{{ range $idx, $Item := .Items -}}
+{{ range $Item.Validators -}}
+{{ if eq .Name "subschema" -}}
+        if v, ok := m[{{ $idx }}].(interface { Validate() error }); ok {
+            if err := v.Validate(); err != nil {
+                return err
+            }
+        }
+{{ else -}}
+        if v, ok := m[{{ $idx }}].({{ .ImpliedType }}); !ok {
+            return &validationError{
+                errType: "type",
+                path: []interface{}{ {{ $idx }} },
+                jsonPath: []interface{}{ {{ $idx }} },
+                message: fmt.Sprintf("must be {{ .ImpliedType }} but got %T", m[{{ $idx }}]),
+            }
+        } else if {{ .TestExpr ($Item.NameSpace) "v" }} {
+            return &validationError{
+                errType: "{{ .Name }}",
+                path: []interface{}{ {{ $idx }} },
+                jsonPath: []interface{}{ {{ $idx }} },
+                message: fmt.Sprintf({{ .Sprintf ($Item.NameSpace) "v" }}),
+            }
+        }
+{{ end -}}
+{{ end -}}
+{{ end -}}
+    return nil
+}
+
+func (t *{{ .Type.Name }}) UnmarshalJSON(data []byte) error {
+    var msgs []json.RawMessage
+    if err := json.Unmarshal(data, &msgs); err != nil {
+        return err
+    }
+{{ range $idx, $_ := .Items -}}
+    if len(msgs) > {{ $idx }} {
+        var item {{ $.QualName .Type }}
+        if err := json.Unmarshal(msgs[{{ $idx }}], &item); err != nil {
+            return err
+        }
+        t[{{ $idx }}] = item
+    }
+{{ end -}}
+    return nil
+}
+`))
 	valueTmpl = template.Must(valueTmpl.New("values.tmpl").Parse(`{{/* gotype: github.com/jwilner/jsonschema2go.Plans */}}
 // Code generated by jsonschema2go. DO NOT EDIT.
 package {{ .Imports.CurPackage }}
@@ -356,8 +423,12 @@ import (
 {{ template "struct.tmpl" . }}
 {{ end -}}
 
-{{ range .Arrays -}}
-{{ template "array.tmpl" . }}
+{{ range .Slices -}}
+{{ template "slice.tmpl" . }}
+{{ end -}}
+
+{{ range .Tuples -}}
+{{ template "tuple.tmpl" . }}
 {{ end -}}
 
 {{ range .Enums }}

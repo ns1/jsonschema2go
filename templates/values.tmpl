@@ -14,8 +14,12 @@ import (
 {{ template "struct.tmpl" . }}
 {{ end -}}
 
-{{ range .Arrays -}}
-{{ template "array.tmpl" . }}
+{{ range .Slices -}}
+{{ template "slice.tmpl" . }}
+{{ end -}}
+
+{{ range .Tuples -}}
+{{ template "tuple.tmpl" . }}
 {{ end -}}
 
 {{ range .Enums }}

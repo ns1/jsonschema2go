@@ -1,0 +1,17 @@
+{
+  "x-jsonschema2go": {
+    "gopath": "github.com/jwilner/jsonschema2go/internal/testdata/generate/tuple/foo#Bar"
+  },
+  "description": "Bar gives you some dumb info",
+  "type": "array",
+  "items": [
+    {
+      "type": "string",
+      "pattern": "^abcdef$"
+    },
+    {
+      "type": "number",
+      "minimum": 42.3
+    }
+  ]
+}

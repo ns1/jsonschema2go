@@ -141,14 +141,26 @@ func (ps *Plans) Structs() (structs []*structPlanContext) {
 	return
 }
 
-func (ps *Plans) Arrays() (arrays []arrayPlanContext) {
+func (ps *Plans) Slices() (slices []*slicePlanContext) {
 	for _, p := range ps.plans {
-		if a, ok := p.(*ArrayPlan); ok {
-			arrays = append(arrays, arrayPlanContext{ps.Imports, a})
+		if a, ok := p.(*SlicePlan); ok {
+			slices = append(slices, &slicePlanContext{ps.Imports, a})
 		}
 	}
-	sort.Slice(arrays, func(i, j int) bool {
-		return arrays[i].Type().Name < arrays[j].Type().Name
+	sort.Slice(slices, func(i, j int) bool {
+		return slices[i].Type().Name < slices[j].Type().Name
+	})
+	return
+}
+
+func (ps *Plans) Tuples() (tuples []*tuplePlanContext) {
+	for _, p := range ps.plans {
+		if a, ok := p.(*TuplePlan); ok {
+			tuples = append(tuples, &tuplePlanContext{ps.Imports, a})
+		}
+	}
+	sort.Slice(tuples, func(i, j int) bool {
+		return tuples[i].Type().Name < tuples[j].Type().Name
 	})
 	return
 }
@@ -292,12 +304,40 @@ func (f *EnrichedStructField) InnerFieldAssignment() (string, error) {
 	return w.String(), err
 }
 
-type arrayPlanContext struct {
+type slicePlanContext struct {
 	*Imports
-	*ArrayPlan
+	*SlicePlan
 }
 
 type enumPlanContext struct {
 	*Imports
 	*EnumPlan
+}
+
+type tuplePlanContext struct {
+	*Imports
+	*TuplePlan
+}
+
+type enrichedTupleItem struct {
+	TuplePlan *tuplePlanContext
+	idx       int
+	*TupleItem
+}
+
+func (e *enrichedTupleItem) NameSpace() string {
+	name := fmt.Sprintf("%s%d", e.TuplePlan.Type().Name, e.idx)
+	if len(name) > 0 {
+		runes := []rune(name)
+		runes[0] = unicode.ToLower(runes[0])
+		name = string(runes)
+	}
+	return name
+}
+
+func (t *tuplePlanContext) Items() (items []*enrichedTupleItem) {
+	for idx, item := range t.TuplePlan.Items {
+		items = append(items, &enrichedTupleItem{t, idx, item})
+	}
+	return
 }

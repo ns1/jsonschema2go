@@ -15,12 +15,13 @@ import (
 var (
 	ErrContinue = errors.New("continue")
 	Composite   = CompositePlanner{
-		plannerFunc(planAllOfObject),
-		plannerFunc(planSimpleObject),
-		plannerFunc(planSimpleArray),
-		plannerFunc(planEnum),
-		plannerFunc(planDiscriminatedOneOfObject),
-		plannerFunc(planOneOfDiffTypes),
+		plannerFunc("allOfObject", planAllOfObject),
+		plannerFunc("object", planObject),
+		plannerFunc("tuple", planTuple),
+		plannerFunc("slice", planSlice),
+		plannerFunc("enum", planEnum),
+		plannerFunc("discriminatedOneOf", planDiscriminatedOneOfObject),
+		plannerFunc("oneOfDiffTypes", planOneOfDiffTypes),
 	}
 	subschemaValidator = Validator{Name: "subschema", ImpliedType: "interface { Validate() error }"}
 )
@@ -33,10 +34,15 @@ type CompositePlanner []Planner
 
 func (c CompositePlanner) Plan(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
 	for i, p := range c {
+		name := strconv.Itoa(i)
+		if p, ok := p.(interface { Name() string }); ok {
+			name = p.Name()
+		}
+
 		pl, err := p.Plan(ctx, helper, schema)
 		if errors.Is(err, ErrContinue) {
 			if isDebug(ctx) {
-				log.Printf("planner: skipping planner %d: %v", i, err)
+				log.Printf("planner %v: skipping planner: %v", name, err)
 			}
 			continue
 		}
@@ -44,9 +50,12 @@ func (c CompositePlanner) Plan(ctx context.Context, helper *PlanningHelper, sche
 			return nil, err
 		}
 		if pl != nil {
+			if isDebug(ctx) {
+				log.Printf("planner %v: planned %v %v", name, pl.Type().GoPath, pl.Type().Name)
+			}
 			return pl, nil
 		}
-		return nil, fmt.Errorf("planner %d returned nil for plan", i)
+		return nil, fmt.Errorf("planner %v returned nil for plan", name)
 	}
 	// we require types for objects and arrays
 	if t := schema.ChooseType(); t == Object || t == Array {
@@ -59,10 +68,25 @@ func (c CompositePlanner) Plan(ctx context.Context, helper *PlanningHelper, sche
 	return nil, nil
 }
 
-type plannerFunc func(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error)
+func plannerFunc(
+	name string,
+	f func(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error),
+) Planner {
+	return namedPlannerFunc{name: name, f: f}
+}
 
-func (p plannerFunc) Plan(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
-	return p(ctx, helper, schema)
+
+type namedPlannerFunc struct {
+	f func(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error)
+	name string
+}
+
+func (p namedPlannerFunc) Name() string {
+	return p.name
+}
+
+func (p namedPlannerFunc) Plan(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
+	return p.f(ctx, helper, schema)
 }
 
 type PlanningHelper struct {
@@ -255,7 +279,7 @@ type discriminatorMarshalTrait struct {
 }
 
 func (d *discriminatorMarshalTrait) Template() string {
-	return "discriminator.tmpl"
+	return "discriminator"
 }
 
 type DiscriminatorCase struct {
@@ -370,7 +394,7 @@ func planAllOfObject(ctx context.Context, helper *PlanningHelper, schema *Schema
 	return s, nil
 }
 
-func planSimpleObject(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
+func planObject(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
 	if schema.ChooseType() != Object {
 		return nil, fmt.Errorf("not an object: %w", ErrContinue)
 	}
@@ -398,7 +422,50 @@ func planSimpleObject(ctx context.Context, helper *PlanningHelper, schema *Schem
 	return s, nil
 }
 
-func planSimpleArray(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
+func planTuple(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
+	if schema.ChooseType() != Array {
+		return nil, fmt.Errorf("not an array: %w", ErrContinue)
+	}
+	tInfo := helper.TypeInfo(schema)
+	if tInfo.Unknown() {
+		return nil, fmt.Errorf("type unknown: %w", ErrContinue)
+	}
+	if schema.Items == nil || len(schema.Items.TupleFields) == 0 {
+		return nil, fmt.Errorf("not a tuple: %w", ErrContinue)
+	}
+	_, schemas, err := loadSchemaList(ctx, helper, schema, schema.Items.TupleFields)
+	if err != nil {
+		return nil, err
+	}
+
+	var items []*TupleItem
+	for i, s := range schemas {
+		t := helper.TypeInfo(s)
+		if t.Unknown() {
+			return nil, fmt.Errorf("type for position %d unknown: %w", i, ErrContinue)
+		}
+		if !t.BuiltIn() {
+			if err := helper.Dep(ctx, s); err != nil {
+				return nil, err
+			}
+		}
+		vals := validators(s)
+		items = append(items, &TupleItem{
+			Comment:    s.Annotations.GetString("description"),
+			Type:       t,
+			validators: vals,
+		})
+	}
+
+	return &TuplePlan{
+		typeInfo: tInfo,
+		Comment:  schema.Annotations.GetString("description"),
+		id:       schema.CalcID,
+		Items:    items,
+	}, nil
+}
+
+func planSlice(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {
 	if schema.ChooseType() != Array {
 		return nil, fmt.Errorf("not an array: %w", ErrContinue)
 	}
@@ -415,7 +482,7 @@ func planSimpleArray(ctx context.Context, helper *PlanningHelper, schema *Schema
 			return nil, err
 		}
 	}
-	a := &ArrayPlan{typeInfo: tInfo, id: schema.CalcID}
+	a := SlicePlan{typeInfo: tInfo, id: schema.CalcID}
 	a.Comment = schema.Annotations.GetString("description")
 	if itemSchema != nil {
 		if a.ItemType = helper.TypeInfo(itemSchema); a.ItemType.Unknown() {
@@ -458,7 +525,7 @@ func planSimpleArray(ctx context.Context, helper *PlanningHelper, schema *Schema
 	if itemSchema != nil {
 		a.itemValidators = validators(itemSchema)
 	}
-	return a, nil
+	return &a, nil
 }
 
 func planEnum(ctx context.Context, helper *PlanningHelper, schema *Schema) (Plan, error) {

@@ -2,6 +2,7 @@ package jsonschema2go
 
 import (
 	"bytes"
+	"fmt"
 	"net/url"
 	"sort"
 	"strings"
@@ -39,6 +40,72 @@ var primitives = map[SimpleType]string{
 	String:  "string",
 }
 
+type TuplePlan struct {
+	typeInfo TypeInfo
+	id       *url.URL
+	Comment  string
+
+	Items []*TupleItem
+}
+
+func (t *TuplePlan) ArrayLength() int {
+	return len(t.Items)
+}
+
+func (t *TuplePlan) Type() TypeInfo {
+	return t.typeInfo
+}
+
+func (t *TuplePlan) Deps() []TypeInfo {
+	deps := []TypeInfo{
+		{GoPath: "encoding/json", Name: "Marshal"},
+		{GoPath: "encoding/json", Name: "Unmarshal"},
+		{GoPath: "fmt", Name: "Sprintf"},
+	}
+	for _, f := range t.Items {
+		deps = append(deps, f.Type)
+		for _, v := range f.validators {
+			deps = append(deps, v.Deps...)
+		}
+	}
+	return deps
+}
+
+func (t *TuplePlan) ID() string {
+	if t.id != nil {
+		return t.id.String()
+	}
+	return ""
+}
+
+func (s *TuplePlan) ValidateInitialize() bool {
+	for _, f := range s.Items {
+		for _, v := range f.validators {
+			if v.varExpr != nil {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+type TupleItem struct {
+	Comment    string
+	Type       TypeInfo
+	validators []Validator
+}
+
+func (t TupleItem) Validators() []Validator {
+	return sortedValidators(t.validators)
+}
+
+func sortedValidators(vals []Validator) []Validator {
+	sort.Slice(vals, func(i, j int) bool {
+		return vals[i].Name < vals[j].Name
+	})
+	return vals
+}
+
 type StructField struct {
 	Comment    string
 	Name       string
@@ -50,10 +117,7 @@ type StructField struct {
 }
 
 func (s StructField) Validators() []Validator {
-	sort.Slice(s.validators, func(i, j int) bool {
-		return s.validators[i].Name < s.validators[j].Name
-	})
-	return s.validators
+	return sortedValidators(s.validators)
 }
 
 type Validator struct {
@@ -90,8 +154,13 @@ func (v *Validator) Sprintf(nameSpace, qualifiedName string) (string, error) {
 	}{nameSpace, qualifiedName})
 }
 
-func (Validator) NameSpace(names ...string) string {
-	name := strings.Join(names, "")
+func (Validator) NameSpace(names ...interface{}) string {
+	strs := make([]string, 0, len(names))
+	for _, n := range names {
+		strs = append(strs, fmt.Sprint(n))
+	}
+
+	name := strings.Join(strs, "")
 	if len(name) > 0 {
 		runes := []rune(name)
 		runes[0] = unicode.ToLower(runes[0])
@@ -113,7 +182,7 @@ type Plan interface {
 type boxedEncodingTrait struct{}
 
 func (boxedEncodingTrait) Template() string {
-	return "boxed.tmpl"
+	return "boxed"
 }
 
 func (boxedEncodingTrait) Deps() []TypeInfo {
@@ -167,7 +236,7 @@ func (s *StructPlan) Deps() (deps []TypeInfo) {
 	return
 }
 
-type ArrayPlan struct {
+type SlicePlan struct {
 	typeInfo TypeInfo
 	id       *url.URL
 
@@ -177,36 +246,36 @@ type ArrayPlan struct {
 	itemValidators []Validator
 }
 
-func (a *ArrayPlan) ID() string {
+func (a *SlicePlan) ID() string {
 	if a.id != nil {
 		return a.id.String()
 	}
 	return ""
 }
 
-func (a *ArrayPlan) Type() TypeInfo {
+func (a *SlicePlan) Type() TypeInfo {
 	return a.typeInfo
 }
 
-func (a *ArrayPlan) Deps() []TypeInfo {
+func (a *SlicePlan) Deps() []TypeInfo {
 	return []TypeInfo{a.ItemType, {Name: "Marshal", GoPath: "encoding/json"}, {Name: "Sprintf", GoPath: "fmt"}}
 }
 
-func (a *ArrayPlan) Validators() []Validator {
+func (a *SlicePlan) Validators() []Validator {
 	sort.Slice(a.validators, func(i, j int) bool {
 		return a.validators[i].Name < a.validators[j].Name
 	})
 	return a.validators
 }
 
-func (a *ArrayPlan) ItemValidators() []Validator {
+func (a *SlicePlan) ItemValidators() []Validator {
 	sort.Slice(a.itemValidators, func(i, j int) bool {
 		return a.itemValidators[i].Name < a.itemValidators[j].Name
 	})
 	return a.itemValidators
 }
 
-func (a *ArrayPlan) ItemValidateInitialize() bool {
+func (a *SlicePlan) ItemValidateInitialize() bool {
 	for _, i := range a.itemValidators {
 		if i.varExpr != nil {
 			return true

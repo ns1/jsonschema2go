@@ -69,7 +69,6 @@ func TestGenerate(t *testing.T) {
 		if !e.IsDir() {
 			continue
 		}
-
 		t.Run(path.Base(e.Name()), func(t *testing.T) {
 			r := require.New(t)
 

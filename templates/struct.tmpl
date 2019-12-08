@@ -87,7 +87,7 @@ func (m *{{ $.Type.Name }}) Validate() error {
 }
 
 {{ range $t := .Traits -}}
-{{ if eq .Template "boxed.tmpl" }}
+{{ if eq .Template "boxed" }}
 func (m *{{ $.Type.Name }}) MarshalJSON() ([]byte, error) {
     inner := struct {
 {{ range $.Fields -}}
@@ -108,7 +108,7 @@ func (m *{{ $.Type.Name }}) MarshalJSON() ([]byte, error) {
 	return json.Marshal(inner)
 }
 
-{{ else if eq .Template "discriminator.tmpl" }}
+{{ else if eq .Template "discriminator" }}
 func (m *{{ $.Type.Name }}) UnmarshalJSON(data []byte) error {
 	var discrim struct {
     {{ with .StructField -}}
