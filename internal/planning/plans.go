@@ -55,3 +55,7 @@ func (e *EnumPlan) Type() generate.TypeInfo {
 func (e *EnumPlan) Deps() []generate.TypeInfo {
 	return []generate.TypeInfo{e.BaseType, {Name: "Sprintf", GoPath: "fmt"}}
 }
+
+func (e *EnumPlan) Printable(imp *generate.Imports) generate.PrintablePlan {
+	return &enumPlanContext{Imports: imp, EnumPlan: e}
+}

@@ -121,3 +121,16 @@ func planSlice(ctx context.Context, helper generate.Helper, schema *sch.Schema) 
 	}
 	return &a, nil
 }
+
+type slicePlanContext struct {
+	*generate.Imports
+	*SlicePlan
+}
+
+func (s *slicePlanContext) Template() string {
+	return "slice.tmpl"
+}
+
+func (s *SlicePlan) Printable(imp *generate.Imports) generate.PrintablePlan {
+	return &slicePlanContext{Imports: imp, SlicePlan: s}
+}

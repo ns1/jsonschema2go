@@ -9,10 +9,16 @@ type Plan interface {
 	Type() TypeInfo
 	Deps() []TypeInfo
 	ID() string
+	Printable(imports *Imports) PrintablePlan
 }
 
 type Planner interface {
 	Plan(ctx context.Context, helper Helper, schema *schema.Schema) (Plan, error)
+}
+
+type PrintablePlan interface {
+	Template() string
+	QualName(info TypeInfo) string
 }
 
 type Helper interface {

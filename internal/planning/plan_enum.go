@@ -26,3 +26,12 @@ func planEnum(ctx context.Context, helper generate.Helper, schema *schema.Schema
 	}
 	return e, nil
 }
+
+type enumPlanContext struct {
+	*generate.Imports
+	*EnumPlan
+}
+
+func (e *enumPlanContext) Template() string {
+	return "enum.tmpl"
+}

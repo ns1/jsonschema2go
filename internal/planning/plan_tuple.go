@@ -6,6 +6,7 @@ import (
 	"github.com/jwilner/jsonschema2go/pkg/generate"
 	sch "github.com/jwilner/jsonschema2go/pkg/schema"
 	"net/url"
+	"unicode"
 )
 
 type TuplePlan struct {
@@ -14,6 +15,10 @@ type TuplePlan struct {
 	Comment  string
 
 	Items []*TupleItem
+}
+
+func (t *TuplePlan) Printable(imports *generate.Imports) generate.PrintablePlan {
+	return &TuplePlanContext{Imports: imports, TuplePlan: t}
 }
 
 func (t *TuplePlan) ArrayLength() int {
@@ -46,8 +51,8 @@ func (t *TuplePlan) ID() string {
 	return ""
 }
 
-func (s *TuplePlan) ValidateInitialize() bool {
-	for _, f := range s.Items {
+func (t *TuplePlan) ValidateInitialize() bool {
+	for _, f := range t.Items {
 		for _, v := range f.validators {
 			if v.varExpr != nil {
 				return true
@@ -114,4 +119,36 @@ func PlanTuple(ctx context.Context, helper generate.Helper, schema *sch.Schema) 
 		id:       schema.CalcID,
 		Items:    items,
 	}, nil
+}
+
+type TuplePlanContext struct {
+	*generate.Imports
+	*TuplePlan
+}
+
+func (t *TuplePlanContext) Template() string {
+	return "tuple.tmpl"
+}
+
+type EnrichedTupleItem struct {
+	TuplePlan *TuplePlanContext
+	idx       int
+	*TupleItem
+}
+
+func (e *EnrichedTupleItem) NameSpace() string {
+	name := fmt.Sprintf("%s%d", e.TuplePlan.Type().Name, e.idx)
+	if len(name) > 0 {
+		runes := []rune(name)
+		runes[0] = unicode.ToLower(runes[0])
+		name = string(runes)
+	}
+	return name
+}
+
+func (t *TuplePlanContext) Items() (items []*EnrichedTupleItem) {
+	for idx, item := range t.TuplePlan.Items {
+		items = append(items, &EnrichedTupleItem{t, idx, item})
+	}
+	return
 }

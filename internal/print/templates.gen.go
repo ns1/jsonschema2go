@@ -419,20 +419,16 @@ import (
 )
 {{ end -}}
 
-{{ range .Structs -}}
+{{ range .Plans -}}
+{{ if eq .Template "struct.tmpl" -}}
 {{ template "struct.tmpl" . }}
-{{ end -}}
-
-{{ range .Slices -}}
+{{ else if eq .Template "slice.tmpl" -}}
 {{ template "slice.tmpl" . }}
-{{ end -}}
-
-{{ range .Tuples -}}
+{{ else if eq .Template "tuple.tmpl" -}}
 {{ template "tuple.tmpl" . }}
-{{ end -}}
-
-{{ range .Enums }}
+{{ else if eq .Template "enum.tmpl" }}
 {{ template "enum.tmpl" . }}
+{{ end -}}
 {{ end -}}
 
 type valErr interface {
