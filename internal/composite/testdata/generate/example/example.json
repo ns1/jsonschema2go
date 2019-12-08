@@ -1,0 +1,17 @@
+{
+  "description": "Bar contains some info",
+  "x-jsonschema2go": {
+    "gopath": "github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/example/foo#Bar"
+  },
+  "properties": {
+    "baz": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{10}$"
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 3
+    }
+  },
+  "required": ["baz"]
+}

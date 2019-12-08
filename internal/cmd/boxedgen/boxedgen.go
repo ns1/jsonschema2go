@@ -75,7 +75,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	f, err := os.Create("boxed/boxed.go")
+	f, err := os.Create("pkg/boxed/boxed.go")
 	if err != nil {
 		log.Fatal(err)
 	}
