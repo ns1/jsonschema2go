@@ -23,6 +23,7 @@ func defaultSort(plans []gen.Plan) []gen.Plan {
 				return false
 			}
 		}
+		// equal
 		return false
 	})
 	return sorted
