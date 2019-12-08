@@ -1,0 +1,11 @@
+{
+  "x-jsonschema2go": {
+    "gopath": "github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/simple_nested/foo#A"
+  },
+  "type": "object",
+  "properties": {
+    "b": {
+      "type": "object"
+    }
+  }
+}

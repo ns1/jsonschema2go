@@ -1,0 +1,11 @@
+{
+  "x-jsonschema2go": {
+    "gopath": "github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/composite/foo#Blob"
+  },
+  "type": "object",
+  "properties": {
+    "count": {
+      "type": "integer"
+    }
+  }
+}

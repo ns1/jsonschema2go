@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jwilner/jsonschema2go/internal/composite"
+	"github.com/jwilner/jsonschema2go/internal/enum"
+	"github.com/jwilner/jsonschema2go/internal/slice"
+	"github.com/jwilner/jsonschema2go/internal/tuple"
 	"github.com/jwilner/jsonschema2go/pkg/ctxflags"
 	"github.com/jwilner/jsonschema2go/pkg/generate"
 	sch "github.com/jwilner/jsonschema2go/pkg/schema"
@@ -14,20 +18,20 @@ import (
 )
 
 var (
-	ErrContinue = errors.New("continue")
-	Composite   = CompositePlanner{
-		plannerFunc("allOfObject", planAllOfObject),
-		plannerFunc("object", planObject),
-		plannerFunc("tuple", PlanTuple),
-		plannerFunc("slice", planSlice),
-		plannerFunc("enum", planEnum),
-		plannerFunc("discriminatedOneOf", planDiscriminatedOneOfObject),
-		plannerFunc("oneOfDiffTypes", planOneOfDiffTypes),
+	Composite = CompositePlanner{
+		plannerFunc("allOfObject", composite.PlanAllOfObject),
+		plannerFunc("object", composite.PlanObject),
+		plannerFunc("tuple", tuple.PlanTuple),
+		plannerFunc("slice", slice.PlanSlice),
+		plannerFunc("enum", enum.Plan),
+		plannerFunc("discriminatedOneOf", composite.PlanDiscriminatedOneOfObject),
+		plannerFunc("oneOfDiffTypes", composite.PlanOneOfDiffTypes),
 	}
 )
 
 type CompositePlanner []generate.Planner
 
+//go:generate go run ../cmd/embedtmpl/embedtmpl.go planning values.tmpl tmpl.gen.go
 func (c CompositePlanner) Plan(ctx context.Context, helper generate.Helper, schema *sch.Schema) (generate.Plan, error) {
 	for i, p := range c {
 		name := strconv.Itoa(i)
@@ -36,7 +40,7 @@ func (c CompositePlanner) Plan(ctx context.Context, helper generate.Helper, sche
 		}
 
 		pl, err := p.Plan(ctx, helper, schema)
-		if errors.Is(err, ErrContinue) {
+		if errors.Is(err, generate.ErrContinue) {
 			if ctxflags.IsDebug(ctx) {
 				log.Printf("planner %v: skipping planner: %v", name, err)
 			}
@@ -149,34 +153,6 @@ func (p *Helper) Dep(ctx context.Context, schemas ...*sch.Schema) error {
 		}
 	}
 	return nil
-}
-
-func loadSchemaList(
-	ctx context.Context,
-	helper generate.Helper,
-	parent *sch.Schema,
-	schemas []*sch.RefOrSchema,
-) (sch.SimpleType, []*sch.Schema, error) {
-	var (
-		resolved  []*sch.Schema
-		foundType sch.SimpleType
-	)
-	for _, s := range schemas {
-		r, err := s.Resolve(ctx, parent, helper)
-		if err != nil {
-			return sch.Unknown, nil, err
-		}
-		resolved = append(resolved, r)
-		t := r.ChooseType()
-		if t == sch.Unknown {
-			continue
-		}
-		if foundType == sch.Unknown {
-			foundType = t
-			continue
-		}
-	}
-	return foundType, resolved, nil
 }
 
 func NewNamer(knownInitialisms []string) *Namer {

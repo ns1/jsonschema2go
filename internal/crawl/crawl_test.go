@@ -4,7 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/jwilner/jsonschema2go/internal/composite"
+	"github.com/jwilner/jsonschema2go/internal/enum"
 	"github.com/jwilner/jsonschema2go/internal/planning"
+	"github.com/jwilner/jsonschema2go/internal/validator"
 	"github.com/jwilner/jsonschema2go/pkg/generate"
 	"github.com/jwilner/jsonschema2go/pkg/schema"
 	"github.com/stretchr/testify/require"
@@ -35,17 +38,17 @@ func TestSchemaToPlan(t *testing.T) {
 				}),
 			},
 			want: []generate.Plan{
-				&planning.StructPlan{
+				&composite.StructPlan{
 					TypeInfo: generate.TypeInfo{
 						GoPath: "github.com/jwilner/jsonschema2go/example",
 						Name:   "Awesome",
 					},
 					Comment: "i am bob",
-					Fields: []planning.StructField{
+					Fields: []composite.StructField{
 						{
 							Name: "Count",
 							Type: generate.TypeInfo{
-								GoPath:  "github.com/jwilner/jsonschema2go/boxed",
+								GoPath:  "github.com/jwilner/jsonschema2go/pkg/boxed",
 								Name:    "Int64",
 								ValPath: "Int64",
 							},
@@ -53,7 +56,7 @@ func TestSchemaToPlan(t *testing.T) {
 							Tag:      `json:"count"`,
 						},
 					},
-					Traits: []planning.Trait{&planning.BoxedEncodingTrait{}},
+					Traits: []composite.Trait{&composite.BoxedEncodingTrait{}},
 				},
 			},
 		},
@@ -80,13 +83,13 @@ func TestSchemaToPlan(t *testing.T) {
 				},
 			},
 			want: []generate.Plan{
-				&planning.StructPlan{
+				&composite.StructPlan{
 					TypeInfo: generate.TypeInfo{
 						GoPath: "github.com/jwilner/jsonschema2go/example",
 						Name:   "Awesome",
 					},
 					Comment: "i am bob",
-					Fields: []planning.StructField{
+					Fields: []composite.StructField{
 						{
 							Name:     "Nested",
 							JSONName: "nested",
@@ -95,28 +98,28 @@ func TestSchemaToPlan(t *testing.T) {
 								Name:   "NestedType",
 							},
 							Tag:             `json:"nested,omitempty"`,
-							FieldValidators: []planning.Validator{planning.SubschemaValidator},
+							FieldValidators: []validator.Validator{validator.SubschemaValidator},
 						},
 					},
 				},
-				&planning.StructPlan{
+				&composite.StructPlan{
 					TypeInfo: generate.TypeInfo{
 						GoPath: "github.com/jwilner/jsonschema2go/example",
 						Name:   "NestedType",
 					},
-					Fields: []planning.StructField{
+					Fields: []composite.StructField{
 						{
 							Name:     "Count",
 							JSONName: "count",
 							Type: generate.TypeInfo{
-								GoPath:  "github.com/jwilner/jsonschema2go/boxed",
+								GoPath:  "github.com/jwilner/jsonschema2go/pkg/boxed",
 								Name:    "Int64",
 								ValPath: "Int64",
 							},
 							Tag: `json:"count"`,
 						},
 					},
-					Traits: []planning.Trait{&planning.BoxedEncodingTrait{}},
+					Traits: []composite.Trait{&composite.BoxedEncodingTrait{}},
 				},
 			},
 		},
@@ -152,37 +155,37 @@ func TestSchemaToPlan(t *testing.T) {
 				},
 			},
 			want: []generate.Plan{
-				&planning.StructPlan{
+				&composite.StructPlan{
 					TypeInfo: generate.TypeInfo{
 						GoPath: "github.com/jwilner/jsonschema2go/example",
 						Name:   "Awesome",
 					},
 					Comment: "i am bob",
-					Fields: []planning.StructField{
+					Fields: []composite.StructField{
 						{
 							Name:     "Count",
 							JSONName: "count",
 							Type: generate.TypeInfo{
-								GoPath:  "github.com/jwilner/jsonschema2go/boxed",
+								GoPath:  "github.com/jwilner/jsonschema2go/pkg/boxed",
 								Name:    "Int64",
 								ValPath: "Int64",
 							},
 							Tag: `json:"count"`,
 						},
 					},
-					Traits: []planning.Trait{&planning.BoxedEncodingTrait{}},
+					Traits: []composite.Trait{&composite.BoxedEncodingTrait{}},
 				},
-				&planning.StructPlan{
+				&composite.StructPlan{
 					TypeInfo: generate.TypeInfo{
 						GoPath: "github.com/jwilner/jsonschema2go/example",
 						Name:   "AwesomeWithID",
 					},
-					Fields: []planning.StructField{
+					Fields: []composite.StructField{
 						{
 							Name:     "ID",
 							JSONName: "id",
 							Type: generate.TypeInfo{
-								GoPath:  "github.com/jwilner/jsonschema2go/boxed",
+								GoPath:  "github.com/jwilner/jsonschema2go/pkg/boxed",
 								Name:    "Int64",
 								ValPath: "Int64",
 							},
@@ -193,10 +196,10 @@ func TestSchemaToPlan(t *testing.T) {
 								GoPath: "github.com/jwilner/jsonschema2go/example",
 								Name:   "Awesome",
 							},
-							FieldValidators: []planning.Validator{planning.SubschemaValidator},
+							FieldValidators: []validator.Validator{validator.SubschemaValidator},
 						},
 					},
-					Traits: []planning.Trait{&planning.BoxedEncodingTrait{}},
+					Traits: []composite.Trait{&composite.BoxedEncodingTrait{}},
 				},
 			},
 		},
@@ -214,13 +217,13 @@ func TestSchemaToPlan(t *testing.T) {
 				},
 			},
 			want: []generate.Plan{
-				&planning.EnumPlan{
+				&enum.EnumPlan{
 					TypeInfo: generate.TypeInfo{
 						GoPath: "github.com/jwilner/jsonschema2go/example",
 						Name:   "Letter",
 					},
 					BaseType: generate.TypeInfo{Name: "string"},
-					Members: []planning.EnumMember{
+					Members: []enum.EnumMember{
 						{"A", "a"},
 						{"B", "b"},
 						{"C", "c"},
@@ -245,12 +248,12 @@ func TestSchemaToPlan(t *testing.T) {
 				},
 			},
 			want: []generate.Plan{
-				&planning.StructPlan{
+				&composite.StructPlan{
 					TypeInfo: generate.TypeInfo{
 						GoPath: "github.com/jwilner/jsonschema2go/example",
 						Name:   "Awesome",
 					},
-					Fields: []planning.StructField{
+					Fields: []composite.StructField{
 						{
 							Name:     "Bob",
 							JSONName: "bob",

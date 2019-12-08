@@ -1,0 +1,220 @@
+{{/* gotype: github.com/jwilner/jsonschema2go.structPlanContext */}}
+{{ if .Comment -}}
+// {{ .Comment }}
+{{ end -}}
+{{ if .ID -}}
+// generated from {{ .ID }}
+{{ end -}}
+type {{ .Type.Name }} struct {
+{{ range .Fields -}}
+	{{ .FieldDecl }}
+{{ end }}
+}
+
+{{ if .ValidateInitialize }}
+var (
+{{ range $Field := .Fields -}}
+{{ range $Field.Validators -}}
+	{{ .Var (.NameSpace $.Type.Name $Field.Name) }}
+{{ end -}}
+{{ end -}}
+)
+{{ end -}}
+
+func (m *{{ $.Type.Name }}) Validate() error {
+{{ range .Fields -}}
+{{ if .Required -}}
+	if {{ .TestSetExpr false }} {
+		return &validationError{
+			errType: "required",
+			message: "field required",
+			path: []interface{}{"{{ .Name }}"},
+			jsonPath: []interface{}{"{{ .JSONName }}"},
+		}
+	}
+{{ end -}}
+{{ end -}}
+{{ range $Field := .Fields -}}
+{{ if ne .Type.Name "interface{}" -}}
+{{ range $Field.Validators -}}
+{{ if eq .Name "subschema" -}}
+    if err := m.{{ $Field.FieldRef }}.Validate(); err != nil {
+		{{ if not $Field.Embedded -}}
+		if err, ok := err.(valErr); ok {
+        	return &validationError{
+        		errType: err.ErrType(),
+        		message: err.Message(),
+				path: append([]interface{}{"{{ $Field.Name }}"}, err.Path()...),
+				jsonPath: append([]interface{}{"{{ $Field.JSONName }}"}, err.JSONPath()...),
+			}
+		}
+		{{ end -}}
+		return err
+	}
+{{ else -}}
+    if {{ if not $Field.Required -}}{{ $Field.TestSetExpr true }} &&{{ end -}}{{ .Test ($Field.NameSpace) ($Field.DerefExpr) }} {
+		return &validationError{
+    		errType: "{{ .Name }}",
+			path: []interface{}{"{{ $Field.Name }}"},
+			jsonPath: []interface{}{"{{ $Field.JSONName }}"},
+			message: fmt.Sprintf({{ .Sprintf ($Field.NameSpace) ($Field.DerefExpr) }}),
+		}
+	}
+{{ end -}}
+{{ end -}}
+{{ else -}}
+{{ range $Field.Validators -}}
+{{ if eq .Name "subschema" -}}
+	if v, ok := m.{{ $Field.FieldRef }}.(interface { Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return err
+		}
+    }
+{{ else -}}
+	if v, ok := m.{{ $Field.FieldRef }}.({{ .ImpliedType }}); ok {
+		if {{ .Test ($Field.NameSpace) "v" }} {
+			return &validationError{
+				errType: "{{ .Name }}",
+				message: fmt.Sprintf({{ .Sprintf ($Field.NameSpace) "v" }}),
+			}
+		}
+	}
+{{ end -}}
+{{ end -}}
+{{ end -}}
+{{ end -}}
+	return nil
+}
+
+{{ range $t := .Traits -}}
+{{ if eq .Template "boxed" }}
+func (m *{{ $.Type.Name }}) MarshalJSON() ([]byte, error) {
+    inner := struct {
+{{ range $.Fields -}}
+{{ .InnerFieldDecl }}
+{{ end -}}
+	} {
+{{ range $.Fields -}}
+{{ with .InnerFieldLiteral -}}
+{{ . }}
+{{ end -}}
+{{ end -}}
+	}
+{{ range $.Fields -}}
+{{ with .InnerFieldAssignment -}}
+{{ . }}
+{{ end -}}
+{{ end -}}
+	return json.Marshal(inner)
+}
+
+{{ else if eq .Template "discriminator" }}
+func (m *{{ $.Type.Name }}) UnmarshalJSON(data []byte) error {
+	var discrim struct {
+    {{ with .StructField -}}
+        {{ .Name }} {{ if .Type.Pointer -}}*{{ end -}}{{ $.QualName .Type }} {{ if .Tag }}`{{ .Tag }}`{{ end }}
+	{{ end }}
+	}
+	if err := json.Unmarshal(data, &discrim); err != nil {
+		return err
+	}
+	switch discrim.{{ $t.StructField.Name }} {
+	{{ range .Cases -}}
+	case "{{ .Value }}":
+		m.{{ $t.StructField.Name }} = new({{ $.QualName .TypeInfo }})
+	{{ end -}}
+    {{ with .Default -}}
+	default:
+        m.{{ $t.StructField.Name }} = new({{ $.QualName .TypeInfo }})
+	{{ else -}}
+	default:
+		return fmt.Errorf("unknown discriminator: %v", discrim.{{ $t.StructField.Name }})
+	{{ end -}}
+	}
+	return json.Unmarshal(data, m.{{ .StructField.Name }})
+}
+
+func (m *{{ $.Type.Name }}) MarshalJSON() ([]byte, error) {
+	return json.Marshal(m.{{ .StructField.Name }})
+}
+{{ else if eq .Template "oneOf" }}
+func (m *{{ $.Type.Name }}) UnmarshalJSON(data []byte) error {
+	tok, err := json.NewDecoder(bytes.NewReader(data)).Token()
+	if err != nil {
+		return err
+	}
+	switch {{ if or .Array.Name .Object.Name -}}t :={{ end -}} tok.(type) {
+{{- /*gotype: github.com/jwilner/jsonschema2go.marshalOneOfTrait */ -}}
+{{ if or .Array.Name .Object.Name -}}
+	case json.Delim:
+{{ if .Object.Name -}}
+		if t == '{' {
+			var obj {{ $.QualName .Object }}
+			if err := json.Unmarshal(data, &obj); err != nil {
+				return err
+			}
+			m.Value = obj
+			return nil
+		}
+{{ end -}}
+{{ if .Array.Name -}}
+		if t == '[' {
+			var arr {{ $.QualName .Array }}
+			if err := json.Unmarshal(data, &arr); err != nil {
+				return err
+			}
+			m.Value = arr
+			return nil
+		}
+{{ end -}}
+{{ end -}}
+{{ range .Primitives -}}
+{{ if eq . "string" -}}
+	case string:
+		var s string
+		if err := json.Unmarshal(data, &s); err != nil {
+			return err
+		}
+		m.Value = s
+    	return nil
+{{ else if eq . "int64" -}}
+	case float64:
+		var i int64
+		if err := json.Unmarshal(data, &i); err != nil {
+			return err
+		}
+		m.Value = i
+		return nil
+{{ else if eq . "float64" -}}
+	case float64:
+		var f float64
+		if err := json.Unmarshal(data, &f); err != nil {
+			return err
+		}
+		m.Value = f
+		return nil
+{{ else if eq . "bool" -}}
+	case bool:
+		var b bool
+		if err := json.Unmarshal(data, &b); err != nil {
+        	return err
+		}
+		m.Value = b
+    	return nil
+{{ end -}}
+{{ end -}}
+    }
+{{ if .Nil -}}
+	if tok == nil {
+		return nil
+	}
+{{ end -}}
+	return fmt.Errorf("unsupported type: %T", tok)
+}
+
+func (m *{{ $.Type.Name }}) MarshalJSON() ([]byte, error) {
+	return json.Marshal(m.Value)
+}
+{{ end -}}
+{{ end -}}
+

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/jwilner/jsonschema2go/internal/templates"
 	"github.com/jwilner/jsonschema2go/pkg/ctxflags"
 	"github.com/jwilner/jsonschema2go/pkg/generate"
 	"go/format"
@@ -17,9 +18,9 @@ type Printer interface {
 
 func New(tmpl *template.Template) Printer {
 	if tmpl == nil {
-		tmpl = valueTmpl
+		tmpl = templates.Template
 	}
-	return &printer{valueTmpl}
+	return &printer{tmpl}
 }
 
 type printer struct {
@@ -35,13 +36,8 @@ func (p *printer) Print(ctx context.Context, w io.Writer, goPath string, plans [
 	}
 	imps := generate.NewImports(goPath, depPaths)
 
-	sorted := make([]generate.PrintablePlan, 0, len(plans))
-	for _, p := range defaultSort(plans) {
-		sorted = append(sorted, p.Printable(imps))
-	}
-
 	var buf bytes.Buffer
-	if err := valueTmpl.Execute(&buf, &Plans{imps, sorted}); err != nil {
+	if err := templates.Template.Execute(&buf, &Plans{imps, defaultSort(plans)}); err != nil {
 		return fmt.Errorf("unable to execute tmpl: %w", err)
 	}
 	formatted, err := format.Source(buf.Bytes())
@@ -58,41 +54,5 @@ func (p *printer) Print(ctx context.Context, w io.Writer, goPath string, plans [
 
 type Plans struct {
 	Imports *generate.Imports
-	Plans   []generate.PrintablePlan
-}
-
-func (ps *Plans) Structs() (structs []generate.PrintablePlan) {
-	for _, p := range ps.Plans {
-		if p.Template() == "struct.tmpl" {
-			structs = append(structs, p)
-		}
-	}
-	return
-}
-
-func (ps *Plans) Slices() (slices []generate.PrintablePlan) {
-	for _, p := range ps.Plans {
-		if p.Template() == "slice.tmpl" {
-			slices = append(slices, p)
-		}
-	}
-	return
-}
-
-func (ps *Plans) Tuples() (tuples []generate.PrintablePlan) {
-	for _, p := range ps.Plans {
-		if p.Template() == "tuple.tmpl" {
-			tuples = append(tuples, p)
-		}
-	}
-	return
-}
-
-func (ps *Plans) Enums() (enums []generate.PrintablePlan) {
-	for _, p := range ps.Plans {
-		if p.Template() == "enum.tmpl" {
-			enums = append(enums, p)
-		}
-	}
-	return
+	Plans   []generate.Plan
 }

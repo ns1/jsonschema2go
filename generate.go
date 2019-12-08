@@ -9,8 +9,6 @@ import (
 	"github.com/jwilner/jsonschema2go/pkg/ctxflags"
 )
 
-//go:generate go run internal/cmd/gentmpl/gentmpl.go
-
 func Generate(ctx context.Context, fileNames []string, options ...Option) error {
 	s := &settings{
 		planner: planning.Composite,

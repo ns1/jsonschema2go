@@ -3,7 +3,8 @@ package print
 import (
 	"bytes"
 	"context"
-	"github.com/jwilner/jsonschema2go/internal/planning"
+	"github.com/jwilner/jsonschema2go/internal/composite"
+	"github.com/jwilner/jsonschema2go/internal/slice"
 	"github.com/jwilner/jsonschema2go/pkg/generate"
 	"github.com/stretchr/testify/require"
 	"go/format"
@@ -143,9 +144,9 @@ var _ valErr = new(validationError)
 			name:   "simple struct",
 			goPath: "github.com/jwilner/jsonschema2go",
 			plans: []generate.Plan{
-				&planning.StructPlan{
+				&composite.StructPlan{
 					Comment: "Bob does lots of cool things",
-					Fields: []planning.StructField{
+					Fields: []composite.StructField{
 						{Name: "Count", Type: generate.TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
 					},
 					TypeInfo: generate.TypeInfo{
@@ -175,9 +176,9 @@ func (m *Bob) Validate() error {
 			name:   "struct with qualified field",
 			goPath: "github.com/jwilner/jsonschema2go",
 			plans: []generate.Plan{
-				&planning.StructPlan{
+				&composite.StructPlan{
 					Comment: "Bob does lots of cool things",
-					Fields: []planning.StructField{
+					Fields: []composite.StructField{
 						{Name: "Count", Type: generate.TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
 						{
 							Name: "Other",
@@ -218,9 +219,9 @@ func (m *Bob) Validate() error {
 			name:   "struct with aliased import",
 			goPath: "github.com/jwilner/jsonschema2go",
 			plans: []generate.Plan{
-				&planning.StructPlan{
+				&composite.StructPlan{
 					Comment: "Bob does lots of cool things",
-					Fields: []planning.StructField{
+					Fields: []composite.StructField{
 						{Name: "Count", Type: generate.TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
 						{
 							Name: "Other",
@@ -272,9 +273,9 @@ func (m *Bob) Validate() error {
 			name:   "struct with embedded",
 			goPath: "github.com/jwilner/jsonschema2go",
 			plans: []generate.Plan{
-				&planning.StructPlan{
+				&composite.StructPlan{
 					Comment: "Bob does lots of cool things",
-					Fields: []planning.StructField{
+					Fields: []composite.StructField{
 						{
 							Type: generate.TypeInfo{
 								GoPath: "github.com/jwilner/jsonschema2go/blah",
@@ -311,9 +312,9 @@ func (m *Bob) Validate() error {
 			name:   "struct with embedded",
 			goPath: "github.com/jwilner/jsonschema2go",
 			plans: []generate.Plan{
-				&planning.StructPlan{
+				&composite.StructPlan{
 					Comment: "Bob does lots of cool things",
-					Fields: []planning.StructField{
+					Fields: []composite.StructField{
 						{
 							Type: generate.TypeInfo{
 								GoPath: "github.com/jwilner/jsonschema2go",
@@ -325,9 +326,9 @@ func (m *Bob) Validate() error {
 						Name: "Bob",
 					},
 				},
-				&planning.StructPlan{
+				&composite.StructPlan{
 					Comment: "OtherType does lots of cool things",
-					Fields: []planning.StructField{
+					Fields: []composite.StructField{
 						{Type: generate.TypeInfo{Name: "int"}, Name: "Count", Tag: `json:"count,omitempty"`},
 					},
 					TypeInfo: generate.TypeInfo{
@@ -367,7 +368,7 @@ func (m *OtherType) Validate() error {
 			name:   "array with struct",
 			goPath: "github.com/jwilner/jsonschema2go",
 			plans: []generate.Plan{
-				&planning.SlicePlan{
+				&slice.SlicePlan{
 					TypeInfo: generate.TypeInfo{
 						Name: "Bob",
 					},
@@ -377,9 +378,9 @@ func (m *OtherType) Validate() error {
 						Name:   "OtherType",
 					},
 				},
-				&planning.StructPlan{
+				&composite.StructPlan{
 					Comment: "OtherType does lots of cool things",
-					Fields: []planning.StructField{
+					Fields: []composite.StructField{
 						{Type: generate.TypeInfo{Name: "int"}, Name: "Count", Tag: `json:"count,omitempty"`},
 					},
 					TypeInfo: generate.TypeInfo{

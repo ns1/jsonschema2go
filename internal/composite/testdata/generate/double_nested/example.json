@@ -1,0 +1,20 @@
+{
+  "x-jsonschema2go": {
+    "gopath": "github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/double_nested/foo#Bar"
+  },
+  "description": "Bar gives you some dumb info",
+  "type": "object",
+  "properties": {
+    "foo": {
+      "x-jsonschema2go": {
+        "gopath": "github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/double_nested/foo#Foo"
+      },
+      "type": "object",
+      "properties": {
+        "baz": {
+          "$ref": "baz.json"
+        }
+      }
+    }
+  }
+}

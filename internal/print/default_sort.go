@@ -1,7 +1,10 @@
 package print
 
 import (
-	"github.com/jwilner/jsonschema2go/internal/planning"
+	"github.com/jwilner/jsonschema2go/internal/composite"
+	"github.com/jwilner/jsonschema2go/internal/enum"
+	"github.com/jwilner/jsonschema2go/internal/slice"
+	"github.com/jwilner/jsonschema2go/internal/tuple"
 	gen "github.com/jwilner/jsonschema2go/pkg/generate"
 	"sort"
 )
@@ -28,13 +31,13 @@ func defaultSort(plans []gen.Plan) []gen.Plan {
 func key(plan gen.Plan) []string {
 	name := plan.Type().Name
 	switch plan.(type) {
-	case *planning.StructPlan:
+	case *composite.StructPlan:
 		return []string{"a", name}
-	case *planning.SlicePlan:
+	case *slice.SlicePlan:
 		return []string{"b", name}
-	case *planning.TuplePlan:
+	case *tuple.TuplePlan:
 		return []string{"c", name}
-	case *planning.EnumPlan:
+	case *enum.EnumPlan:
 		return []string{"d", name}
 	default:
 		return []string{"z", name}
