@@ -14,12 +14,12 @@ func defaultSort(plans []gen.Plan) []gen.Plan {
 	copy(sorted, plans)
 	sort.Slice(sorted, func(i, j int) bool {
 		keyI, keyJ := key(sorted[i]), key(sorted[j])
-		for idx, kI := range keyI {
-			kJ := keyJ[idx]
+		for idx := range keyI {
+			kI, kJ := keyI[idx], keyJ[idx]
 			if kI < kJ {
 				return true
 			}
-			if kJ > kI {
+			if kJ < kI {
 				return false
 			}
 		}
