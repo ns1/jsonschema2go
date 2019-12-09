@@ -4,24 +4,18 @@ import (
 	"context"
 	"fmt"
 	"github.com/jwilner/jsonschema2go/internal/planning"
-	"github.com/jwilner/jsonschema2go/pkg/ctxflags"
-	gen "github.com/jwilner/jsonschema2go/pkg/generate"
-	"github.com/jwilner/jsonschema2go/pkg/schema"
+	gen "github.com/jwilner/jsonschema2go/pkg/gen"
 	"log"
 	"net/url"
 	"sync"
 	"sync/atomic"
 )
 
-type CrawlResult struct {
-	Plan gen.Plan
-	Err  error
-}
-
+// Crawl traverses a set of JSON Schemas, lazily loading their children in concurrent goroutines as need be.
 func Crawl(
 	ctx context.Context,
 	planner gen.Planner,
-	loader schema.Loader,
+	loader gen.Loader,
 	typer planning.Typer,
 	fileNames []string,
 ) (map[string][]gen.Plan, error) {
@@ -38,11 +32,11 @@ func Crawl(
 func initialLoad(
 	ctx context.Context,
 	wg *sync.WaitGroup,
-	loader schema.Loader,
+	loader gen.Loader,
 	fileNames []string,
-) (<-chan *schema.Schema, <-chan error) {
+) (<-chan *gen.Schema, <-chan error) {
 	// load all initial schemas concurrently
-	loaded := make(chan *schema.Schema)
+	loaded := make(chan *gen.Schema)
 	errC := make(chan error, 1)
 	var sent int64 // used to track completion of tasks
 	for _, fileName := range fileNames {
@@ -76,13 +70,13 @@ func initialLoad(
 func crawl(
 	ctx context.Context,
 	planner gen.Planner,
-	loader schema.Loader,
+	loader gen.Loader,
 	typer planning.Typer,
-	schemas <-chan *schema.Schema,
-) <-chan CrawlResult {
+	schemas <-chan *gen.Schema,
+) <-chan crawlResult {
 	helper := planning.NewHelper(ctx, loader, typer, schemas)
 
-	results := make(chan CrawlResult)
+	results := make(chan crawlResult)
 
 	go func() {
 		defer close(results)
@@ -91,21 +85,21 @@ func crawl(
 			wg           sync.WaitGroup
 			allCopied    bool
 			inFlight     int
-			innerResults = make(chan CrawlResult)
+			innerResults = make(chan crawlResult)
 		)
 
 		defer wg.Wait()
 
-		derivePlan := func(s *schema.Schema) {
+		derivePlan := func(s *gen.Schema) {
 			plan, err := planner.Plan(ctx, helper, s)
 			select {
-			case innerResults <- CrawlResult{plan, err}:
+			case innerResults <- crawlResult{plan, err}:
 			case <-ctx.Done():
 				return
 			}
 		}
 
-		forward := func(result CrawlResult) {
+		forward := func(result crawlResult) {
 			select {
 			case <-ctx.Done():
 			case results <- result:
@@ -122,7 +116,7 @@ func crawl(
 			case s := <-helper.Schemas():
 				t := helper.TypeInfo(s)
 				if seen[t] {
-					if ctxflags.IsDebug(ctx) {
+					if gen.IsDebug(ctx) {
 						log.Printf("crawler: skipping %v -- already seen", t)
 					}
 					continue
@@ -130,13 +124,13 @@ func crawl(
 				seen[t] = true
 
 				if s.Config.Exclude {
-					if ctxflags.IsDebug(ctx) {
+					if gen.IsDebug(ctx) {
 						log.Printf("crawler: excluding %v by request", t)
 					}
 					continue
 				}
 
-				if ctxflags.IsDebug(ctx) {
+				if gen.IsDebug(ctx) {
 					log.Printf("crawler: planning %v", t)
 				}
 				inFlight++
@@ -167,7 +161,7 @@ func crawl(
 	return results
 }
 
-func group(ctx context.Context, results <-chan CrawlResult, errC <-chan error) (map[string][]gen.Plan, error) {
+func group(ctx context.Context, results <-chan crawlResult, errC <-chan error) (map[string][]gen.Plan, error) {
 	// group together results
 	grouped := make(map[string][]gen.Plan)
 	for {
@@ -192,3 +186,9 @@ func group(ctx context.Context, results <-chan CrawlResult, errC <-chan error) (
 		}
 	}
 }
+
+type crawlResult struct {
+	Plan gen.Plan
+	Err  error
+}
+

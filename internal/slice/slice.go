@@ -6,19 +6,18 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jwilner/jsonschema2go/internal/validator"
-	"github.com/jwilner/jsonschema2go/pkg/generate"
-	sch "github.com/jwilner/jsonschema2go/pkg/schema"
+	"github.com/jwilner/jsonschema2go/pkg/gen"
 	"net/url"
 	"sort"
 	"strconv"
 )
 
 type SlicePlan struct {
-	TypeInfo generate.TypeInfo
+	TypeInfo gen.TypeInfo
 	id       *url.URL
 
 	Comment        string
-	ItemType       generate.TypeInfo
+	ItemType       gen.TypeInfo
 	validators     []validator.Validator
 	itemValidators []validator.Validator
 }
@@ -30,12 +29,12 @@ func (a *SlicePlan) ID() string {
 	return ""
 }
 
-func (a *SlicePlan) Type() generate.TypeInfo {
+func (a *SlicePlan) Type() gen.TypeInfo {
 	return a.TypeInfo
 }
 
-func (a *SlicePlan) Deps() []generate.TypeInfo {
-	return []generate.TypeInfo{a.ItemType, {Name: "Marshal", GoPath: "encoding/json"}, {Name: "Sprintf", GoPath: "fmt"}}
+func (a *SlicePlan) Deps() []gen.TypeInfo {
+	return []gen.TypeInfo{a.ItemType, {Name: "Marshal", GoPath: "encoding/json"}, {Name: "Sprintf", GoPath: "fmt"}}
 }
 
 func (a *SlicePlan) Validators() []validator.Validator {
@@ -61,18 +60,18 @@ func (a *SlicePlan) ItemValidateInitialize() bool {
 	return false
 }
 
-//go:generate go run ../cmd/embedtmpl/embedtmpl.go slice slice.tmpl tmpl.gen.go
-func PlanSlice(ctx context.Context, helper generate.Helper, schema *sch.Schema) (generate.Plan, error) {
-	if schema.ChooseType() != sch.Array {
-		return nil, fmt.Errorf("not an array: %w", generate.ErrContinue)
+//go:generatego run ../cmd/embedtmpl/embedtmpl.go slice slice.tmpl tmpl.gen.go
+func PlanSlice(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Plan, error) {
+	if schema.ChooseType() != gen.Array {
+		return nil, fmt.Errorf("not an array: %w", gen.ErrContinue)
 	}
 	tInfo := helper.TypeInfo(schema)
 	if tInfo.Unknown() {
-		return nil, fmt.Errorf("type unknown: %w", generate.ErrContinue)
+		return nil, fmt.Errorf("type unknown: %w", gen.ErrContinue)
 	}
 
 	// we've matched
-	var itemSchema *sch.Schema
+	var itemSchema *gen.Schema
 	if schema.Items != nil && schema.Items.Items != nil {
 		var err error
 		if itemSchema, err = schema.Items.Items.Resolve(ctx, schema, helper); err != nil {
@@ -86,7 +85,7 @@ func PlanSlice(ctx context.Context, helper generate.Helper, schema *sch.Schema) 
 			return nil, nil
 		}
 	} else {
-		a.ItemType = generate.TypeInfo{Name: "interface{}"}
+		a.ItemType = gen.TypeInfo{Name: "interface{}"}
 	}
 	if !a.ItemType.BuiltIn() && itemSchema != nil {
 		if err := helper.Dep(ctx, itemSchema); err != nil {
@@ -126,11 +125,11 @@ func PlanSlice(ctx context.Context, helper generate.Helper, schema *sch.Schema) 
 }
 
 type slicePlanContext struct {
-	*generate.Imports
+	*gen.Imports
 	*SlicePlan
 }
 
-func (s *SlicePlan) Execute(imp *generate.Imports) (string, error) {
+func (s *SlicePlan) Execute(imp *gen.Imports) (string, error) {
 	var w bytes.Buffer
 	err := tmpl.Execute(&w, slicePlanContext{imp, s})
 	return w.String(), err

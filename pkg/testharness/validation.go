@@ -1,12 +1,11 @@
-package harness
+package testharness
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"github.com/jwilner/jsonschema2go"
-	"github.com/jwilner/jsonschema2go/pkg/generate"
-	schema2 "github.com/jwilner/jsonschema2go/pkg/schema"
+	"github.com/jwilner/jsonschema2go/pkg/gen"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
@@ -18,21 +17,7 @@ import (
 	"testing"
 )
 
-type SchemaCase struct {
-	Description string          `json:"description"`
-	Schema      json.RawMessage `json:"schema"`
-	Tests       []TestCase      `json:"tests"`
-	Skip        string          `json:"skip"`
-}
-
-type TestCase struct {
-	Description string          `json:"description"`
-	Data        json.RawMessage `json:"data"`
-	Output      json.RawMessage `json:"output"`
-	Valid       bool            `json:"valid"`
-	Skip        string          `json:"skip"`
-}
-
+// RunValidationTest runs validation tests such as those provided by the JSONSchema validation test suite.
 func RunValidationTest(t *testing.T, root string) {
 	r := require.New(t)
 	ctx := context.Background()
@@ -44,7 +29,7 @@ func RunValidationTest(t *testing.T, root string) {
 		t.Run(path.Base(e.Name()), func(t *testing.T) {
 			r := require.New(t)
 
-			var cases []SchemaCase
+			var cases []schemaCase
 			r.NoError(func() error {
 				f, err := os.Open(path.Join(root, e.Name()))
 				if err != nil {
@@ -117,17 +102,17 @@ func compileValidator(ctx context.Context, r *require.Assertions, schema json.Ra
 	r.NoError(err)
 
 	var (
-		names = make(map[*schema2.Schema]string)
+		names = make(map[*gen.Schema]string)
 		mux   sync.Mutex
 	)
 
 	r.NoError(jsonschema2go.Generate(
 		ctx,
 		[]string{"file:" + src},
-		jsonschema2go.CustomTypeFunc(func(schema *schema2.Schema) generate.TypeInfo {
+		jsonschema2go.CustomTypeFunc(func(schema *gen.Schema) gen.TypeInfo {
 			if schema.Config.GoPath != "" {
 				parts := strings.SplitN(schema.Config.GoPath, "#", 2)
-				return generate.TypeInfo{GoPath: parts[0], Name: parts[1]}
+				return gen.TypeInfo{GoPath: parts[0], Name: parts[1]}
 			}
 			mux.Lock()
 			defer mux.Unlock()
@@ -136,10 +121,9 @@ func compileValidator(ctx context.Context, r *require.Assertions, schema json.Ra
 				names[schema] = string('a' + len(names))
 			}
 
-			return generate.TypeInfo{GoPath: "main", Name: names[schema]}
+			return gen.TypeInfo{GoPath: "main", Name: names[schema]}
 		}),
 		jsonschema2go.PrefixMap("main", dirName),
-		jsonschema2go.Debug(true),
 	))
 
 	_, err = os.Stat(path.Join(dirName, "values.gen.go"))
@@ -172,7 +156,7 @@ func main() {
 	fmt.Fprint(os.Stdout, "valid")
 }
 `)
-	harnessPath := path.Join(dirName, "harness")
+	harnessPath := path.Join(dirName, "testharness")
 	mainPath := path.Join(dirName, "main.go")
 	valuesPath := path.Join(dirName, "values.gen.go")
 	cmd := exec.CommandContext(
@@ -190,4 +174,19 @@ func main() {
 		r.NoError(err, string(f))
 	}
 	return &validator{workDir: dirName, harnessPath: harnessPath, valuesPath: valuesPath}
+}
+
+type schemaCase struct {
+	Description string          `json:"description"`
+	Schema      json.RawMessage `json:"schema"`
+	Tests       []testCase      `json:"tests"`
+	Skip        string          `json:"skip"`
+}
+
+type testCase struct {
+	Description string          `json:"description"`
+	Data        json.RawMessage `json:"data"`
+	Output      json.RawMessage `json:"output"`
+	Valid       bool            `json:"valid"`
+	Skip        string          `json:"skip"`
 }

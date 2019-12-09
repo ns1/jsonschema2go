@@ -1,4 +1,4 @@
-package schema
+package gen
 
 import (
 	"encoding/json"
@@ -140,7 +140,7 @@ func TestSchema_UnmarshalJSON(t *testing.T) {
 		{
 			name: "simple",
 			data: `{"type": "array", "items": {"type": "string"}}`,
-			want: Schema{Type: &TypeField{Array}, Items: &ItemsFields{Items: schema(Schema{Type: &TypeField{String}})}},
+			want: Schema{Type: &TypeField{Array}, Items: &ItemsField{Items: schema(Schema{Type: &TypeField{String}})}},
 		},
 		{
 			name: "annos",
@@ -168,7 +168,7 @@ func TestSchema_UnmarshalJSON(t *testing.T) {
 			name: "itemFields tuple",
 			data: `{"items": [{"type": "integer"}, {"type": "string"}]}`,
 			want: Schema{
-				Items: &ItemsFields{
+				Items: &ItemsField{
 					TupleFields: []*RefOrSchema{
 						schema(Schema{Type: &TypeField{Integer}}),
 						schema(Schema{Type: &TypeField{String}}),
@@ -180,7 +180,7 @@ func TestSchema_UnmarshalJSON(t *testing.T) {
 			name: "itemFields schema",
 			data: `{"items": {"type": "integer"}}`,
 			want: Schema{
-				Items: &ItemsFields{
+				Items: &ItemsField{
 					Items: schema(Schema{Type: &TypeField{Integer}}),
 				},
 			},

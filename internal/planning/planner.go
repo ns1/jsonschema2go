@@ -8,9 +8,7 @@ import (
 	"github.com/jwilner/jsonschema2go/internal/enum"
 	"github.com/jwilner/jsonschema2go/internal/slice"
 	"github.com/jwilner/jsonschema2go/internal/tuple"
-	"github.com/jwilner/jsonschema2go/pkg/ctxflags"
-	"github.com/jwilner/jsonschema2go/pkg/generate"
-	sch "github.com/jwilner/jsonschema2go/pkg/schema"
+	"github.com/jwilner/jsonschema2go/pkg/gen"
 	"log"
 	"strconv"
 	"strings"
@@ -29,9 +27,9 @@ var (
 	}
 )
 
-type CompositePlanner []generate.Planner
+type CompositePlanner []gen.Planner
 
-func (c CompositePlanner) Plan(ctx context.Context, helper generate.Helper, schema *sch.Schema) (generate.Plan, error) {
+func (c CompositePlanner) Plan(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Plan, error) {
 	for i, p := range c {
 		name := strconv.Itoa(i)
 		if p, ok := p.(interface{ Name() string }); ok {
@@ -39,8 +37,8 @@ func (c CompositePlanner) Plan(ctx context.Context, helper generate.Helper, sche
 		}
 
 		pl, err := p.Plan(ctx, helper, schema)
-		if errors.Is(err, generate.ErrContinue) {
-			if ctxflags.IsDebug(ctx) {
+		if errors.Is(err, gen.ErrContinue) {
+			if gen.IsDebug(ctx) {
 				log.Printf("planner %v: skipping planner: %v", name, err)
 			}
 			continue
@@ -49,7 +47,7 @@ func (c CompositePlanner) Plan(ctx context.Context, helper generate.Helper, sche
 			return nil, err
 		}
 		if pl != nil {
-			if ctxflags.IsDebug(ctx) {
+			if gen.IsDebug(ctx) {
 				log.Printf("planner %v: planned %v %v", name, pl.Type().GoPath, pl.Type().Name)
 			}
 			return pl, nil
@@ -57,7 +55,7 @@ func (c CompositePlanner) Plan(ctx context.Context, helper generate.Helper, sche
 		return nil, fmt.Errorf("planner %v returned nil for plan", name)
 	}
 	// we require types for objects and arrays
-	if t := schema.ChooseType(); t == sch.Object || t == sch.Array {
+	if t := schema.ChooseType(); t == gen.Object || t == gen.Array {
 		id := schema.Loc
 		if schema.CalcID != nil {
 			id = schema.CalcID
@@ -69,13 +67,13 @@ func (c CompositePlanner) Plan(ctx context.Context, helper generate.Helper, sche
 
 func plannerFunc(
 	name string,
-	f func(ctx context.Context, helper generate.Helper, schema *sch.Schema) (generate.Plan, error),
-) generate.Planner {
+	f func(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Plan, error),
+) gen.Planner {
 	return namedPlannerFunc{name: name, f: f}
 }
 
 type namedPlannerFunc struct {
-	f    func(ctx context.Context, helper generate.Helper, schema *sch.Schema) (generate.Plan, error)
+	f    func(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Plan, error)
 	name string
 }
 
@@ -83,26 +81,26 @@ func (p namedPlannerFunc) Name() string {
 	return p.name
 }
 
-func (p namedPlannerFunc) Plan(ctx context.Context, helper generate.Helper, schema *sch.Schema) (generate.Plan, error) {
+func (p namedPlannerFunc) Plan(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Plan, error) {
 	return p.f(ctx, helper, schema)
 }
 
 func NewHelper(
 	ctx context.Context,
-	loader sch.Loader,
+	loader gen.Loader,
 	typer Typer,
-	schemas <-chan *sch.Schema,
+	schemas <-chan *gen.Schema,
 ) *Helper {
 	// allSchemas represents the merged stream of explicitly requested schemas and their children; it is
 	// in essence the queue which powers a breadth-first search of the object graph
-	allSchemas := make(chan *sch.Schema)
+	allSchemas := make(chan *gen.Schema)
 	// puts all schemas on merged and puts a signal on noMoreComing when no more coming
 	noMoreComing := copyAndSignal(ctx, schemas, allSchemas)
 
 	return &Helper{loader, typer, allSchemas, noMoreComing}
 }
 
-func copyAndSignal(ctx context.Context, schemas <-chan *sch.Schema, merged chan<- *sch.Schema) <-chan struct{} {
+func copyAndSignal(ctx context.Context, schemas <-chan *gen.Schema, merged chan<- *gen.Schema) <-chan struct{} {
 	schemasDone := make(chan struct{})
 	go func() {
 		for {
@@ -129,13 +127,13 @@ func copyAndSignal(ctx context.Context, schemas <-chan *sch.Schema, merged chan<
 }
 
 type Helper struct {
-	sch.Loader
+	gen.Loader
 	Typer
-	Deps      chan *sch.Schema
+	Deps      chan *gen.Schema
 	submitted <-chan struct{}
 }
 
-func (p *Helper) Schemas() <-chan *sch.Schema {
+func (p *Helper) Schemas() <-chan *gen.Schema {
 	return p.Deps
 }
 
@@ -143,7 +141,7 @@ func (p *Helper) Submitted() <-chan struct{} {
 	return p.submitted
 }
 
-func (p *Helper) Dep(ctx context.Context, schemas ...*sch.Schema) error {
+func (p *Helper) Dep(ctx context.Context, schemas ...*gen.Schema) error {
 	for _, s := range schemas {
 		select {
 		case p.Deps <- s:
@@ -217,44 +215,44 @@ func (n *Namer) exportedIdentifier(parts [][]rune) string {
 	return strings.Join(words, "")
 }
 
-var DefaultTyper = Typer{NewNamer([]string{"id", "http"}), DefaultTypeFunc, map[sch.SimpleType]string{
-	sch.Boolean: "bool",
-	sch.Integer: "int64",
-	sch.Number:  "float64",
-	sch.Null:    "interface{}",
-	sch.String:  "string",
+var DefaultTyper = Typer{NewNamer([]string{"id", "http"}), DefaultTypeFunc, map[gen.SimpleType]string{
+	gen.Boolean: "bool",
+	gen.Integer: "int64",
+	gen.Number:  "float64",
+	gen.Null:    "interface{}",
+	gen.String:  "string",
 }}
 
-func DefaultTypeFunc(s *sch.Schema) generate.TypeInfo {
+func DefaultTypeFunc(s *gen.Schema) gen.TypeInfo {
 	parts := strings.SplitN(s.Config.GoPath, "#", 2)
 	if len(parts) == 2 {
-		return generate.TypeInfo{GoPath: parts[0], Name: parts[1]}
+		return gen.TypeInfo{GoPath: parts[0], Name: parts[1]}
 	}
-	return generate.TypeInfo{}
+	return gen.TypeInfo{}
 }
 
 type Typer struct {
 	*Namer
-	TypeFunc   func(s *sch.Schema) generate.TypeInfo
-	Primitives map[sch.SimpleType]string
+	TypeFunc   func(s *gen.Schema) gen.TypeInfo
+	Primitives map[gen.SimpleType]string
 }
 
-func (d Typer) TypeInfo(s *sch.Schema) generate.TypeInfo {
+func (d Typer) TypeInfo(s *gen.Schema) gen.TypeInfo {
 	t := s.ChooseType()
-	if t != sch.Array && t != sch.Object && s.Config.GoPath == "" {
-		return generate.TypeInfo{Name: d.Primitive(t)}
+	if t != gen.Array && t != gen.Object && s.Config.GoPath == "" {
+		return gen.TypeInfo{Name: d.Primitive(t)}
 	}
 	return d.TypeInfoHinted(s, t)
 }
 
-func (d Typer) TypeInfoHinted(s *sch.Schema, t sch.SimpleType) generate.TypeInfo {
+func (d Typer) TypeInfoHinted(s *gen.Schema, t gen.SimpleType) gen.TypeInfo {
 	if f := d.TypeFunc(s); f.Name != "" {
 		f.Name = d.Namer.JSONPropertyExported(f.Name)
 		return f
 	}
-	return generate.TypeInfo{Name: d.Primitive(t)}
+	return gen.TypeInfo{Name: d.Primitive(t)}
 }
 
-func (d Typer) Primitive(s sch.SimpleType) string {
+func (d Typer) Primitive(s gen.SimpleType) string {
 	return d.Primitives[s]
 }

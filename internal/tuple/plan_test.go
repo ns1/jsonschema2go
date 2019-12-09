@@ -1,12 +1,12 @@
 package tuple_test
 
 import (
-	"github.com/jwilner/jsonschema2go/pkg/harness"
+	"github.com/jwilner/jsonschema2go/pkg/testharness"
 	"testing"
 )
 
 func TestPlan(t *testing.T) {
-	harness.RunGenerateTests(
+	testharness.RunGenerateTests(
 		t,
 		"testdata/",
 		"testdata/generate",

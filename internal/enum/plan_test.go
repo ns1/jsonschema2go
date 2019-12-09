@@ -1,12 +1,12 @@
 package enum_test
 
 import (
-	"github.com/jwilner/jsonschema2go/pkg/harness"
+	"github.com/jwilner/jsonschema2go/pkg/testharness"
 	"testing"
 )
 
 func TestPlan(t *testing.T) {
-	harness.RunGenerateTests(
+	testharness.RunGenerateTests(
 		t,
 		"testdata/",
 		"testdata/generate",
@@ -15,5 +15,5 @@ func TestPlan(t *testing.T) {
 }
 
 func TestValidation(t *testing.T) {
-	harness.RunValidationTest(t, "testdata/validation/")
+	testharness.RunValidationTest(t, "testdata/validation/")
 }

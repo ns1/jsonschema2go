@@ -3,8 +3,7 @@ package validator
 import (
 	"bytes"
 	"fmt"
-	"github.com/jwilner/jsonschema2go/pkg/generate"
-	sch "github.com/jwilner/jsonschema2go/pkg/schema"
+	"github.com/jwilner/jsonschema2go/pkg/gen"
 	"sort"
 	"strconv"
 	"strings"
@@ -17,17 +16,17 @@ var SubschemaValidator = Validator{Name: "subschema", ImpliedType: "interface { 
 type Validator struct {
 	Name                           string
 	VarExpr, TestExpr, SprintfExpr *template.Template
-	Deps                           []generate.TypeInfo
+	Deps                           []gen.TypeInfo
 	ImpliedType                    string
 }
 
-func Validators(schema *sch.Schema) (styles []Validator) {
+func Validators(schema *gen.Schema) (styles []Validator) {
 	switch typ := schema.ChooseType(); typ {
-	case sch.Array, sch.Object:
+	case gen.Array, gen.Object:
 		if !schema.Config.NoValidate {
 			styles = append(styles, SubschemaValidator)
 		}
-	case sch.String:
+	case gen.String:
 		if schema.Pattern != nil {
 			pattern := *schema.Pattern
 			styles = append(styles, Validator{
@@ -35,7 +34,7 @@ func Validators(schema *sch.Schema) (styles []Validator) {
 				VarExpr:     TemplateStr("{{ .NameSpace }}Pattern = regexp.MustCompile(`" + pattern + "`)"),
 				TestExpr:    TemplateStr("!{{ .NameSpace }}Pattern.MatchString({{ .QualifiedName }})"),
 				SprintfExpr: TemplateStr(`"must match '` + pattern + `' but got %q", {{ .QualifiedName }}`),
-				Deps:        []generate.TypeInfo{{GoPath: "regexp", Name: "MustCompile"}},
+				Deps:        []gen.TypeInfo{{GoPath: "regexp", Name: "MustCompile"}},
 				ImpliedType: "string",
 			})
 		}
@@ -61,18 +60,18 @@ func Validators(schema *sch.Schema) (styles []Validator) {
 				ImpliedType: "string",
 			})
 		}
-	case sch.Integer, sch.Number:
+	case gen.Integer, gen.Number:
 		impliedType := "int64"
-		if typ == sch.Number {
+		if typ == gen.Number {
 			impliedType = "float64"
 		}
 		if schema.MultipleOf != nil {
 			multipleOf := fmt.Sprintf("%v", *schema.MultipleOf)
 
-			var deps []generate.TypeInfo
+			var deps []gen.TypeInfo
 			expr := TemplateStr(`{{ .QualifiedName }}%` + multipleOf + ` != 0`)
-			if schema.ChooseType() == sch.Number {
-				deps = []generate.TypeInfo{{GoPath: "math", Name: "Mod"}}
+			if schema.ChooseType() == gen.Number {
+				deps = []gen.TypeInfo{{GoPath: "math", Name: "Mod"}}
 				expr = TemplateStr(`math.Mod({{ .QualifiedName }}, ` + multipleOf + `) != 0`)
 			}
 

@@ -1,4 +1,4 @@
-package generate
+package gen
 
 import (
 	"fmt"
@@ -6,15 +6,15 @@ import (
 	"sort"
 )
 
-type Import struct {
-	GoPath, Alias string
-}
-
+// Imports encapsulates knowledge about the current imports and namespace. It provides utilities for generating
+// appropriately qualified names.
 type Imports struct {
 	currentGoPath string
 	aliases       map[string]string
 }
 
+// NewImports creates a new Imports. Paths and aliases for the `importGoPaths` will be derived according to the
+// `currentGoPath`
 func NewImports(currentGoPath string, importGoPaths []string) *Imports {
 	baseName := make(map[string]map[string]bool)
 	for _, i := range importGoPaths {
@@ -53,10 +53,18 @@ func NewImports(currentGoPath string, importGoPaths []string) *Imports {
 	return &Imports{currentGoPath, aliases}
 }
 
+// CurPackage the current package for this Imports
 func (i *Imports) CurPackage() string {
 	return path.Base(i.currentGoPath)
 }
 
+// Import contains GoPath and Alias information, if any.
+type Import struct {
+	GoPath, Alias string
+}
+
+// List returns all of the imports in this value, ready to be rendered in a template. Aliases will be derived and
+// provided as necessary.
 func (i *Imports) List() (imports []Import) {
 	for path, alias := range i.aliases {
 		imports = append(imports, Import{path, alias})
@@ -67,6 +75,8 @@ func (i *Imports) List() (imports []Import) {
 	return
 }
 
+// QualName returns a qualified name for the provided TypeInfo; for example, if the value is from an imported package,
+// QualName will return it with the appropriate dot prefix.
 func (i *Imports) QualName(info TypeInfo) string {
 	if info.BuiltIn() || info.GoPath == i.currentGoPath {
 		return info.Name
@@ -78,6 +88,7 @@ func (i *Imports) QualName(info TypeInfo) string {
 	return fmt.Sprintf("%s.%s", qual, info.Name)
 }
 
+// TypeInfo encapsulates common information about a go value.
 type TypeInfo struct {
 	GoPath  string
 	Name    string
@@ -85,10 +96,13 @@ type TypeInfo struct {
 	ValPath string
 }
 
+// BuiltIn returns whether or not this is a TypeInfo for a built-in type, where built-in means a primitive value type
+// always available in the runtime
 func (t TypeInfo) BuiltIn() bool {
 	return t.GoPath == ""
 }
 
+// Unknown returns whether this TypeInfo is unset.
 func (t TypeInfo) Unknown() bool {
 	return t == TypeInfo{}
 }

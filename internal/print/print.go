@@ -3,8 +3,7 @@ package print
 import (
 	"context"
 	"fmt"
-	"github.com/jwilner/jsonschema2go/pkg/ctxflags"
-	"github.com/jwilner/jsonschema2go/pkg/generate"
+	"github.com/jwilner/jsonschema2go/pkg/gen"
 	"log"
 	"net/url"
 	"os"
@@ -52,7 +51,7 @@ func TypeFromId(pairs [][2]string) func(string) (string, string) {
 func Print(
 	ctx context.Context,
 	printer Printer,
-	grouped map[string][]generate.Plan,
+	grouped map[string][]gen.Plan,
 	prefixes [][2]string,
 ) error {
 	var childRoutines sync.WaitGroup
@@ -63,7 +62,7 @@ func Print(
 	errs := make(chan error, 1)
 	for k, group := range grouped {
 		childRoutines.Add(1)
-		go func(k string, group []generate.Plan) {
+		go func(k string, group []gen.Plan) {
 			defer childRoutines.Done()
 			if err := func() error {
 				path := mapper(k)
@@ -85,7 +84,7 @@ func Print(
 				if err := printer.Print(ctx, f, k, group); err != nil {
 					return fmt.Errorf("unable to print: %w", err)
 				}
-				if ctxflags.IsDebug(ctx) {
+				if gen.IsDebug(ctx) {
 					log.Printf("printer: successfully printed %d plans to %v", len(group), p)
 				}
 				return nil

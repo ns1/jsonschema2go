@@ -6,66 +6,53 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jwilner/jsonschema2go/internal/validator"
-	"github.com/jwilner/jsonschema2go/pkg/generate"
-	sch "github.com/jwilner/jsonschema2go/pkg/schema"
+	"github.com/jwilner/jsonschema2go/pkg/gen"
 	"net/url"
 	"sort"
 	"unicode"
 )
 
+// StructField contains information about how a struct's field should be rendered
 type StructField struct {
 	Comment         string
 	Name            string
 	JSONName        string
-	Type            generate.TypeInfo
+	Type            gen.TypeInfo
 	Tag             string
 	Required        bool
 	FieldValidators []validator.Validator
 }
 
+// Validators returns the validators for this field
 func (s StructField) Validators() []validator.Validator {
 	return validator.Sorted(s.FieldValidators)
 }
 
+// StructPlan is an implementation of the interface Plan specific to structs
 type StructPlan struct {
-	TypeInfo generate.TypeInfo
-	Id       *url.URL
+	TypeInfo gen.TypeInfo
+	ID       *url.URL
 
 	Comment string
 	Fields  []StructField
 	Traits  []Trait
 }
 
-func (s *StructPlan) Type() generate.TypeInfo {
+// Type returns the calculated type info for this struct
+func (s *StructPlan) Type() gen.TypeInfo {
 	return s.TypeInfo
 }
 
-func (s *StructPlan) ValidateInitialize() bool {
-	for _, f := range s.Fields {
-		for _, v := range f.FieldValidators {
-			if v.VarExpr != nil {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func (s *StructPlan) ID() string {
-	if s.Id != nil {
-		return s.Id.String()
-	}
-	return ""
-}
-
-func (s *StructPlan) Execute(imp *generate.Imports) (string, error) {
+// Execute executes the provided struct plan and returns it rendered as a string
+func (s *StructPlan) Execute(imp *gen.Imports) (string, error) {
 	var w bytes.Buffer
 	err := tmpl.Execute(&w, &structPlanContext{s, imp})
 	return w.String(), err
 }
 
-func (s *StructPlan) Deps() (deps []generate.TypeInfo) {
-	deps = append(deps, generate.TypeInfo{Name: "Sprintf", GoPath: "fmt"})
+// Deps returns all known required imported symbols for this plan
+func (s *StructPlan) Deps() (deps []gen.TypeInfo) {
+	deps = append(deps, gen.TypeInfo{Name: "Sprintf", GoPath: "fmt"})
 	for _, f := range s.Fields {
 		deps = append(deps, f.Type)
 		for _, v := range f.FieldValidators {
@@ -73,7 +60,7 @@ func (s *StructPlan) Deps() (deps []generate.TypeInfo) {
 		}
 	}
 	for _, t := range s.Traits {
-		if t, ok := t.(interface{ Deps() []generate.TypeInfo }); ok {
+		if t, ok := t.(interface{ Deps() []gen.TypeInfo }); ok {
 			deps = append(deps, t.Deps()...)
 		}
 	}
@@ -81,17 +68,19 @@ func (s *StructPlan) Deps() (deps []generate.TypeInfo) {
 }
 
 //go:generate go run ../cmd/embedtmpl/embedtmpl.go composite struct.tmpl tmpl.gen.go
-func PlanObject(ctx context.Context, helper generate.Helper, schema *sch.Schema) (generate.Plan, error) {
-	if schema.ChooseType() != sch.Object {
-		return nil, fmt.Errorf("not an object: %w", generate.ErrContinue)
+
+// PlanObject returns a plan if the provided type is an object; otherwise it returns ErrContinue
+func PlanObject(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Plan, error) {
+	if schema.ChooseType() != gen.Object {
+		return nil, fmt.Errorf("not an object: %w", gen.ErrContinue)
 	}
 	tInfo := helper.TypeInfo(schema)
 	if tInfo.Unknown() {
-		return nil, fmt.Errorf("type unknown: %w", generate.ErrContinue)
+		return nil, fmt.Errorf("type unknown: %w", gen.ErrContinue)
 	}
 	// matched
 
-	s := &StructPlan{TypeInfo: tInfo, Id: schema.CalcID}
+	s := &StructPlan{TypeInfo: tInfo, ID: schema.CalcID}
 	s.Comment = schema.Annotations.GetString("description")
 	fields, err := deriveStructFields(ctx, helper, schema)
 	if err != nil {
@@ -101,7 +90,7 @@ func PlanObject(ctx context.Context, helper generate.Helper, schema *sch.Schema)
 
 	for _, f := range fields {
 		if f.Type.GoPath == "github.com/jwilner/jsonschema2go/pkg/boxed" {
-			s.Traits = append(s.Traits, &BoxedEncodingTrait{})
+			s.Traits = append(s.Traits, &boxedEncodingTrait{})
 			break
 		}
 	}
@@ -111,8 +100,8 @@ func PlanObject(ctx context.Context, helper generate.Helper, schema *sch.Schema)
 
 func deriveStructFields(
 	ctx context.Context,
-	helper generate.Helper,
-	schema *sch.Schema,
+	helper gen.Helper,
+	schema *gen.Schema,
 ) (fields []StructField, _ error) {
 	required := make(map[string]bool, len(schema.Required))
 	for _, k := range schema.Required {
@@ -140,10 +129,10 @@ func deriveStructFields(
 			if err != nil {
 				return nil, err
 			}
-			if oneOfA.ChooseType() == sch.Null || oneOfB.ChooseType() == sch.Null {
+			if oneOfA.ChooseType() == gen.Null || oneOfB.ChooseType() == gen.Null {
 				// this is a nillable field
 				valueSchema := oneOfA
-				if valueSchema.ChooseType() == sch.Null {
+				if valueSchema.ChooseType() == gen.Null {
 					valueSchema = oneOfB
 				}
 				if fType = helper.TypeInfo(valueSchema); fType.Unknown() {
@@ -152,8 +141,8 @@ func deriveStructFields(
 				fType.Pointer = true
 			}
 		}
-		if fieldSchema.ChooseType() == sch.Unknown && fType.Unknown() {
-			fType = generate.TypeInfo{Name: "interface{}"}
+		if fieldSchema.ChooseType() == gen.Unknown && fType.Unknown() {
+			fType = gen.TypeInfo{Name: "interface{}"}
 		}
 		if !fType.BuiltIn() {
 			if err := helper.Dep(ctx, fieldSchema); err != nil {
@@ -164,16 +153,16 @@ func deriveStructFields(
 		if fType.BuiltIn() && !fType.Pointer {
 			switch fType.Name {
 			case "string":
-				fType = generate.TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/pkg/boxed", Name: "String", ValPath: "String"}
+				fType = gen.TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/pkg/boxed", Name: "String", ValPath: "String"}
 				tag = fmt.Sprintf(`json:"%s"`, name)
 			case "int64":
-				fType = generate.TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/pkg/boxed", Name: "Int64", ValPath: "Int64"}
+				fType = gen.TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/pkg/boxed", Name: "Int64", ValPath: "Int64"}
 				tag = fmt.Sprintf(`json:"%s"`, name)
 			case "bool":
-				fType = generate.TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/pkg/boxed", Name: "Bool", ValPath: "Bool"}
+				fType = gen.TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/pkg/boxed", Name: "Bool", ValPath: "Bool"}
 				tag = fmt.Sprintf(`json:"%s"`, name)
 			case "float64":
-				fType = generate.TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/pkg/boxed", Name: "Float64", ValPath: "Float64"}
+				fType = gen.TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/pkg/boxed", Name: "Float64", ValPath: "Float64"}
 				tag = fmt.Sprintf(`json:"%s"`, name)
 			}
 		}
@@ -195,18 +184,29 @@ func deriveStructFields(
 
 type structPlanContext struct {
 	*StructPlan
-	*generate.Imports
+	*gen.Imports
 }
 
-type EnrichedStructField struct {
+func (s *structPlanContext) ValidateInitialize() bool {
+	for _, f := range s.Fields() {
+		for _, v := range f.FieldValidators {
+			if v.VarExpr != nil {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+type enrichedStructField struct {
 	StructField
 	StructPlan *StructPlan
-	Imports    *generate.Imports
+	Imports    *gen.Imports
 }
 
-func (s *structPlanContext) Fields() (fields []EnrichedStructField) {
+func (s *structPlanContext) Fields() (fields []enrichedStructField) {
 	for _, f := range s.StructPlan.Fields {
-		fields = append(fields, EnrichedStructField{
+		fields = append(fields, enrichedStructField{
 			StructField: f,
 			StructPlan:  s.StructPlan,
 			Imports:     s.Imports,
@@ -215,7 +215,7 @@ func (s *structPlanContext) Fields() (fields []EnrichedStructField) {
 	return
 }
 
-func (f *EnrichedStructField) DerefExpr() string {
+func (f *enrichedStructField) DerefExpr() string {
 	valPath := ""
 	if f.Type.ValPath != "" {
 		valPath = "." + f.Type.ValPath
@@ -223,7 +223,7 @@ func (f *EnrichedStructField) DerefExpr() string {
 	return fmt.Sprintf("m.%s%s", f.Name, valPath)
 }
 
-func (f *EnrichedStructField) TestSetExpr(pos bool) (string, error) {
+func (f *enrichedStructField) TestSetExpr(pos bool) (string, error) {
 	if f.Type.GoPath == "github.com/jwilner/jsonschema2go/pkg/boxed" {
 		op := ""
 		if !pos {
@@ -241,7 +241,7 @@ func (f *EnrichedStructField) TestSetExpr(pos bool) (string, error) {
 	return "", errors.New("no test set expr")
 }
 
-func (f *EnrichedStructField) NameSpace() string {
+func (f *enrichedStructField) NameSpace() string {
 	name := fmt.Sprintf("%s%s", f.StructPlan.Type().Name, f.Name)
 	if len(name) > 0 {
 		runes := []rune(name)
@@ -251,7 +251,7 @@ func (f *EnrichedStructField) NameSpace() string {
 	return name
 }
 
-func (f *EnrichedStructField) FieldDecl() string {
+func (f *enrichedStructField) FieldDecl() string {
 	typ := f.Imports.QualName(f.Type)
 	if f.Type.Pointer {
 		typ = "*" + typ
@@ -263,7 +263,7 @@ func (f *EnrichedStructField) FieldDecl() string {
 	return f.Name + " " + typ + tag
 }
 
-func (f *EnrichedStructField) InnerFieldDecl() string {
+func (f *enrichedStructField) InnerFieldDecl() string {
 	typName := f.Imports.QualName(f.Type)
 	if f.Type.GoPath == "github.com/jwilner/jsonschema2go/pkg/boxed" {
 		s := []rune(f.Type.Name)
@@ -278,18 +278,18 @@ func (f *EnrichedStructField) InnerFieldDecl() string {
 	return fmt.Sprintf("%s %s %s", f.Name, typName, tag)
 }
 
-func (f *EnrichedStructField) Embedded() bool {
+func (f *enrichedStructField) Embedded() bool {
 	return f.Name == ""
 }
 
-func (f *EnrichedStructField) FieldRef() string {
+func (f *enrichedStructField) FieldRef() string {
 	if f.Name != "" {
 		return f.Name
 	}
 	return f.Type.Name // embedded
 }
 
-func (f *EnrichedStructField) InnerFieldLiteral() string {
+func (f *enrichedStructField) InnerFieldLiteral() string {
 	if f.Type.GoPath == "github.com/jwilner/jsonschema2go/pkg/boxed" {
 		return ""
 	}
@@ -304,7 +304,7 @@ var fieldAssignmentTmpl = validator.TemplateStr(`if m.{{ .Name }}.Set {
 	inner.{{ .Name }} = &m.{{ .Name }}{{ .ValPath }}
 }`)
 
-func (f *EnrichedStructField) InnerFieldAssignment() (string, error) {
+func (f *enrichedStructField) InnerFieldAssignment() (string, error) {
 	if f.Type.GoPath != "github.com/jwilner/jsonschema2go/pkg/boxed" {
 		return "", nil
 	}
@@ -327,25 +327,25 @@ func (f *EnrichedStructField) InnerFieldAssignment() (string, error) {
 
 func loadSchemaList(
 	ctx context.Context,
-	helper generate.Helper,
-	parent *sch.Schema,
-	schemas []*sch.RefOrSchema,
-) (sch.SimpleType, []*sch.Schema, error) {
+	helper gen.Helper,
+	parent *gen.Schema,
+	schemas []*gen.RefOrSchema,
+) (gen.SimpleType, []*gen.Schema, error) {
 	var (
-		resolved  []*sch.Schema
-		foundType sch.SimpleType
+		resolved  []*gen.Schema
+		foundType gen.SimpleType
 	)
 	for _, s := range schemas {
 		r, err := s.Resolve(ctx, parent, helper)
 		if err != nil {
-			return sch.Unknown, nil, err
+			return gen.Unknown, nil, err
 		}
 		resolved = append(resolved, r)
 		t := r.ChooseType()
-		if t == sch.Unknown {
+		if t == gen.Unknown {
 			continue
 		}
-		if foundType == sch.Unknown {
+		if foundType == gen.Unknown {
 			foundType = t
 			continue
 		}

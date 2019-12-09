@@ -4,18 +4,17 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/jwilner/jsonschema2go/pkg/ctxflags"
-	"github.com/jwilner/jsonschema2go/pkg/generate"
+	"github.com/jwilner/jsonschema2go/pkg/gen"
 	"go/format"
 	"io"
 	"text/template"
 )
 
 type Printer interface {
-	Print(ctx context.Context, w io.Writer, goPath string, plans []generate.Plan) error
+	Print(ctx context.Context, w io.Writer, goPath string, plans []gen.Plan) error
 }
 
-//go:generate go run ../cmd/embedtmpl/embedtmpl.go print values.tmpl tmpl.gen.go
+//go:generatego run ../cmd/embedtmpl/embedtmpl.go print values.tmpl tmpl.gen.go
 func New(t *template.Template) Printer {
 	if t == nil {
 		t = tmpl
@@ -27,14 +26,14 @@ type printer struct {
 	tmpl *template.Template
 }
 
-func (p *printer) Print(ctx context.Context, w io.Writer, goPath string, plans []generate.Plan) error {
+func (p *printer) Print(ctx context.Context, w io.Writer, goPath string, plans []gen.Plan) error {
 	var depPaths []string
 	for _, pl := range plans {
 		for _, d := range pl.Deps() {
 			depPaths = append(depPaths, d.GoPath)
 		}
 	}
-	imps := generate.NewImports(goPath, depPaths)
+	imps := gen.NewImports(goPath, depPaths)
 
 	var buf bytes.Buffer
 	if err := p.tmpl.Execute(&buf, &Plans{imps, defaultSort(plans)}); err != nil {
@@ -42,7 +41,7 @@ func (p *printer) Print(ctx context.Context, w io.Writer, goPath string, plans [
 	}
 	formatted, err := format.Source(buf.Bytes())
 	if err != nil {
-		if ctxflags.IsDebug(ctx) {
+		if gen.IsDebug(ctx) {
 			_, _ = w.Write(buf.Bytes()) // write unformatted for debugging
 		}
 		return fmt.Errorf("unable to format: %w", err)
@@ -53,6 +52,6 @@ func (p *printer) Print(ctx context.Context, w io.Writer, goPath string, plans [
 }
 
 type Plans struct {
-	Imports *generate.Imports
-	Plans   []generate.Plan
+	Imports *gen.Imports
+	Plans   []gen.Plan
 }

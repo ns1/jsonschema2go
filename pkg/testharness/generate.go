@@ -1,4 +1,4 @@
-package harness
+package testharness
 
 import (
 	"bufio"
@@ -16,6 +16,7 @@ import (
 	"unicode"
 )
 
+// RunGenerateTests runs tests which verify the appearance of generated code.
 func RunGenerateTests(t *testing.T, testDataDir, root, goPath string) {
 	var err error
 	if testDataDir, err = filepath.Abs(testDataDir); err != nil {

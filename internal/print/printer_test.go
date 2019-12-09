@@ -5,7 +5,7 @@ import (
 	"context"
 	"github.com/jwilner/jsonschema2go/internal/composite"
 	"github.com/jwilner/jsonschema2go/internal/slice"
-	"github.com/jwilner/jsonschema2go/pkg/generate"
+	"github.com/jwilner/jsonschema2go/pkg/gen"
 	"github.com/stretchr/testify/require"
 	"go/format"
 	"testing"
@@ -16,7 +16,7 @@ func TestImports_List(t *testing.T) {
 		name          string
 		currentGoPath string
 		importGoPaths []string
-		wantImports   []generate.Import
+		wantImports   []gen.Import
 	}{
 		{
 			"empty",
@@ -31,7 +31,7 @@ func TestImports_List(t *testing.T) {
 				"github.com/jwilner/jsonschema2go/example",
 				"github.com/jwilner/jsonschema2go/foo/example",
 			},
-			[]generate.Import{
+			[]gen.Import{
 				{"github.com/jwilner/jsonschema2go/example", ""},
 				{"github.com/jwilner/jsonschema2go/foo/example", "example2"},
 			},
@@ -40,14 +40,14 @@ func TestImports_List(t *testing.T) {
 			"multiple",
 			"github.com/jwilner/jsonschema2go",
 			[]string{"encoding/json", "encoding/json"},
-			[]generate.Import{
+			[]gen.Import{
 				{"encoding/json", ""},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.wantImports, generate.NewImports(tt.currentGoPath, tt.importGoPaths).List())
+			require.Equal(t, tt.wantImports, gen.NewImports(tt.currentGoPath, tt.importGoPaths).List())
 		})
 	}
 }
@@ -57,41 +57,41 @@ func TestImports_QualName(t *testing.T) {
 		name          string
 		currentGoPath string
 		importGoPaths []string
-		typeInfo      generate.TypeInfo
+		typeInfo      gen.TypeInfo
 		want          string
 	}{
 		{
 			"builtin",
 			"github.com/jwilner/jsonschema2go",
 			[]string{"github.com/jwilner/jsonschema2go/example", "github.com/jwilner/jsonschema2go/foo/example"},
-			generate.TypeInfo{Name: "int"},
+			gen.TypeInfo{Name: "int"},
 			"int",
 		},
 		{
 			"external",
 			"github.com/jwilner/jsonschema2go",
 			[]string{"github.com/jwilner/jsonschema2go/example", "github.com/jwilner/jsonschema2go/foo/example"},
-			generate.TypeInfo{GoPath: "github.com/jwilner/jsonschema2go", Name: "Bob"},
+			gen.TypeInfo{GoPath: "github.com/jwilner/jsonschema2go", Name: "Bob"},
 			"Bob",
 		},
 		{
 			"external",
 			"github.com/jwilner/jsonschema2go",
 			[]string{"github.com/jwilner/jsonschema2go/example", "github.com/jwilner/jsonschema2go/foo/example"},
-			generate.TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/example", Name: "Bob"},
+			gen.TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/example", Name: "Bob"},
 			"example.Bob",
 		},
 		{
 			"external with alias",
 			"github.com/jwilner/jsonschema2go",
 			[]string{"github.com/jwilner/jsonschema2go/example", "github.com/jwilner/jsonschema2go/foo/example"},
-			generate.TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/foo/example", Name: "Bob"},
+			gen.TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/foo/example", Name: "Bob"},
 			"example2.Bob",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.want, generate.NewImports(tt.currentGoPath, tt.importGoPaths).QualName(tt.typeInfo))
+			require.Equal(t, tt.want, gen.NewImports(tt.currentGoPath, tt.importGoPaths).QualName(tt.typeInfo))
 		})
 	}
 }
@@ -136,20 +136,20 @@ var _ valErr = new(validationError)
 	tests := []struct {
 		name    string
 		goPath  string
-		plans   []generate.Plan
+		plans   []gen.Plan
 		wantW   string
 		wantErr bool
 	}{
 		{
 			name:   "simple struct",
 			goPath: "github.com/jwilner/jsonschema2go",
-			plans: []generate.Plan{
+			plans: []gen.Plan{
 				&composite.StructPlan{
 					Comment: "Bob does lots of cool things",
 					Fields: []composite.StructField{
-						{Name: "Count", Type: generate.TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
+						{Name: "Count", Type: gen.TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
 					},
-					TypeInfo: generate.TypeInfo{
+					TypeInfo: gen.TypeInfo{
 						Name: "Bob",
 					},
 				},
@@ -175,21 +175,21 @@ func (m *Bob) Validate() error {
 		{
 			name:   "struct with qualified field",
 			goPath: "github.com/jwilner/jsonschema2go",
-			plans: []generate.Plan{
+			plans: []gen.Plan{
 				&composite.StructPlan{
 					Comment: "Bob does lots of cool things",
 					Fields: []composite.StructField{
-						{Name: "Count", Type: generate.TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
+						{Name: "Count", Type: gen.TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
 						{
 							Name: "Other",
-							Type: generate.TypeInfo{
+							Type: gen.TypeInfo{
 								GoPath: "github.com/jwilner/jsonschema2go/blah",
 								Name:   "OtherType",
 							},
 							Tag: `json:"other,omitempty"`,
 						},
 					},
-					TypeInfo: generate.TypeInfo{
+					TypeInfo: gen.TypeInfo{
 						Name: "Bob",
 					},
 				},
@@ -218,14 +218,14 @@ func (m *Bob) Validate() error {
 		{
 			name:   "struct with aliased import",
 			goPath: "github.com/jwilner/jsonschema2go",
-			plans: []generate.Plan{
+			plans: []gen.Plan{
 				&composite.StructPlan{
 					Comment: "Bob does lots of cool things",
 					Fields: []composite.StructField{
-						{Name: "Count", Type: generate.TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
+						{Name: "Count", Type: gen.TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
 						{
 							Name: "Other",
-							Type: generate.TypeInfo{
+							Type: gen.TypeInfo{
 								GoPath:  "github.com/jwilner/jsonschema2go/blah",
 								Name:    "OtherType",
 								Pointer: true,
@@ -234,14 +234,14 @@ func (m *Bob) Validate() error {
 						},
 						{
 							Name: "OtherOther",
-							Type: generate.TypeInfo{
+							Type: gen.TypeInfo{
 								GoPath: "github.com/jwilner/jsonschema2go/bob/blah",
 								Name:   "AnotherType",
 							},
 							Tag: `json:"another,omitempty"`,
 						},
 					},
-					TypeInfo: generate.TypeInfo{
+					TypeInfo: gen.TypeInfo{
 						Name: "Bob",
 					},
 				},
@@ -272,18 +272,18 @@ func (m *Bob) Validate() error {
 		{
 			name:   "struct with embedded",
 			goPath: "github.com/jwilner/jsonschema2go",
-			plans: []generate.Plan{
+			plans: []gen.Plan{
 				&composite.StructPlan{
 					Comment: "Bob does lots of cool things",
 					Fields: []composite.StructField{
 						{
-							Type: generate.TypeInfo{
+							Type: gen.TypeInfo{
 								GoPath: "github.com/jwilner/jsonschema2go/blah",
 								Name:   "OtherType",
 							},
 						},
 					},
-					TypeInfo: generate.TypeInfo{
+					TypeInfo: gen.TypeInfo{
 						Name: "Bob",
 					},
 				},
@@ -311,27 +311,27 @@ func (m *Bob) Validate() error {
 		{
 			name:   "struct with embedded",
 			goPath: "github.com/jwilner/jsonschema2go",
-			plans: []generate.Plan{
+			plans: []gen.Plan{
 				&composite.StructPlan{
 					Comment: "Bob does lots of cool things",
 					Fields: []composite.StructField{
 						{
-							Type: generate.TypeInfo{
+							Type: gen.TypeInfo{
 								GoPath: "github.com/jwilner/jsonschema2go",
 								Name:   "OtherType",
 							},
 						},
 					},
-					TypeInfo: generate.TypeInfo{
+					TypeInfo: gen.TypeInfo{
 						Name: "Bob",
 					},
 				},
 				&composite.StructPlan{
 					Comment: "OtherType does lots of cool things",
 					Fields: []composite.StructField{
-						{Type: generate.TypeInfo{Name: "int"}, Name: "Count", Tag: `json:"count,omitempty"`},
+						{Type: gen.TypeInfo{Name: "int"}, Name: "Count", Tag: `json:"count,omitempty"`},
 					},
-					TypeInfo: generate.TypeInfo{
+					TypeInfo: gen.TypeInfo{
 						Name: "OtherType",
 					},
 				},
@@ -367,13 +367,13 @@ func (m *OtherType) Validate() error {
 		{
 			name:   "array with struct",
 			goPath: "github.com/jwilner/jsonschema2go",
-			plans: []generate.Plan{
+			plans: []gen.Plan{
 				&slice.SlicePlan{
-					TypeInfo: generate.TypeInfo{
+					TypeInfo: gen.TypeInfo{
 						Name: "Bob",
 					},
 					Comment: "Bob does lots of cool things",
-					ItemType: generate.TypeInfo{
+					ItemType: gen.TypeInfo{
 						GoPath: "github.com/jwilner/jsonschema2go",
 						Name:   "OtherType",
 					},
@@ -381,9 +381,9 @@ func (m *OtherType) Validate() error {
 				&composite.StructPlan{
 					Comment: "OtherType does lots of cool things",
 					Fields: []composite.StructField{
-						{Type: generate.TypeInfo{Name: "int"}, Name: "Count", Tag: `json:"count,omitempty"`},
+						{Type: gen.TypeInfo{Name: "int"}, Name: "Count", Tag: `json:"count,omitempty"`},
 					},
-					TypeInfo: generate.TypeInfo{
+					TypeInfo: gen.TypeInfo{
 						Name: "OtherType",
 					},
 				},

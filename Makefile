@@ -1,5 +1,11 @@
 .PHONY: test test-cover
 
+lint:
+	golint ./...
+
+gen:
+	go generate ./...
+
 test:
 	go test ./...
 

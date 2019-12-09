@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/jwilner/jsonschema2go/pkg/schema"
+	"github.com/jwilner/jsonschema2go/pkg/gen"
 	"io"
 	"log"
 	"net/http"
@@ -13,29 +13,9 @@ import (
 	"sync"
 )
 
-type HTTPDoer interface {
-	Do(r *http.Request) (*http.Response, error)
-}
-
-var _ HTTPDoer = http.DefaultClient
-
-type schemaResult struct {
-	schema *schema.Schema
-	error  error
-}
-
-type schemaRequest struct {
-	url string
-	c   chan<- schemaResult
-}
-
-type cachingLoader struct {
-	requests chan schemaRequest
-	client   HTTPDoer
-	closeC   chan chan<- error
-}
-
-func New(debug bool) *cachingLoader {
+// New returns a new thread safe loader which caches requests and can handle either file system or http URIs. If the
+// debug bool flag is set true, messages will be logged concerning every served request.
+func New(debug bool) gen.Loader {
 	c := &cachingLoader{
 		requests: make(chan schemaRequest),
 		client:   http.DefaultClient,
@@ -45,6 +25,29 @@ func New(debug bool) *cachingLoader {
 	return c
 }
 
+type cachingLoader struct {
+	requests chan schemaRequest
+	client   httpDoer
+	closeC   chan chan<- error
+}
+
+// Load returns a schema for the provided URL, either filesystem or HTTP
+func (c *cachingLoader) Load(ctx context.Context, u *url.URL) (*gen.Schema, error) {
+	req := make(chan schemaResult)
+	select {
+	case c.requests <- schemaRequest{u.String(), req}:
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+	select {
+	case res := <-req:
+		return res.schema, res.error
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
+// Close closes the loader and waits for it to stop.
 func (c *cachingLoader) Close() error {
 	errC := make(chan error)
 	c.closeC <- errC
@@ -88,7 +91,7 @@ func (c *cachingLoader) run(debug bool) {
 		childRoutines = new(sync.WaitGroup)
 		activeReqs    = make(map[string][]chan<- schemaResult)
 		fetches       = make(chan uriSchemaResult)
-		cache         = make(map[string]*schema.Schema)
+		cache         = make(map[string]*gen.Schema)
 	)
 
 	for {
@@ -169,7 +172,7 @@ func (c *cachingLoader) fetch(ctx context.Context, rawURL string) schemaResult {
 		_ = r.Close()
 	}()
 
-	var s schema.Schema
+	var s gen.Schema
 	if err := json.NewDecoder(r).Decode(&s); err != nil {
 		return schemaResult{nil, fmt.Errorf("unable to decode %q: %w", u.Path, err)}
 	}
@@ -177,17 +180,18 @@ func (c *cachingLoader) fetch(ctx context.Context, rawURL string) schemaResult {
 	return schemaResult{&s, nil}
 }
 
-func (c *cachingLoader) Load(ctx context.Context, u *url.URL) (*schema.Schema, error) {
-	req := make(chan schemaResult)
-	select {
-	case c.requests <- schemaRequest{u.String(), req}:
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	}
-	select {
-	case res := <-req:
-		return res.schema, res.error
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	}
+type httpDoer interface {
+	Do(r *http.Request) (*http.Response, error)
+}
+
+var _ httpDoer = http.DefaultClient
+
+type schemaResult struct {
+	schema *gen.Schema
+	error  error
+}
+
+type schemaRequest struct {
+	url string
+	c   chan<- schemaResult
 }

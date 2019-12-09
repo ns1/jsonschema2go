@@ -5,22 +5,21 @@ import (
 	"context"
 	"fmt"
 	"github.com/jwilner/jsonschema2go/internal/validator"
-	"github.com/jwilner/jsonschema2go/pkg/generate"
-	sch "github.com/jwilner/jsonschema2go/pkg/schema"
+	"github.com/jwilner/jsonschema2go/pkg/gen"
 	"net/url"
 	"unicode"
 )
 
 type TuplePlan struct {
-	typeInfo generate.TypeInfo
+	typeInfo gen.TypeInfo
 	id       *url.URL
 	Comment  string
 
 	Items []*TupleItem
 }
 
-//go:generate go run ../cmd/embedtmpl/embedtmpl.go tuple tuple.tmpl tmpl.gen.go
-func (t *TuplePlan) Execute(imports *generate.Imports) (string, error) {
+//go:generatego run ../cmd/embedtmpl/embedtmpl.go tuple tuple.tmpl tmpl.gen.go
+func (t *TuplePlan) Execute(imports *gen.Imports) (string, error) {
 	var w bytes.Buffer
 	err := tmpl.Execute(&w, &TuplePlanContext{imports, t})
 	return w.String(), err
@@ -30,12 +29,12 @@ func (t *TuplePlan) ArrayLength() int {
 	return len(t.Items)
 }
 
-func (t *TuplePlan) Type() generate.TypeInfo {
+func (t *TuplePlan) Type() gen.TypeInfo {
 	return t.typeInfo
 }
 
-func (t *TuplePlan) Deps() []generate.TypeInfo {
-	deps := []generate.TypeInfo{
+func (t *TuplePlan) Deps() []gen.TypeInfo {
+	deps := []gen.TypeInfo{
 		{GoPath: "encoding/json", Name: "Marshal"},
 		{GoPath: "encoding/json", Name: "Unmarshal"},
 		{GoPath: "fmt", Name: "Sprintf"},
@@ -69,7 +68,7 @@ func (t *TuplePlan) ValidateInitialize() bool {
 
 type TupleItem struct {
 	Comment    string
-	Type       generate.TypeInfo
+	Type       gen.TypeInfo
 	validators []validator.Validator
 }
 
@@ -77,16 +76,16 @@ func (t TupleItem) Validators() []validator.Validator {
 	return validator.Sorted(t.validators)
 }
 
-func PlanTuple(ctx context.Context, helper generate.Helper, schema *sch.Schema) (generate.Plan, error) {
-	if schema.ChooseType() != sch.Array {
-		return nil, fmt.Errorf("not an array: %w", generate.ErrContinue)
+func PlanTuple(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Plan, error) {
+	if schema.ChooseType() != gen.Array {
+		return nil, fmt.Errorf("not an array: %w", gen.ErrContinue)
 	}
 	tInfo := helper.TypeInfo(schema)
 	if tInfo.Unknown() {
-		return nil, fmt.Errorf("type unknown: %w", generate.ErrContinue)
+		return nil, fmt.Errorf("type unknown: %w", gen.ErrContinue)
 	}
 	if schema.Items == nil || len(schema.Items.TupleFields) == 0 {
-		return nil, fmt.Errorf("not a tuple: %w", generate.ErrContinue)
+		return nil, fmt.Errorf("not a tuple: %w", gen.ErrContinue)
 	}
 	_, schemas, err := loadSchemaList(ctx, helper, schema, schema.Items.TupleFields)
 	if err != nil {
@@ -127,7 +126,7 @@ func PlanTuple(ctx context.Context, helper generate.Helper, schema *sch.Schema) 
 }
 
 type TuplePlanContext struct {
-	*generate.Imports
+	*gen.Imports
 	*TuplePlan
 }
 
@@ -156,25 +155,25 @@ func (t *TuplePlanContext) Items() (items []*EnrichedTupleItem) {
 
 func loadSchemaList(
 	ctx context.Context,
-	helper generate.Helper,
-	parent *sch.Schema,
-	schemas []*sch.RefOrSchema,
-) (sch.SimpleType, []*sch.Schema, error) {
+	helper gen.Helper,
+	parent *gen.Schema,
+	schemas []*gen.RefOrSchema,
+) (gen.SimpleType, []*gen.Schema, error) {
 	var (
-		resolved  []*sch.Schema
-		foundType sch.SimpleType
+		resolved  []*gen.Schema
+		foundType gen.SimpleType
 	)
 	for _, s := range schemas {
 		r, err := s.Resolve(ctx, parent, helper)
 		if err != nil {
-			return sch.Unknown, nil, err
+			return gen.Unknown, nil, err
 		}
 		resolved = append(resolved, r)
 		t := r.ChooseType()
-		if t == sch.Unknown {
+		if t == gen.Unknown {
 			continue
 		}
-		if foundType == sch.Unknown {
+		if foundType == gen.Unknown {
 			foundType = t
 			continue
 		}

@@ -4,28 +4,27 @@ import (
 	"context"
 	"fmt"
 	"github.com/jwilner/jsonschema2go/internal/validator"
-	"github.com/jwilner/jsonschema2go/pkg/generate"
-	sch "github.com/jwilner/jsonschema2go/pkg/schema"
+	"github.com/jwilner/jsonschema2go/pkg/gen"
 )
 
-func PlanAllOfObject(ctx context.Context, helper generate.Helper, schema *sch.Schema) (generate.Plan, error) {
+func PlanAllOfObject(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Plan, error) {
 	composedTyp, schemas, err := loadSchemaList(ctx, helper, schema, schema.AllOf)
 	if err != nil {
 		return nil, err
 	}
 	if len(schemas) == 0 {
-		return nil, fmt.Errorf("no allOf schemas: %w", generate.ErrContinue)
+		return nil, fmt.Errorf("no allOf schemas: %w", gen.ErrContinue)
 	}
-	if composedTyp != sch.Object {
-		return nil, fmt.Errorf("not an object: %w", generate.ErrContinue)
+	if composedTyp != gen.Object {
+		return nil, fmt.Errorf("not an object: %w", gen.ErrContinue)
 	}
 	tInfo := helper.TypeInfoHinted(schema, composedTyp)
 	if tInfo.Unknown() {
-		return nil, fmt.Errorf("type unknown: %w", generate.ErrContinue)
+		return nil, fmt.Errorf("type unknown: %w", gen.ErrContinue)
 	}
 	// we've matched
 
-	s := &StructPlan{TypeInfo: tInfo, Id: schema.CalcID}
+	s := &StructPlan{TypeInfo: tInfo, ID: schema.CalcID}
 	s.Comment = schema.Annotations.GetString("description")
 
 	fields, err := deriveStructFields(ctx, helper, schema)
@@ -54,7 +53,7 @@ func PlanAllOfObject(ctx context.Context, helper generate.Helper, schema *sch.Sc
 
 	for _, f := range s.Fields {
 		if f.Type.GoPath == "github.com/jwilner/jsonschema2go/pkg/boxed" {
-			s.Traits = append(s.Traits, &BoxedEncodingTrait{})
+			s.Traits = append(s.Traits, &boxedEncodingTrait{})
 			break
 		}
 	}
