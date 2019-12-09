@@ -368,7 +368,7 @@ func (m *OtherType) Validate() error {
 			name:   "array with struct",
 			goPath: "github.com/jwilner/jsonschema2go",
 			plans: []gen.Plan{
-				&slice.SlicePlan{
+				&slice.Plan{
 					TypeInfo: gen.TypeInfo{
 						Name: "Bob",
 					},

@@ -6,6 +6,8 @@ import (
 	"github.com/jwilner/jsonschema2go/pkg/gen"
 )
 
+// PlanDiscriminatedOneOfObject generates a value for a oneOf array of object schemas, provided discriminator config
+// has been provided; if it doesn't match, ErrContinue is returned.
 func PlanDiscriminatedOneOfObject(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Plan, error) {
 	discrim := schema.Config.Discriminator
 	if !discrim.IsSet() {

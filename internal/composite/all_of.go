@@ -7,6 +7,8 @@ import (
 	"github.com/jwilner/jsonschema2go/pkg/gen"
 )
 
+// PlanAllOfObject attempts to generate a Plan from the AllOf schemas on an object; if it doesn't match, ErrContinue
+// is returned.
 func PlanAllOfObject(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Plan, error) {
 	composedTyp, schemas, err := loadSchemaList(ctx, helper, schema, schema.AllOf)
 	if err != nil {

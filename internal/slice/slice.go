@@ -12,56 +12,10 @@ import (
 	"strconv"
 )
 
-type SlicePlan struct {
-	TypeInfo gen.TypeInfo
-	id       *url.URL
-
-	Comment        string
-	ItemType       gen.TypeInfo
-	validators     []validator.Validator
-	itemValidators []validator.Validator
-}
-
-func (a *SlicePlan) ID() string {
-	if a.id != nil {
-		return a.id.String()
-	}
-	return ""
-}
-
-func (a *SlicePlan) Type() gen.TypeInfo {
-	return a.TypeInfo
-}
-
-func (a *SlicePlan) Deps() []gen.TypeInfo {
-	return []gen.TypeInfo{a.ItemType, {Name: "Marshal", GoPath: "encoding/json"}, {Name: "Sprintf", GoPath: "fmt"}}
-}
-
-func (a *SlicePlan) Validators() []validator.Validator {
-	sort.Slice(a.validators, func(i, j int) bool {
-		return a.validators[i].Name < a.validators[j].Name
-	})
-	return a.validators
-}
-
-func (a *SlicePlan) ItemValidators() []validator.Validator {
-	sort.Slice(a.itemValidators, func(i, j int) bool {
-		return a.itemValidators[i].Name < a.itemValidators[j].Name
-	})
-	return a.itemValidators
-}
-
-func (a *SlicePlan) ItemValidateInitialize() bool {
-	for _, i := range a.itemValidators {
-		if i.VarExpr != nil {
-			return true
-		}
-	}
-	return false
-}
-
 //go:generatego run ../cmd/embedtmpl/embedtmpl.go slice slice.tmpl tmpl.gen.go
-func PlanSlice(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Plan, error) {
+
+// Build attempts to generate the plan for a slice from the provided schema
+func Build(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Plan, error) {
 	if schema.ChooseType() != gen.Array {
 		return nil, fmt.Errorf("not an array: %w", gen.ErrContinue)
 	}
@@ -78,7 +32,7 @@ func PlanSlice(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.
 			return nil, err
 		}
 	}
-	a := SlicePlan{TypeInfo: tInfo, id: schema.CalcID}
+	a := Plan{TypeInfo: tInfo, ID: schema.CalcID}
 	a.Comment = schema.Annotations.GetString("description")
 	if itemSchema != nil {
 		if a.ItemType = helper.TypeInfo(itemSchema); a.ItemType.Unknown() {
@@ -124,13 +78,61 @@ func PlanSlice(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.
 	return &a, nil
 }
 
-type slicePlanContext struct {
-	*gen.Imports
-	*SlicePlan
+// Plan encapsulates information for rendering the source code of a slice
+type Plan struct {
+	TypeInfo gen.TypeInfo
+	ID       *url.URL
+
+	Comment        string
+	ItemType       gen.TypeInfo
+	validators     []validator.Validator
+	itemValidators []validator.Validator
 }
 
-func (s *SlicePlan) Execute(imp *gen.Imports) (string, error) {
+// Type returns the TypeInfo for this plan
+func (p *Plan) Type() gen.TypeInfo {
+	return p.TypeInfo
+}
+
+// Deps returns any known dependencies of this plan
+func (p *Plan) Deps() []gen.TypeInfo {
+	return []gen.TypeInfo{p.ItemType, {Name: "Marshal", GoPath: "encoding/json"}, {Name: "Sprintf", GoPath: "fmt"}}
+}
+
+// Validators returns validators of the slice itself
+func (p *Plan) Validators() []validator.Validator {
+	sort.Slice(p.validators, func(i, j int) bool {
+		return p.validators[i].Name < p.validators[j].Name
+	})
+	return p.validators
+}
+
+// ItemValidators returns validators of the items within the slice itself
+func (p *Plan) ItemValidators() []validator.Validator {
+	sort.Slice(p.itemValidators, func(i, j int) bool {
+		return p.itemValidators[i].Name < p.itemValidators[j].Name
+	})
+	return p.itemValidators
+}
+
+// ItemValidateInitialize returns whether there are any item validators which require initialization
+func (p *Plan) ItemValidateInitialize() bool {
+	for _, i := range p.itemValidators {
+		if i.VarExpr != nil {
+			return true
+		}
+	}
+	return false
+}
+
+// Execute renders the current plan as a string
+func (p *Plan) Execute(imp *gen.Imports) (string, error) {
 	var w bytes.Buffer
-	err := tmpl.Execute(&w, slicePlanContext{imp, s})
+	err := tmpl.Execute(&w, slicePlanContext{imp, p})
 	return w.String(), err
+}
+
+type slicePlanContext struct {
+	*gen.Imports
+	*Plan
 }

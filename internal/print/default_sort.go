@@ -34,11 +34,11 @@ func key(plan gen.Plan) []string {
 	switch plan.(type) {
 	case *composite.StructPlan:
 		return []string{"a", name}
-	case *slice.SlicePlan:
+	case *slice.Plan:
 		return []string{"b", name}
 	case *tuple.TuplePlan:
 		return []string{"c", name}
-	case *enum.EnumPlan:
+	case *enum.Plan:
 		return []string{"d", name}
 	default:
 		return []string{"z", name}

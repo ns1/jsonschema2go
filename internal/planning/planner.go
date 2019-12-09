@@ -20,8 +20,8 @@ var (
 		plannerFunc("allOfObject", composite.PlanAllOfObject),
 		plannerFunc("object", composite.PlanObject),
 		plannerFunc("tuple", tuple.PlanTuple),
-		plannerFunc("slice", slice.PlanSlice),
-		plannerFunc("enum", enum.Plan),
+		plannerFunc("slice", slice.Build),
+		plannerFunc("enum", enum.Build),
 		plannerFunc("discriminatedOneOf", composite.PlanDiscriminatedOneOfObject),
 		plannerFunc("oneOfDiffTypes", composite.PlanOneOfDiffTypes),
 	}

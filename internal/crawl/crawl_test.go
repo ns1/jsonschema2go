@@ -212,13 +212,13 @@ func TestSchemaToPlan(t *testing.T) {
 				},
 			},
 			want: []gen.Plan{
-				&enum.EnumPlan{
+				&enum.Plan{
 					TypeInfo: gen.TypeInfo{
 						GoPath: "github.com/jwilner/jsonschema2go/example",
 						Name:   "Letter",
 					},
 					BaseType: gen.TypeInfo{Name: "string"},
-					Members: []enum.EnumMember{
+					Members: []enum.Member{
 						{"A", "a"},
 						{"B", "b"},
 						{"C", "c"},
