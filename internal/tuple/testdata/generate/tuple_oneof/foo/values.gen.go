@@ -64,7 +64,7 @@ func (t *Bar) Validate() error {
 			errType:  "pattern",
 			path:     []interface{}{0},
 			jsonPath: []interface{}{0},
-			message:  fmt.Sprintf("must match '^abcdef$' but got %q", v),
+			message:  fmt.Sprintf(`must match '^abcdef$' but got %q`, v),
 		}
 	}
 	if v, ok := m[1].(float64); !ok {

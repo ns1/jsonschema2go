@@ -67,6 +67,7 @@ func (s *StructPlan) Deps() (deps []gen.TypeInfo) {
 	return
 }
 
+
 //go:generate go run ../cmd/embedtmpl/embedtmpl.go composite struct.tmpl tmpl.gen.go
 
 // PlanObject returns a plan if the provided type is an object; otherwise it returns ErrContinue
@@ -79,6 +80,12 @@ func PlanObject(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen
 		return nil, fmt.Errorf("type unknown: %w", gen.ErrContinue)
 	}
 	// matched
+
+	if schema.AdditionalProperties != nil &&
+		schema.AdditionalProperties.Bool != nil &&
+		*schema.AdditionalProperties.Bool {
+		// this is just going to be a map
+	}
 
 	s := &StructPlan{TypeInfo: tInfo, ID: schema.CalcID}
 	s.Comment = schema.Annotations.GetString("description")
@@ -140,6 +147,13 @@ func deriveStructFields(
 				}
 				fType.Pointer = true
 			}
+		}
+		if fieldSchema.ChooseType() == gen.Object &&
+			len(fieldSchema.Properties) == 0 &&
+			fieldSchema.AdditionalProperties != nil &&
+			fieldSchema.AdditionalProperties.Bool != nil &&
+			*fieldSchema.AdditionalProperties.Bool {
+			fType = gen.TypeInfo{Name: "map[string]interface{}"}
 		}
 		if fieldSchema.ChooseType() == gen.Unknown && fType.Unknown() {
 			fType = gen.TypeInfo{Name: "interface{}"}

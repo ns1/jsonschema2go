@@ -145,7 +145,7 @@ func (m *Bar) Validate() error {
 			errType:  "pattern",
 			path:     []interface{}{"String"},
 			jsonPath: []interface{}{"string"},
-			message:  fmt.Sprintf("must match '^(123|456)$' but got %q", m.String.String),
+			message:  fmt.Sprintf(`must match '^(123|456)$' but got %q`, m.String.String),
 		}
 	}
 	return nil

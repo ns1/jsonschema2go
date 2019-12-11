@@ -6,40 +6,37 @@ import (
 	"fmt"
 )
 
-// Bar gives you lots of dumb info
-// generated from https://example.com/testdata/generate/array_pattern/foo/bar.json
-type Bar []string
+// generated from https://example.com/testdata/generate/array_field_scalar/foo/example.json
+type Example struct {
+	Options ExampleOptions `json:"options,omitempty"`
+}
 
-func (m Bar) MarshalJSON() ([]byte, error) {
+func (m *Example) Validate() error {
+	if err := m.Options.Validate(); err != nil {
+		if err, ok := err.(valErr); ok {
+			return &validationError{
+				errType:  err.ErrType(),
+				message:  err.Message(),
+				path:     append([]interface{}{"Options"}, err.Path()...),
+				jsonPath: append([]interface{}{"options"}, err.JSONPath()...),
+			}
+		}
+		return err
+	}
+	return nil
+}
+
+// generated from https://example.com/testdata/generate/array_field_scalar/foo/example.json#/properties/options
+type ExampleOptions []string
+
+func (m ExampleOptions) MarshalJSON() ([]byte, error) {
 	if m == nil {
 		return []byte(`[]`), nil
 	}
 	return json.Marshal([]string(m))
 }
 
-var (
-	barItemsPattern = regexp.MustCompile(`^[a-z]{10}$`)
-)
-
-func (m Bar) Validate() error {
-	for i := range m {
-		if len(m[i]) < 3 {
-			return &validationError{
-				errType:  "minLength",
-				message:  fmt.Sprintf("must have length greater than 3 but was %d", len(m[i])),
-				path:     []interface{}{i},
-				jsonPath: []interface{}{i},
-			}
-		}
-		if !barItemsPattern.MatchString(m[i]) {
-			return &validationError{
-				errType:  "pattern",
-				message:  fmt.Sprintf(`must match '^[a-z]{10}$' but got %q`, m[i]),
-				path:     []interface{}{i},
-				jsonPath: []interface{}{i},
-			}
-		}
-	}
+func (m ExampleOptions) Validate() error {
 	return nil
 }
 

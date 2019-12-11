@@ -32,7 +32,7 @@ func (m *Bar) Validate() error {
 			errType:  "pattern",
 			path:     []interface{}{"Baz"},
 			jsonPath: []interface{}{"baz"},
-			message:  fmt.Sprintf("must match '^[0-9a-fA-F]{10}$' but got %q", m.Baz.String),
+			message:  fmt.Sprintf(`must match '^[0-9a-fA-F]{10}$' but got %q`, m.Baz.String),
 		}
 	}
 	if m.Count.Set && m.Count.Int64 < 3 {

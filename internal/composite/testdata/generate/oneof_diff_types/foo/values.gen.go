@@ -31,7 +31,7 @@ func (m *Bar) Validate() error {
 		if !barValuePattern.MatchString(v) {
 			return &validationError{
 				errType: "pattern",
-				message: fmt.Sprintf("must match '^[0-9]{22}$' but got %q", v),
+				message: fmt.Sprintf(`must match '^[0-9]{22}$' but got %q`, v),
 			}
 		}
 	}

@@ -1,2 +1,2 @@
 arr-example.json
-GOLDEN
+

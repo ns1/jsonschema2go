@@ -23,7 +23,7 @@ type Validator struct {
 func Validators(schema *gen.Schema) (styles []Validator) {
 	switch typ := schema.ChooseType(); typ {
 	case gen.Array, gen.Object:
-		if !schema.Config.NoValidate {
+		if !schema.Config.NoValidate && schema.AdditionalProperties == nil {
 			styles = append(styles, SubschemaValidator)
 		}
 	case gen.String:
@@ -33,7 +33,7 @@ func Validators(schema *gen.Schema) (styles []Validator) {
 				Name:        "pattern",
 				VarExpr:     TemplateStr("{{ .NameSpace }}Pattern = regexp.MustCompile(`" + pattern + "`)"),
 				TestExpr:    TemplateStr("!{{ .NameSpace }}Pattern.MatchString({{ .QualifiedName }})"),
-				SprintfExpr: TemplateStr(`"must match '` + pattern + `' but got %q", {{ .QualifiedName }}`),
+				SprintfExpr: TemplateStr("`must match '" + pattern + "' but got %q`, {{ .QualifiedName }}"),
 				Deps:        []gen.TypeInfo{{GoPath: "regexp", Name: "MustCompile"}},
 				ImpliedType: "string",
 			})

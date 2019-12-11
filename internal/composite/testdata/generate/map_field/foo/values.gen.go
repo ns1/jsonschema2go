@@ -2,41 +2,16 @@
 package foo
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/jwilner/jsonschema2go/pkg/boxed"
-	"regexp"
 )
 
-// Bar gives you some dumb info
+// Bar contains some info
 type Bar struct {
-	Name boxed.String `json:"name"`
+	Baz map[string]interface{} `json:"baz,omitempty"`
 }
-
-var (
-	barNamePattern = regexp.MustCompile(`^[0-9]+$`)
-)
 
 func (m *Bar) Validate() error {
-	if m.Name.Set && !barNamePattern.MatchString(m.Name.String) {
-		return &validationError{
-			errType:  "pattern",
-			path:     []interface{}{"Name"},
-			jsonPath: []interface{}{"name"},
-			message:  fmt.Sprintf(`must match '^[0-9]+$' but got %q`, m.Name.String),
-		}
-	}
 	return nil
-}
-
-func (m *Bar) MarshalJSON() ([]byte, error) {
-	inner := struct {
-		Name *string `json:"name,omitempty"`
-	}{}
-	if m.Name.Set {
-		inner.Name = &m.Name.String
-	}
-	return json.Marshal(inner)
 }
 
 type valErr interface {
