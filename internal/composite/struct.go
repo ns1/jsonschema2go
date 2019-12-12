@@ -95,13 +95,6 @@ func PlanObject(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen
 	}
 	s.Fields = fields
 
-	for _, f := range fields {
-		if f.Type.GoPath == "github.com/jwilner/jsonschema2go/pkg/boxed" {
-			s.Traits = append(s.Traits, &boxedEncodingTrait{})
-			break
-		}
-	}
-
 	return s, nil
 }
 
@@ -164,20 +157,10 @@ func deriveStructFields(
 			}
 		}
 		tag := fmt.Sprintf(`json:"%s,omitempty"`, name)
-		if fType.BuiltIn() && !fType.Pointer {
+		if fType.BuiltIn() {
 			switch fType.Name {
-			case "string":
-				fType = gen.TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/pkg/boxed", Name: "String", ValPath: "String"}
-				tag = fmt.Sprintf(`json:"%s"`, name)
-			case "int64":
-				fType = gen.TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/pkg/boxed", Name: "Int64", ValPath: "Int64"}
-				tag = fmt.Sprintf(`json:"%s"`, name)
-			case "bool":
-				fType = gen.TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/pkg/boxed", Name: "Bool", ValPath: "Bool"}
-				tag = fmt.Sprintf(`json:"%s"`, name)
-			case "float64":
-				fType = gen.TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/pkg/boxed", Name: "Float64", ValPath: "Float64"}
-				tag = fmt.Sprintf(`json:"%s"`, name)
+			case "string", "int64", "bool", "float64":
+				fType.Pointer = true
 			}
 		}
 		fields = append(
@@ -234,17 +217,14 @@ func (f *enrichedStructField) DerefExpr() string {
 	if f.Type.ValPath != "" {
 		valPath = "." + f.Type.ValPath
 	}
-	return fmt.Sprintf("m.%s%s", f.Name, valPath)
+	v := fmt.Sprintf("m.%s%s", f.Name, valPath)
+	if f.Type.Pointer {
+		v = "*"+v
+	}
+	return v
 }
 
 func (f *enrichedStructField) TestSetExpr(pos bool) (string, error) {
-	if f.Type.GoPath == "github.com/jwilner/jsonschema2go/pkg/boxed" {
-		op := ""
-		if !pos {
-			op = "!"
-		}
-		return fmt.Sprintf("%sm.%s.Set", op, f.Name), nil
-	}
 	if f.Type.Name == "interface{}" || f.Type.Pointer {
 		op := "!="
 		if !pos {
@@ -279,12 +259,6 @@ func (f *enrichedStructField) FieldDecl() string {
 
 func (f *enrichedStructField) InnerFieldDecl() string {
 	typName := f.Imports.QualName(f.Type)
-	if f.Type.GoPath == "github.com/jwilner/jsonschema2go/pkg/boxed" {
-		s := []rune(f.Type.Name)
-		s[0] = unicode.ToLower(s[0])
-
-		typName = "*" + string(s)
-	}
 	tag := ""
 	if f.Name != "" { // not an embedded struct
 		tag = fmt.Sprintf("`json:"+`"%s,omitempty"`+"`", f.JSONName)
@@ -304,9 +278,6 @@ func (f *enrichedStructField) FieldRef() string {
 }
 
 func (f *enrichedStructField) InnerFieldLiteral() string {
-	if f.Type.GoPath == "github.com/jwilner/jsonschema2go/pkg/boxed" {
-		return ""
-	}
 	fieldRef := f.Name
 	if fieldRef == "" { // embedded
 		fieldRef = f.Type.Name
@@ -319,10 +290,6 @@ var fieldAssignmentTmpl = validator.TemplateStr(`if m.{{ .Name }}.Set {
 }`)
 
 func (f *enrichedStructField) InnerFieldAssignment() (string, error) {
-	if f.Type.GoPath != "github.com/jwilner/jsonschema2go/pkg/boxed" {
-		return "", nil
-	}
-
 	valPath := ""
 	if f.Type.ValPath != "" {
 		valPath = "." + f.Type.ValPath

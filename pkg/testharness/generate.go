@@ -41,7 +41,7 @@ func RunGenerateTests(t *testing.T, testDataDir, root, goPath string) {
 			args, err := readLines(path.Join(testDir, "args.txt"))
 			r.NoError(err)
 
-			var golden bool
+			golden := true
 			paths := make([]string, 0, len(args))
 			for _, a := range args {
 				if a == "GOLDEN" {

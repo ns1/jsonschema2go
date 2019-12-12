@@ -2,9 +2,7 @@
 package foo
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/jwilner/jsonschema2go/pkg/boxed"
 )
 
 // Bar gives you some dumb info
@@ -28,21 +26,11 @@ func (m *Bar) Validate() error {
 }
 
 type Foo struct {
-	Name boxed.String `json:"name"`
+	Name *string `json:"name,omitempty"`
 }
 
 func (m *Foo) Validate() error {
 	return nil
-}
-
-func (m *Foo) MarshalJSON() ([]byte, error) {
-	inner := struct {
-		Name *string `json:"name,omitempty"`
-	}{}
-	if m.Name.Set {
-		inner.Name = &m.Name.String
-	}
-	return json.Marshal(inner)
 }
 
 type valErr interface {

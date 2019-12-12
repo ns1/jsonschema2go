@@ -4,7 +4,6 @@ package foo
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/jwilner/jsonschema2go/pkg/boxed"
 )
 
 // Bar gives you some dumb info
@@ -39,49 +38,21 @@ func (m *Bar) MarshalJSON() ([]byte, error) {
 }
 
 type Left struct {
-	Direction boxed.String `json:"direction"`
-	Value     boxed.Int64  `json:"value"`
+	Direction *string `json:"direction,omitempty"`
+	Value     *int64  `json:"value,omitempty"`
 }
 
 func (m *Left) Validate() error {
 	return nil
 }
 
-func (m *Left) MarshalJSON() ([]byte, error) {
-	inner := struct {
-		Direction *string `json:"direction,omitempty"`
-		Value     *int64  `json:"value,omitempty"`
-	}{}
-	if m.Direction.Set {
-		inner.Direction = &m.Direction.String
-	}
-	if m.Value.Set {
-		inner.Value = &m.Value.Int64
-	}
-	return json.Marshal(inner)
-}
-
 type Right struct {
-	Direction boxed.String  `json:"direction"`
-	Value     boxed.Float64 `json:"value"`
+	Direction *string  `json:"direction,omitempty"`
+	Value     *float64 `json:"value,omitempty"`
 }
 
 func (m *Right) Validate() error {
 	return nil
-}
-
-func (m *Right) MarshalJSON() ([]byte, error) {
-	inner := struct {
-		Direction *string  `json:"direction,omitempty"`
-		Value     *float64 `json:"value,omitempty"`
-	}{}
-	if m.Direction.Set {
-		inner.Direction = &m.Direction.String
-	}
-	if m.Value.Set {
-		inner.Value = &m.Value.Float64
-	}
-	return json.Marshal(inner)
 }
 
 type valErr interface {

@@ -4,7 +4,6 @@ package foo
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/jwilner/jsonschema2go/pkg/boxed"
 )
 
 // generated from https://example.com/testdata/generate/array_field/foo/example.json
@@ -29,25 +28,12 @@ func (m *Example) Validate() error {
 
 // generated from https://example.com/testdata/generate/array_field/foo/inner.json
 type Inner struct {
-	Name  boxed.String `json:"name"`
-	Value interface{}  `json:"value,omitempty"`
+	Name  *string     `json:"name,omitempty"`
+	Value interface{} `json:"value,omitempty"`
 }
 
 func (m *Inner) Validate() error {
 	return nil
-}
-
-func (m *Inner) MarshalJSON() ([]byte, error) {
-	inner := struct {
-		Name  *string     `json:"name,omitempty"`
-		Value interface{} `json:"value,omitempty"`
-	}{
-		Value: m.Value,
-	}
-	if m.Name.Set {
-		inner.Name = &m.Name.String
-	}
-	return json.Marshal(inner)
 }
 
 // generated from https://example.com/testdata/generate/array_field/foo/example.json#/properties/options

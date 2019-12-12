@@ -2,9 +2,7 @@
 package foo
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/jwilner/jsonschema2go/pkg/boxed"
 )
 
 // Bar gives you some dumb info
@@ -24,11 +22,11 @@ func (m *Bar) Validate() error {
 }
 
 type Baz struct {
-	Name boxed.String `json:"name"`
+	Name *string `json:"name,omitempty"`
 }
 
 func (m *Baz) Validate() error {
-	if !m.Name.Set {
+	if m.Name == nil {
 		return &validationError{
 			errType:  "required",
 			message:  "field required",
@@ -39,22 +37,12 @@ func (m *Baz) Validate() error {
 	return nil
 }
 
-func (m *Baz) MarshalJSON() ([]byte, error) {
-	inner := struct {
-		Name *string `json:"name,omitempty"`
-	}{}
-	if m.Name.Set {
-		inner.Name = &m.Name.String
-	}
-	return json.Marshal(inner)
-}
-
 type Blob struct {
-	Count boxed.Int64 `json:"count"`
+	Count *int64 `json:"count,omitempty"`
 }
 
 func (m *Blob) Validate() error {
-	if !m.Count.Set {
+	if m.Count == nil {
 		return &validationError{
 			errType:  "required",
 			message:  "field required",
@@ -63,16 +51,6 @@ func (m *Blob) Validate() error {
 		}
 	}
 	return nil
-}
-
-func (m *Blob) MarshalJSON() ([]byte, error) {
-	inner := struct {
-		Count *int64 `json:"count,omitempty"`
-	}{}
-	if m.Count.Set {
-		inner.Count = &m.Count.Int64
-	}
-	return json.Marshal(inner)
 }
 
 type valErr interface {

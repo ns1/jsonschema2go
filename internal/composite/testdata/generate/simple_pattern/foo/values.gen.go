@@ -2,15 +2,13 @@
 package foo
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/jwilner/jsonschema2go/pkg/boxed"
 	"regexp"
 )
 
 // Bar gives you some dumb info
 type Bar struct {
-	Name boxed.String `json:"name"`
+	Name *string `json:"name,omitempty"`
 }
 
 var (
@@ -18,25 +16,15 @@ var (
 )
 
 func (m *Bar) Validate() error {
-	if m.Name.Set && !barNamePattern.MatchString(m.Name.String) {
+	if m.Name != nil && !barNamePattern.MatchString(*m.Name) {
 		return &validationError{
 			errType:  "pattern",
 			path:     []interface{}{"Name"},
 			jsonPath: []interface{}{"name"},
-			message:  fmt.Sprintf(`must match '^[0-9]+$' but got %q`, m.Name.String),
+			message:  fmt.Sprintf(`must match '^[0-9]+$' but got %q`, *m.Name),
 		}
 	}
 	return nil
-}
-
-func (m *Bar) MarshalJSON() ([]byte, error) {
-	inner := struct {
-		Name *string `json:"name,omitempty"`
-	}{}
-	if m.Name.Set {
-		inner.Name = &m.Name.String
-	}
-	return json.Marshal(inner)
 }
 
 type valErr interface {

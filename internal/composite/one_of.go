@@ -148,13 +148,3 @@ func (d *discriminatorMarshalTrait) Deps() []gen.TypeInfo {
 type Trait interface {
 	Template() string
 }
-
-type boxedEncodingTrait struct{}
-
-func (boxedEncodingTrait) Template() string {
-	return "boxed"
-}
-
-func (boxedEncodingTrait) Deps() []gen.TypeInfo {
-	return []gen.TypeInfo{{GoPath: "encoding/json", Name: "Marshal"}}
-}
