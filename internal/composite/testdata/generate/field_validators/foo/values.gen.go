@@ -4,7 +4,6 @@ package foo
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/jwilner/jsonschema2go/pkg/boxed"
 	"math"
 	"regexp"
 )
@@ -12,12 +11,12 @@ import (
 // Bar gives you some dumb info
 // generated from https://example.com/testdata/generate/field_validators/foo/bar.json
 type Bar struct {
-	Array       BarArray      `json:"array,omitempty"`
-	ExclInteger boxed.Int64   `json:"exclInteger"`
-	ExclNumber  boxed.Float64 `json:"exclNumber"`
-	Integer     boxed.Int64   `json:"integer"`
-	Number      boxed.Float64 `json:"number"`
-	String      boxed.String  `json:"string"`
+	Array       BarArray `json:"array,omitempty"`
+	ExclInteger *int64   `json:"exclInteger,omitempty"`
+	ExclNumber  *float64 `json:"exclNumber,omitempty"`
+	Integer     *int64   `json:"integer,omitempty"`
+	Number      *float64 `json:"number,omitempty"`
+	String      *string  `json:"string,omitempty"`
 }
 
 var (
@@ -25,7 +24,7 @@ var (
 )
 
 func (m *Bar) Validate() error {
-	if !m.String.Set {
+	if m.String == nil {
 		return &validationError{
 			errType:  "required",
 			message:  "field required",
@@ -44,140 +43,111 @@ func (m *Bar) Validate() error {
 		}
 		return err
 	}
-	if m.ExclInteger.Set && m.ExclInteger.Int64 >= 1 {
+	if m.ExclInteger != nil && *m.ExclInteger >= 1 {
 		return &validationError{
 			errType:  "maximumExclusive",
 			path:     []interface{}{"ExclInteger"},
 			jsonPath: []interface{}{"exclInteger"},
-			message:  fmt.Sprintf("must be less than 1 but was %v", m.ExclInteger.Int64),
+			message:  fmt.Sprintf("must be less than 1 but was %v", *m.ExclInteger),
 		}
 	}
-	if m.ExclInteger.Set && m.ExclInteger.Int64 <= 1 {
+	if m.ExclInteger != nil && *m.ExclInteger <= 1 {
 		return &validationError{
 			errType:  "minimumExclusive",
 			path:     []interface{}{"ExclInteger"},
 			jsonPath: []interface{}{"exclInteger"},
-			message:  fmt.Sprintf("must be greater than 1 but was %v", m.ExclInteger.Int64),
+			message:  fmt.Sprintf("must be greater than 1 but was %v", *m.ExclInteger),
 		}
 	}
-	if m.ExclNumber.Set && m.ExclNumber.Float64 >= 1 {
+	if m.ExclNumber != nil && *m.ExclNumber >= 1 {
 		return &validationError{
 			errType:  "maximumExclusive",
 			path:     []interface{}{"ExclNumber"},
 			jsonPath: []interface{}{"exclNumber"},
-			message:  fmt.Sprintf("must be less than 1 but was %v", m.ExclNumber.Float64),
+			message:  fmt.Sprintf("must be less than 1 but was %v", *m.ExclNumber),
 		}
 	}
-	if m.ExclNumber.Set && m.ExclNumber.Float64 <= 1 {
+	if m.ExclNumber != nil && *m.ExclNumber <= 1 {
 		return &validationError{
 			errType:  "minimumExclusive",
 			path:     []interface{}{"ExclNumber"},
 			jsonPath: []interface{}{"exclNumber"},
-			message:  fmt.Sprintf("must be greater than 1 but was %v", m.ExclNumber.Float64),
+			message:  fmt.Sprintf("must be greater than 1 but was %v", *m.ExclNumber),
 		}
 	}
-	if m.Integer.Set && m.Integer.Int64 > 1 {
+	if m.Integer != nil && *m.Integer > 1 {
 		return &validationError{
 			errType:  "maximum",
 			path:     []interface{}{"Integer"},
 			jsonPath: []interface{}{"integer"},
-			message:  fmt.Sprintf("must be less than or equal to 1 but was %v", m.Integer.Int64),
+			message:  fmt.Sprintf("must be less than or equal to 1 but was %v", *m.Integer),
 		}
 	}
-	if m.Integer.Set && m.Integer.Int64 < 1 {
+	if m.Integer != nil && *m.Integer < 1 {
 		return &validationError{
 			errType:  "minimum",
 			path:     []interface{}{"Integer"},
 			jsonPath: []interface{}{"integer"},
-			message:  fmt.Sprintf("must be greater than or equal to 1 but was %v", m.Integer.Int64),
+			message:  fmt.Sprintf("must be greater than or equal to 1 but was %v", *m.Integer),
 		}
 	}
-	if m.Integer.Set && m.Integer.Int64%3 != 0 {
+	if m.Integer != nil && *m.Integer%3 != 0 {
 		return &validationError{
 			errType:  "multipleOf",
 			path:     []interface{}{"Integer"},
 			jsonPath: []interface{}{"integer"},
-			message:  fmt.Sprintf("must be a multiple of 3 but was %v", m.Integer.Int64),
+			message:  fmt.Sprintf("must be a multiple of 3 but was %v", *m.Integer),
 		}
 	}
-	if m.Number.Set && m.Number.Float64 > 1 {
+	if m.Number != nil && *m.Number > 1 {
 		return &validationError{
 			errType:  "maximum",
 			path:     []interface{}{"Number"},
 			jsonPath: []interface{}{"number"},
-			message:  fmt.Sprintf("must be less than or equal to 1 but was %v", m.Number.Float64),
+			message:  fmt.Sprintf("must be less than or equal to 1 but was %v", *m.Number),
 		}
 	}
-	if m.Number.Set && m.Number.Float64 < 1 {
+	if m.Number != nil && *m.Number < 1 {
 		return &validationError{
 			errType:  "minimum",
 			path:     []interface{}{"Number"},
 			jsonPath: []interface{}{"number"},
-			message:  fmt.Sprintf("must be greater than or equal to 1 but was %v", m.Number.Float64),
+			message:  fmt.Sprintf("must be greater than or equal to 1 but was %v", *m.Number),
 		}
 	}
-	if m.Number.Set && math.Mod(m.Number.Float64, 3.2) != 0 {
+	if m.Number != nil && math.Mod(*m.Number, 3.2) != 0 {
 		return &validationError{
 			errType:  "multipleOf",
 			path:     []interface{}{"Number"},
 			jsonPath: []interface{}{"number"},
-			message:  fmt.Sprintf("must be a multiple of 3.2 but was %v", m.Number.Float64),
+			message:  fmt.Sprintf("must be a multiple of 3.2 but was %v", *m.Number),
 		}
 	}
-	if len(m.String.String) > 10 {
+	if len(*m.String) > 10 {
 		return &validationError{
 			errType:  "maxLength",
 			path:     []interface{}{"String"},
 			jsonPath: []interface{}{"string"},
-			message:  fmt.Sprintf("must have length less than 10 but was %d", len(m.String.String)),
+			message:  fmt.Sprintf("must have length less than 10 but was %d", len(*m.String)),
 		}
 	}
-	if len(m.String.String) < 3 {
+	if len(*m.String) < 3 {
 		return &validationError{
 			errType:  "minLength",
 			path:     []interface{}{"String"},
 			jsonPath: []interface{}{"string"},
-			message:  fmt.Sprintf("must have length greater than 3 but was %d", len(m.String.String)),
+			message:  fmt.Sprintf("must have length greater than 3 but was %d", len(*m.String)),
 		}
 	}
-	if !barStringPattern.MatchString(m.String.String) {
+	if !barStringPattern.MatchString(*m.String) {
 		return &validationError{
 			errType:  "pattern",
 			path:     []interface{}{"String"},
 			jsonPath: []interface{}{"string"},
-			message:  fmt.Sprintf(`must match '^(123|456)$' but got %q`, m.String.String),
+			message:  fmt.Sprintf(`must match '^(123|456)$' but got %q`, *m.String),
 		}
 	}
 	return nil
-}
-
-func (m *Bar) MarshalJSON() ([]byte, error) {
-	inner := struct {
-		Array       BarArray `json:"array,omitempty"`
-		ExclInteger *int64   `json:"exclInteger,omitempty"`
-		ExclNumber  *float64 `json:"exclNumber,omitempty"`
-		Integer     *int64   `json:"integer,omitempty"`
-		Number      *float64 `json:"number,omitempty"`
-		String      *string  `json:"string,omitempty"`
-	}{
-		Array: m.Array,
-	}
-	if m.ExclInteger.Set {
-		inner.ExclInteger = &m.ExclInteger.Int64
-	}
-	if m.ExclNumber.Set {
-		inner.ExclNumber = &m.ExclNumber.Float64
-	}
-	if m.Integer.Set {
-		inner.Integer = &m.Integer.Int64
-	}
-	if m.Number.Set {
-		inner.Number = &m.Number.Float64
-	}
-	if m.String.Set {
-		inner.String = &m.String.String
-	}
-	return json.Marshal(inner)
 }
 
 // generated from https://example.com/testdata/generate/field_validators/foo/bar.json#/properties/array

@@ -39,6 +39,7 @@
                 "valid": false
             },
             {
+                "skip": "don't differentiate",
                 "description": "null is not an integer",
                 "data": {"a":  null},
                 "valid": false
@@ -86,6 +87,7 @@
             },
             {
                 "description": "null is not a number",
+                "skip": "don't differentiate from unset",
                 "data": {"a":  null},
                 "valid": false
             }
@@ -137,6 +139,7 @@
             },
             {
                 "description": "null is not a string",
+                "skip": "don't differentiate from unset",
                 "data": {"a":  null},
                 "valid": false
             }
@@ -277,6 +280,7 @@
             },
             {
                 "description": "null is not a boolean",
+                "skip": "don't differentiate from unset",
                 "data": {"a":  null},
                 "valid": false
             }

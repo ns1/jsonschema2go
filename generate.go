@@ -10,8 +10,6 @@ import (
 	"text/template"
 )
 
-//go:generate go run internal/cmd/boxedgen/boxedgen.go
-
 // Generate generates Go source code from the provided JSON schemas. Options can be provided to customize the
 // output behavior
 func Generate(ctx context.Context, uris []string, options ...Option) error {

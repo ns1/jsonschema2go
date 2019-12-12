@@ -32,8 +32,8 @@ Given a schema like in `example.json`:
 ```go
 // Bar contains some info
 type Bar struct {
-	Baz   boxed.String `json:"baz"`
-	Count boxed.Int64  `json:"count"`
+	Baz   *string `json:"baz,omitempty"`
+	Count *int64  `json:"count,omitempty"`
 }
 
 var (
@@ -41,7 +41,7 @@ var (
 )
 
 func (m *Bar) Validate() error {
-	if !m.Baz.Set {
+	if m.Baz == nil {
 		return &validationError{
 			errType:  "required",
 			message:  "field required",
@@ -49,20 +49,20 @@ func (m *Bar) Validate() error {
 			jsonPath: []interface{}{"baz"},
 		}
 	}
-	if !barBazPattern.MatchString(m.Baz.String) {
+	if !barBazPattern.MatchString(*m.Baz) {
 		return &validationError{
 			errType:  "pattern",
 			path:     []interface{}{"Baz"},
 			jsonPath: []interface{}{"baz"},
-			message:  fmt.Sprintf("must match '^[0-9a-fA-F]{10}$' but got %q", m.Baz.String),
+			message:  fmt.Sprintf(`must match '^[0-9a-fA-F]{10}$' but got %q`, *m.Baz),
 		}
 	}
-	if m.Count.Set && m.Count.Int64 < 3 {
+	if m.Count != nil && *m.Count < 3 {
 		return &validationError{
 			errType:  "minimum",
 			path:     []interface{}{"Count"},
 			jsonPath: []interface{}{"count"},
-			message:  fmt.Sprintf("must be greater than or equal to 3 but was %v", m.Count.Int64),
+			message:  fmt.Sprintf("must be greater than or equal to 3 but was %v", *m.Count),
 		}
 	}
 	return nil

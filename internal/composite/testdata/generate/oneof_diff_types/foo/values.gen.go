@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/jwilner/jsonschema2go/pkg/boxed"
 	"regexp"
 )
 
@@ -92,21 +91,11 @@ func (m *Bar) MarshalJSON() ([]byte, error) {
 }
 
 type Baz struct {
-	Baz boxed.String `json:"baz"`
+	Baz *string `json:"baz,omitempty"`
 }
 
 func (m *Baz) Validate() error {
 	return nil
-}
-
-func (m *Baz) MarshalJSON() ([]byte, error) {
-	inner := struct {
-		Baz *string `json:"baz,omitempty"`
-	}{}
-	if m.Baz.Set {
-		inner.Baz = &m.Baz.String
-	}
-	return json.Marshal(inner)
 }
 
 type Bazes []string

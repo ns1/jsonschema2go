@@ -2,19 +2,17 @@
 package foo
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/jwilner/jsonschema2go/pkg/boxed"
 )
 
 // Bar gives you some dumb info
 type Bar struct {
-	Bar boxed.Int64  `json:"bar"`
-	Foo boxed.String `json:"foo"`
+	Bar *int64  `json:"bar,omitempty"`
+	Foo *string `json:"foo,omitempty"`
 }
 
 func (m *Bar) Validate() error {
-	if !m.Bar.Set {
+	if m.Bar == nil {
 		return &validationError{
 			errType:  "required",
 			message:  "field required",
@@ -22,7 +20,7 @@ func (m *Bar) Validate() error {
 			jsonPath: []interface{}{"bar"},
 		}
 	}
-	if !m.Foo.Set {
+	if m.Foo == nil {
 		return &validationError{
 			errType:  "required",
 			message:  "field required",
@@ -31,20 +29,6 @@ func (m *Bar) Validate() error {
 		}
 	}
 	return nil
-}
-
-func (m *Bar) MarshalJSON() ([]byte, error) {
-	inner := struct {
-		Bar *int64  `json:"bar,omitempty"`
-		Foo *string `json:"foo,omitempty"`
-	}{}
-	if m.Bar.Set {
-		inner.Bar = &m.Bar.Int64
-	}
-	if m.Foo.Set {
-		inner.Foo = &m.Foo.String
-	}
-	return json.Marshal(inner)
 }
 
 type valErr interface {

@@ -53,12 +53,5 @@ func PlanAllOfObject(ctx context.Context, helper gen.Helper, schema *gen.Schema)
 		}
 	}
 
-	for _, f := range s.Fields {
-		if f.Type.GoPath == "github.com/jwilner/jsonschema2go/pkg/boxed" {
-			s.Traits = append(s.Traits, &boxedEncodingTrait{})
-			break
-		}
-	}
-
 	return s, nil
 }
