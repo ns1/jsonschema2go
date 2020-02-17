@@ -7,6 +7,7 @@ import (
 )
 
 // Bar gives you some dumb info
+// generated from https://example.com/testdata/generate/array/foo/bar.json
 type Bar struct {
 	Name *string `json:"name,omitempty"`
 }
@@ -16,6 +17,7 @@ func (m *Bar) Validate() error {
 }
 
 // Barz gives you lots of dumb info
+// generated from https://example.com/testdata/generate/array/foo/barz.json
 type Barz []Bar
 
 func (m Barz) MarshalJSON() ([]byte, error) {

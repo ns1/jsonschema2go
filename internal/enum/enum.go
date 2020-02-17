@@ -16,12 +16,12 @@ func Build(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Plan
 		return nil, fmt.Errorf("no enum values: %w", gen.ErrContinue)
 	}
 
-	tInfo := helper.TypeInfo(schema)
+	tInfo := helper.TypeInfoHinted(schema, schema.ChooseType())
 	if tInfo.Unknown() {
 		return nil, fmt.Errorf("type unknown: %w", gen.ErrContinue)
 	}
 
-	e := &Plan{TypeInfo: tInfo, id: schema.CalcID}
+	e := &Plan{TypeInfo: tInfo, ID: schema.ID}
 	e.Comment = schema.Annotations.GetString("description")
 	e.BaseType = gen.TypeInfo{Name: helper.Primitive(schema.ChooseType())}
 	for _, m := range schema.Enum {
@@ -30,7 +30,6 @@ func Build(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Plan
 	}
 	return e, nil
 }
-
 
 // Execute generates the source code an enum from the given plan
 func (e *Plan) Execute(imp *gen.Imports) (string, error) {
@@ -42,19 +41,11 @@ func (e *Plan) Execute(imp *gen.Imports) (string, error) {
 // Plan contains information about Enums to be rendered
 type Plan struct {
 	TypeInfo gen.TypeInfo
-	id       *url.URL
+	ID       *url.URL
 
 	Comment  string
 	BaseType gen.TypeInfo
 	Members  []Member
-}
-
-// ID returns the corresponding ID for this enum if known
-func (e *Plan) ID() string {
-	if e.id != nil {
-		return e.id.String()
-	}
-	return ""
 }
 
 type enumPlanContext struct {

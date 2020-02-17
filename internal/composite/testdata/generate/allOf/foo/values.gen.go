@@ -6,6 +6,7 @@ import (
 )
 
 // Bar gives you some dumb info
+// generated from https://example.com/testdata/generate/allOf/foo/bar.json
 type Bar struct {
 	Bar *int64  `json:"bar,omitempty"`
 	Foo *string `json:"foo,omitempty"`

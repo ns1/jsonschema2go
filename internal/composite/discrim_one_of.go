@@ -35,7 +35,7 @@ func PlanDiscriminatedOneOfObject(ctx context.Context, helper gen.Helper, schema
 	}
 
 	typeMapping := make(map[string]gen.TypeInfo)
-	s := &StructPlan{TypeInfo: tInfo, ID: schema.CalcID}
+	s := &StructPlan{TypeInfo: tInfo, ID: schema.ID}
 	s.Comment = schema.Annotations.GetString("description")
 	for _, subSchema := range schemas {
 		tInfo := helper.TypeInfo(subSchema)

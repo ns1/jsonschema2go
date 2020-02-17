@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// generated from https://example.com/testdata/generate/string_enum/foo/letter.json
 type Letter string
 
 const (

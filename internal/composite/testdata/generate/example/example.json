@@ -1,8 +1,6 @@
 {
+  "id": "https://example.com/testdata/generate/example/foo/bar.json",
   "description": "Bar contains some info",
-  "x-jsonschema2go": {
-    "gopath": "github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/example/foo#Bar"
-  },
   "properties": {
     "baz": {
       "type": "string",

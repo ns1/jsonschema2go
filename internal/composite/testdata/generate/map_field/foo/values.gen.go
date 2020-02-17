@@ -6,6 +6,7 @@ import (
 )
 
 // Bar contains some info
+// generated from https://example.com/testdata/generate/map_field/foo/bar.json
 type Bar struct {
 	Baz map[string]interface{} `json:"baz,omitempty"`
 }

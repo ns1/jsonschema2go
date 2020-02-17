@@ -5,8 +5,9 @@ import (
 	"fmt"
 )
 
+// generated from https://example.com/testdata/generate/simple_nested/foo/a.json
 type A struct {
-	B `json:"b,omitempty"`
+	B AB `json:"b,omitempty"`
 }
 
 func (m *A) Validate() error {
@@ -21,6 +22,14 @@ func (m *A) Validate() error {
 		}
 		return err
 	}
+	return nil
+}
+
+// generated from https://example.com/testdata/generate/simple_nested/foo/a.json#/properties/b
+type AB struct {
+}
+
+func (m *AB) Validate() error {
 	return nil
 }
 

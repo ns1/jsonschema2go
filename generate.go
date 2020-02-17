@@ -2,11 +2,14 @@ package jsonschema2go
 
 import (
 	"context"
+	"errors"
 	"github.com/jwilner/jsonschema2go/internal/cachingloader"
 	"github.com/jwilner/jsonschema2go/internal/crawl"
 	"github.com/jwilner/jsonschema2go/internal/planning"
 	"github.com/jwilner/jsonschema2go/internal/print"
 	"github.com/jwilner/jsonschema2go/pkg/gen"
+	"net/url"
+	"path/filepath"
 	"text/template"
 )
 
@@ -36,7 +39,16 @@ func Generate(ctx context.Context, uris []string, options ...Option) error {
 		ctx = gen.SetDebug(ctx)
 	}
 
-	grouped, err := crawl.Crawl(ctx, s.planner, s.loader, s.typer, uris)
+	if len(uris) == 0 {
+		return errors.New("called with no URIs")
+	}
+
+	normalized := make([]string, 0, len(uris))
+	for _, u := range uris {
+		normalized = append(normalized, normalizeURI(u))
+	}
+
+	grouped, err := crawl.Crawl(ctx, s.planner, s.loader, s.typer, normalized)
 	if err != nil {
 		return err
 	}
@@ -85,16 +97,14 @@ func CustomPlanners(planners ...gen.Planner) Option {
 
 // TypeFromID defines how to map to type information from IDs
 func TypeFromID(pairs ...string) Option {
-	mapper := print.TypeFromId(prefixPairs(pairs))
+	mapper := planning.TypeFromId(prefixPairs(pairs))
 	return func(s *settings) {
 		s.typer.TypeFunc = func(schema *gen.Schema) gen.TypeInfo {
 			if t := planning.DefaultTypeFunc(schema); !t.Unknown() {
 				return t
 			}
-			if schema.CalcID != nil {
-				if path, name := mapper(schema.CalcID.String()); name != "" {
-					return gen.TypeInfo{GoPath: path, Name: name}
-				}
+			if path, name := mapper(schema.ID.String()); name != "" {
+				return gen.TypeInfo{GoPath: path, Name: name}
 			}
 			return gen.TypeInfo{}
 		}
@@ -133,4 +143,12 @@ type settings struct {
 	printer  print.Printer
 	loader   gen.Loader
 	debug    bool
+}
+
+func normalizeURI(uriOrFile string) string {
+	if u, err := url.Parse(uriOrFile); err == nil && u.Scheme != "" {
+		return uriOrFile
+	}
+	p, _ := filepath.Abs(uriOrFile)
+	return "file:" + p
 }

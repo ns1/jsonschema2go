@@ -1,10 +1,11 @@
 {
+  "id": "https://example.com/testdata/generate/multi_pkg/foo/bar.json",
   "description": "Bar gives you some dumb info",
-  "x-jsonschema2go": {
-    "gopath": "github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/multi_pkg/foo#Bar"
-  },
   "allOf": [
     {
+      "x-jsonschema2go": {
+        "promoteFields": true
+      },
       "type": "object",
       "properties": {
         "name": {

@@ -17,12 +17,12 @@ func Crawl(
 	planner gen.Planner,
 	loader gen.Loader,
 	typer planning.Typer,
-	fileNames []string,
+	uris []string,
 ) (map[string][]gen.Plan, error) {
 	var childRoutines sync.WaitGroup
 	defer childRoutines.Wait()
 
-	loaded, errC := initialLoad(ctx, &childRoutines, loader, fileNames)
+	loaded, errC := initialLoad(ctx, &childRoutines, loader, uris)
 
 	results := crawl(ctx, planner, loader, typer, loaded)
 
@@ -33,18 +33,18 @@ func initialLoad(
 	ctx context.Context,
 	wg *sync.WaitGroup,
 	loader gen.Loader,
-	fileNames []string,
+	uris []string,
 ) (<-chan *gen.Schema, <-chan error) {
 	// load all initial schemas concurrently
 	loaded := make(chan *gen.Schema)
 	errC := make(chan error, 1)
 	var sent int64 // used to track completion of tasks
-	for _, fileName := range fileNames {
+	for _, uri := range uris {
 		wg.Add(1)
-		go func(fileName string) {
+		go func(uri string) {
 			defer wg.Done()
 
-			u, err := url.Parse(fileName)
+			u, err := url.Parse(uri)
 			if err != nil {
 				errC <- err
 				return
@@ -52,17 +52,17 @@ func initialLoad(
 
 			schema, err := loader.Load(ctx, u)
 			if err != nil {
-				errC <- fmt.Errorf("unable to resolve schema from %q: %w", fileName, err)
+				errC <- fmt.Errorf("unable to resolve schema from %q: %w", uri, err)
 				return
 			}
 			select {
 			case <-ctx.Done():
 			case loaded <- schema:
-				if atomic.AddInt64(&sent, 1) == int64(len(fileNames)) {
+				if atomic.AddInt64(&sent, 1) == int64(len(uris)) {
 					close(loaded)
 				}
 			}
-		}(fileName)
+		}(uri)
 	}
 	return loaded, errC
 }
@@ -191,4 +191,3 @@ type crawlResult struct {
 	Plan gen.Plan
 	Err  error
 }
-

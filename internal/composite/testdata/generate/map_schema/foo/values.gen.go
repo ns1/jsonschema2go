@@ -2,23 +2,25 @@
 package foo
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
-// Bar gives you some dumb info
-// generated from https://example.com/testdata/generate/nested/foo/bar.json
+// Bar contains some info
+// generated from https://example.com/testdata/generate/map_schema/foo/bar.json
 type Bar struct {
-	Foo Foo `json:"foo,omitempty"`
+	Baz BarBaz `json:"baz,omitempty"`
+	Biz BarBiz `json:"biz,omitempty"`
 }
 
 func (m *Bar) Validate() error {
-	if err := m.Foo.Validate(); err != nil {
+	if err := m.Biz.Validate(); err != nil {
 		if err, ok := err.(valErr); ok {
 			return &validationError{
 				errType:  err.ErrType(),
 				message:  err.Message(),
-				path:     append([]interface{}{"Foo"}, err.Path()...),
-				jsonPath: append([]interface{}{"foo"}, err.JSONPath()...),
+				path:     append([]interface{}{"Biz"}, err.Path()...),
+				jsonPath: append([]interface{}{"biz"}, err.JSONPath()...),
 			}
 		}
 		return err
@@ -26,12 +28,25 @@ func (m *Bar) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/nested/foo/foo.json
-type Foo struct {
-	Name *string `json:"name,omitempty"`
+// generated from https://example.com/testdata/generate/map_schema/foo/bar.json#/properties/baz
+type BarBaz struct {
 }
 
-func (m *Foo) Validate() error {
+func (m *BarBaz) Validate() error {
+	return nil
+}
+
+// generated from https://example.com/testdata/generate/map_schema/foo/bar.json#/properties/biz
+type BarBiz []string
+
+func (m BarBiz) MarshalJSON() ([]byte, error) {
+	if m == nil {
+		return []byte(`[]`), nil
+	}
+	return json.Marshal([]string(m))
+}
+
+func (m BarBiz) Validate() error {
 	return nil
 }
 

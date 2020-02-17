@@ -6,6 +6,7 @@ import (
 )
 
 // Bar gives you some dumb info
+// generated from https://example.com/testdata/generate/double_nested/foo/bar.json
 type Bar struct {
 	Foo Foo `json:"foo,omitempty"`
 }
@@ -25,6 +26,7 @@ func (m *Bar) Validate() error {
 	return nil
 }
 
+// generated from https://example.com/testdata/generate/double_nested/foo/baz.json
 type Baz struct {
 	Name *string `json:"name,omitempty"`
 }
@@ -33,6 +35,7 @@ func (m *Baz) Validate() error {
 	return nil
 }
 
+// generated from https://example.com/testdata/generate/double_nested/foo/bar.json#/properties/foo
 type Foo struct {
 	Baz Baz `json:"baz,omitempty"`
 }

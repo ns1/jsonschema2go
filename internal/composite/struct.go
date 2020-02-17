@@ -67,7 +67,6 @@ func (s *StructPlan) Deps() (deps []gen.TypeInfo) {
 	return
 }
 
-
 //go:generate go run ../cmd/embedtmpl/embedtmpl.go composite struct.tmpl tmpl.gen.go
 
 // PlanObject returns a plan if the provided type is an object; otherwise it returns ErrContinue
@@ -81,13 +80,7 @@ func PlanObject(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen
 	}
 	// matched
 
-	if schema.AdditionalProperties != nil &&
-		schema.AdditionalProperties.Bool != nil &&
-		*schema.AdditionalProperties.Bool {
-		// this is just going to be a map
-	}
-
-	s := &StructPlan{TypeInfo: tInfo, ID: schema.CalcID}
+	s := &StructPlan{TypeInfo: tInfo, ID: schema.ID}
 	s.Comment = schema.Annotations.GetString("description")
 	fields, err := deriveStructFields(ctx, helper, schema)
 	if err != nil {
@@ -219,7 +212,7 @@ func (f *enrichedStructField) DerefExpr() string {
 	}
 	v := fmt.Sprintf("m.%s%s", f.Name, valPath)
 	if f.Type.Pointer {
-		v = "*"+v
+		v = "*" + v
 	}
 	return v
 }

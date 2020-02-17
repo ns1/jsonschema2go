@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// generated from https://example.com/testdata/generate/multi_pkg/foobar/blob.json
 type Blob struct {
 	Count *int64 `json:"count,omitempty"`
 }

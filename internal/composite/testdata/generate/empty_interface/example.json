@@ -1,7 +1,5 @@
 {
-  "x-jsonschema2go": {
-    "gopath": "github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/empty_interface/foo#Bar"
-  },
+  "id": "https://example.com/testdata/generate/empty_interface/foo/bar.json",
   "description": "Bar gives you some dumb info",
   "type": "object",
   "properties": {

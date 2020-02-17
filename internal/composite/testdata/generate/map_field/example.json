@@ -1,8 +1,6 @@
 {
+  "id": "https://example.com/testdata/generate/map_field/foo/bar.json",
   "description": "Bar contains some info",
-  "x-jsonschema2go": {
-    "gopath": "github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/map_field/foo#Bar"
-  },
   "properties": {
     "baz": {
       "type": "object",

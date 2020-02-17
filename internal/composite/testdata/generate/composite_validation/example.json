@@ -1,8 +1,6 @@
 {
   "description": "Bar gives you some dumb info",
-  "x-jsonschema2go": {
-    "gopath": "github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/composite_validation/foo#Bar"
-  },
+  "id": "https://example.com/testdata/generate/composite_validation/foo/bar.json",
   "allOf": [
     {
       "$ref": "other.json"

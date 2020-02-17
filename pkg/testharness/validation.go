@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/jwilner/jsonschema2go"
 	"github.com/jwilner/jsonschema2go/pkg/gen"
 	"github.com/stretchr/testify/require"
@@ -39,6 +40,16 @@ func RunValidationTest(t *testing.T, root string) {
 
 				return json.NewDecoder(f).Decode(&cases)
 			}())
+
+			for i := range cases {
+				var m map[string]interface{}
+				r.NoError(json.Unmarshal(cases[i].Schema, &m))
+				m["id"] = fmt.Sprintf("%d.json", i)
+				var err error
+				cases[i].Schema, err = json.Marshal(m)
+				r.NoError(err)
+			}
+
 			for _, sc := range cases {
 				t.Run(sc.Description, func(t *testing.T) {
 					if sc.Skip != "" {

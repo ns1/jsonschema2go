@@ -1,4 +1,5 @@
 {
+  "id": "https://example.com/testdata/generate/exclude_external_pkg/foo/example.json",
   "description": "Bar gives you some dumb info",
   "type": "object",
   "x-jsonschema2go": {

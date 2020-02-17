@@ -9,6 +9,7 @@ import (
 )
 
 // Bar gives you some dumb info
+// generated from https://example.com/testdata/generate/oneof_diff_types/foo/bar.json
 type Bar struct {
 	Value interface{}
 }
@@ -90,6 +91,7 @@ func (m *Bar) MarshalJSON() ([]byte, error) {
 	return json.Marshal(m.Value)
 }
 
+// generated from https://example.com/testdata/generate/oneof_diff_types/foo/bar.json#/oneOf/0
 type Baz struct {
 	Baz *string `json:"baz,omitempty"`
 }
@@ -98,6 +100,7 @@ func (m *Baz) Validate() error {
 	return nil
 }
 
+// generated from https://example.com/testdata/generate/oneof_diff_types/foo/bar.json#/oneOf/1
 type Bazes []string
 
 func (m Bazes) MarshalJSON() ([]byte, error) {

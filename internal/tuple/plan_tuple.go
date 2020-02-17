@@ -36,7 +36,7 @@ func (t *TuplePlan) Type() gen.TypeInfo {
 func (t *TuplePlan) Deps() []gen.TypeInfo {
 	deps := []gen.TypeInfo{
 		{GoPath: "encoding/json", Name: "Marshal"},
-		{GoPath: "encoding/json", Name: "Unmarshal"},
+		{GoPath: "encoding/json", Name: "Read"},
 		{GoPath: "fmt", Name: "Sprintf"},
 	}
 	for _, f := range t.Items {
@@ -120,7 +120,7 @@ func PlanTuple(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.
 	return &TuplePlan{
 		typeInfo: tInfo,
 		Comment:  schema.Annotations.GetString("description"),
-		id:       schema.CalcID,
+		id:       schema.ID,
 		Items:    items,
 	}, nil
 }
