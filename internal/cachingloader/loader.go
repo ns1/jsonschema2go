@@ -73,7 +73,7 @@ func (c *cachingLoader) run(debug bool) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			s, err := c.fetch(ctx, u)
+			s, err := c.delegate.Load(ctx, u)
 			select {
 			case result <- uriSchemaResult{s, err, u}:
 			case <-ctx.Done():
@@ -132,14 +132,10 @@ func (c *cachingLoader) run(debug bool) {
 
 			// we won't cache errors
 			if fet.error == nil && fet.schema != nil {
-				cache[fet.url.String()] = fet.schema
+				cache[key] = fet.schema
 			}
 		}
 	}
-}
-
-func (c *cachingLoader) fetch(ctx context.Context, u *url.URL) (*gen.Schema, error) {
-	return c.delegate.Load(ctx, u)
 }
 
 type uriSchemaResult struct {
