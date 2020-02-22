@@ -15,6 +15,10 @@ import (
 	"testing"
 )
 
+func tag(s string) string {
+	return "`" + s + "`"
+}
+
 func TestSchemaToPlan(t *testing.T) {
 	u, _ := url.Parse("https://hi.json")
 	c, _ := url.Parse("https://hi.json#/properties/child")
@@ -55,7 +59,7 @@ func TestSchemaToPlan(t *testing.T) {
 								Name:    "int64",
 							},
 							JSONName: "count",
-							Tag:      `json:"count,omitempty"`,
+							Tag:      tag(`json:"count,omitempty"`),
 						},
 					},
 				},
@@ -101,7 +105,7 @@ func TestSchemaToPlan(t *testing.T) {
 								GoPath: "github.com/jwilner/jsonschema2go/example",
 								Name:   "NestedType",
 							},
-							Tag:             `json:"nested,omitempty"`,
+							Tag:             tag(`json:"nested,omitempty"`),
 							FieldValidators: []validator.Validator{validator.SubschemaValidator},
 						},
 					},
@@ -120,7 +124,7 @@ func TestSchemaToPlan(t *testing.T) {
 								Pointer: true,
 								Name:    "int64",
 							},
-							Tag: `json:"count,omitempty"`,
+							Tag: tag(`json:"count,omitempty"`),
 						},
 					},
 				},
@@ -178,7 +182,7 @@ func TestSchemaToPlan(t *testing.T) {
 								Pointer: true,
 								Name:    "int64",
 							},
-							Tag: `json:"count,omitempty"`,
+							Tag: tag(`json:"count,omitempty"`),
 						},
 					},
 				},
@@ -196,7 +200,7 @@ func TestSchemaToPlan(t *testing.T) {
 								Pointer: true,
 								Name:    "int64",
 							},
-							Tag: `json:"id,omitempty"`,
+							Tag: tag(`json:"id,omitempty"`),
 						},
 						{
 							Type: gen.TypeInfo{
@@ -268,7 +272,7 @@ func TestSchemaToPlan(t *testing.T) {
 							Name:     "Bob",
 							JSONName: "bob",
 							Type:     gen.TypeInfo{Name: "int64", Pointer: true},
-							Tag:      `json:"bob,omitempty"`,
+							Tag:      tag(`json:"bob,omitempty"`),
 						},
 					},
 				},

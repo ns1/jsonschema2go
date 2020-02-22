@@ -147,7 +147,7 @@ var _ valErr = new(validationError)
 				&composite.StructPlan{
 					Comment: "Bob does lots of cool things",
 					Fields: []composite.StructField{
-						{Name: "Count", Type: gen.TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
+						{Name: "Count", Type: gen.TypeInfo{Name: "int"}, Tag: tag(`json:"count,omitempty"`)},
 					},
 					TypeInfo: gen.TypeInfo{
 						Name: "Bob",
@@ -179,14 +179,14 @@ func (m *Bob) Validate() error {
 				&composite.StructPlan{
 					Comment: "Bob does lots of cool things",
 					Fields: []composite.StructField{
-						{Name: "Count", Type: gen.TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
+						{Name: "Count", Type: gen.TypeInfo{Name: "int"}, Tag: tag(`json:"count,omitempty"`)},
 						{
 							Name: "Other",
 							Type: gen.TypeInfo{
 								GoPath: "github.com/jwilner/jsonschema2go/blah",
 								Name:   "OtherType",
 							},
-							Tag: `json:"other,omitempty"`,
+							Tag: tag(`json:"other,omitempty"`),
 						},
 					},
 					TypeInfo: gen.TypeInfo{
@@ -222,7 +222,7 @@ func (m *Bob) Validate() error {
 				&composite.StructPlan{
 					Comment: "Bob does lots of cool things",
 					Fields: []composite.StructField{
-						{Name: "Count", Type: gen.TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
+						{Name: "Count", Type: gen.TypeInfo{Name: "int"}, Tag: tag(`json:"count,omitempty"`)},
 						{
 							Name: "Other",
 							Type: gen.TypeInfo{
@@ -230,7 +230,7 @@ func (m *Bob) Validate() error {
 								Name:    "OtherType",
 								Pointer: true,
 							},
-							Tag: `json:"other,omitempty"`,
+							Tag: tag(`json:"other,omitempty"`),
 						},
 						{
 							Name: "OtherOther",
@@ -238,7 +238,7 @@ func (m *Bob) Validate() error {
 								GoPath: "github.com/jwilner/jsonschema2go/bob/blah",
 								Name:   "AnotherType",
 							},
-							Tag: `json:"another,omitempty"`,
+							Tag: tag(`json:"another,omitempty"`),
 						},
 					},
 					TypeInfo: gen.TypeInfo{
@@ -329,7 +329,7 @@ func (m *Bob) Validate() error {
 				&composite.StructPlan{
 					Comment: "OtherType does lots of cool things",
 					Fields: []composite.StructField{
-						{Type: gen.TypeInfo{Name: "int"}, Name: "Count", Tag: `json:"count,omitempty"`},
+						{Type: gen.TypeInfo{Name: "int"}, Name: "Count", Tag: tag(`json:"count,omitempty"`)},
 					},
 					TypeInfo: gen.TypeInfo{
 						Name: "OtherType",
@@ -381,7 +381,7 @@ func (m *OtherType) Validate() error {
 				&composite.StructPlan{
 					Comment: "OtherType does lots of cool things",
 					Fields: []composite.StructField{
-						{Type: gen.TypeInfo{Name: "int"}, Name: "Count", Tag: `json:"count,omitempty"`},
+						{Type: gen.TypeInfo{Name: "int"}, Name: "Count", Tag: tag(`json:"count,omitempty"`)},
 					},
 					TypeInfo: gen.TypeInfo{
 						Name: "OtherType",
@@ -426,9 +426,9 @@ func (m Bob) Validate() error {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var w bytes.Buffer
-			err := New(nil).Print(context.Background(), &w, tt.goPath, tt.plans)
+			err := New(nil).Print(gen.SetDebug(context.Background()), &w, tt.goPath, tt.plans)
 			if (err != nil) != tt.wantErr {
-				t.Fatalf("printStruct() error = %v, wantErr %v", err, tt.wantErr)
+				t.Fatalf("printStruct() error = %v, wantErr %v, output: %s", err, tt.wantErr, w.String())
 			}
 			formatted, err := format.Source(w.Bytes())
 			if err != nil {
@@ -441,4 +441,8 @@ func (m Bob) Validate() error {
 			require.Equal(t, string(formattedWant), string(formatted))
 		})
 	}
+}
+
+func tag(s string) string {
+	return "`" + s + "`"
 }

@@ -149,7 +149,16 @@ func deriveStructFields(
 				return nil, err
 			}
 		}
-		tag := fmt.Sprintf(`json:"%s,omitempty"`, name)
+
+		var tag string
+		switch {
+		case name == "": // embedded fields don't get tags
+		case fieldSchema.ChooseType() == gen.Array || fieldSchema.Config.NoOmitEmpty:
+			tag = fmt.Sprintf("`"+`json:"%s"`+"`", name)
+		default:
+			tag = fmt.Sprintf("`"+`json:"%s,omitempty"`+"`", name)
+		}
+
 		if fType.BuiltIn() {
 			switch fType.Name {
 			case "string", "int64", "bool", "float64":
@@ -243,20 +252,12 @@ func (f *enrichedStructField) FieldDecl() string {
 	if f.Type.Pointer {
 		typ = "*" + typ
 	}
-	tag := f.Tag
-	if tag != "" {
-		tag = "`" + tag + "`"
-	}
-	return f.Name + " " + typ + tag
+	return f.Name + " " + typ + " " + f.Tag
 }
 
 func (f *enrichedStructField) InnerFieldDecl() string {
 	typName := f.Imports.QualName(f.Type)
-	tag := ""
-	if f.Name != "" { // not an embedded struct
-		tag = fmt.Sprintf("`json:"+`"%s,omitempty"`+"`", f.JSONName)
-	}
-	return fmt.Sprintf("%s %s %s", f.Name, typName, tag)
+	return fmt.Sprintf("%s %s %s", f.Name, typName, f.Tag)
 }
 
 func (f *enrichedStructField) Embedded() bool {

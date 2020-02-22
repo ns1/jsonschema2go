@@ -23,7 +23,7 @@ func init() {
 // SimpleType is the enumeration of JSONSchema's supported types.
 type SimpleType uint8
 
-// Each of these is a core type of JSONSchema, except for Unknown, which is a userful zero value.
+// Each of these is a core type of JSONSchema, except for Unknown, which is a useful zero value.
 const (
 	Unknown SimpleType = iota
 	Array
@@ -244,6 +244,7 @@ type Config struct {
 	Discriminator Discriminator `json:"Discriminator"`
 	NoValidate    bool          `json:"noValidate"`
 	PromoteFields bool          `json:"promoteFields"`
+	NoOmitEmpty   bool          `json:"noOmitEmpty"`
 }
 
 // Discriminator is jsonschema2go specific info for discriminating between multiple oneOf objects

@@ -10,10 +10,8 @@ Generate Go types from JSON Schema files. Designed to be configurable to permit 
 Given a schema like in `example.json`:
 ```json
 {
+  "id": "https://example.com/testdata/generate/example/foo/bar.json",
   "description": "Bar contains some info",
-  "x-jsonschema2go": {
-    "gopath": "github.com/jwilner/jsonschema2go/internal/testdata/render/example/foo#Bar"
-  },
   "properties": {
     "baz": {
       "type": "string",
@@ -31,6 +29,7 @@ Given a schema like in `example.json`:
 `jsonschema2go` generates types like:
 ```go
 // Bar contains some info
+// generated from https://example.com/testdata/generate/example/foo/bar.json
 type Bar struct {
 	Baz   *string `json:"baz,omitempty"`
 	Count *int64  `json:"count,omitempty"`
@@ -71,7 +70,7 @@ func (m *Bar) Validate() error {
 
 ## Types
 
-Default configuration for `jsonschema2go` handles primitives, arrays, objects, `allOf` polymorphism, and `oneOf` polymorphism (with discriminator annotation).
+Default configuration for JSONSchema2Go handles a wide subset of the JSONSchema specification. For documentation of the coverage, consult the various test cases in all of the `testdata` directories.
 
 ## Usage
 ```go
@@ -90,3 +89,15 @@ func main() {
     }
 }
 ```
+
+## Naming Rules
+
+### Top level schemas
+
+IDs are required for all top level schemas (this is already a best practice for JSONSchema). By default, that ID is used to generate type information. For example, if you provide a schema with the ID, `https://example.com/testdata/generate/example/foo/bar.json`, the default behavior is to generate a type `Bar` in the current working directory at `example.com/testdata/generate/example/foo`.
+
+You can also provide an explicit Go path (and name) by setting `x-jsonschema2go.gopath`. For example, setting `gopath` to `example.com/examples/foo#Baz` will set the target gopath to `example.com/examples/foo` and the type name to `Baz`.
+
+### Nested schemas
+
+For nested schemas mapping to types which require names, if not explicitly set via ID or `x-jsonschema2go.gopath`, the name will be derived from the name of the containing top level spec and the path to the element. For example, if the type `Bar` has a field `Baz`, the field's type might be `BarBaz`.

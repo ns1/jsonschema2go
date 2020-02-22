@@ -119,7 +119,7 @@ func (m *{{ $.Type.Name }}) MarshalJSON() ([]byte, error) {
 func (m *{{ $.Type.Name }}) UnmarshalJSON(data []byte) error {
 	var discrim struct {
     {{ with .StructField -}}
-        {{ .Name }} {{ if .Type.Pointer -}}*{{ end -}}{{ $.QualName .Type }} {{ if .Tag }}` + "`" + `{{ .Tag }}` + "`" + `{{ end }}
+        {{ .Name }} {{ if .Type.Pointer -}}*{{ end -}}{{ $.QualName .Type }} {{ .Tag }}
 	{{ end }}
 	}
 	if err := json.Unmarshal(data, &discrim); err != nil {

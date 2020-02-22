@@ -63,7 +63,7 @@ func PlanDiscriminatedOneOfObject(ctx context.Context, helper gen.Helper, schema
 				Name:     helper.JSONPropertyExported(discrim.PropertyName),
 				JSONName: discrim.PropertyName,
 				Type:     gen.TypeInfo{Name: "string"},
-				Tag:      fmt.Sprintf(`json:"%s"`, discrim.PropertyName),
+				Tag:      fmt.Sprintf("`"+`json:"%s"`+"`", discrim.PropertyName),
 			},
 			typeMapping,
 		},
