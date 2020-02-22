@@ -8,7 +8,7 @@ import (
 
 // generated from https://example.com/testdata/generate/array_field_scalar/foo/example.json
 type Example struct {
-	Options ExampleOptions `json:"options,omitempty"`
+	Options ExampleOptions `json:"options"`
 }
 
 func (m *Example) Validate() error {

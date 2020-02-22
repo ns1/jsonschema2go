@@ -1,7 +1,5 @@
 {
-  "x-jsonschema2go": {
-    "gopath": "github.com/jwilner/jsonschema2go/internal/enum/testdata/generate/string_enum/foo#Letter"
-  },
+  "id": "https://example.com/testdata/generate/string_enum/foo/letter.json",
   "type": "string",
   "enum": [
     "a",

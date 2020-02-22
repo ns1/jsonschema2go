@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/url"
 	"reflect"
 	"strings"
@@ -24,7 +23,7 @@ func init() {
 // SimpleType is the enumeration of JSONSchema's supported types.
 type SimpleType uint8
 
-// Each of these is a core type of JSONSchema, except for Unknown, which is a userful zero value.
+// Each of these is a core type of JSONSchema, except for Unknown, which is a useful zero value.
 const (
 	Unknown SimpleType = iota
 	Array
@@ -87,6 +86,10 @@ type BoolOrSchema struct {
 	Schema *RefOrSchema
 }
 
+func (a *BoolOrSchema) Present() bool {
+	return a != nil && (a.Schema != nil || (a.Bool != nil && *a.Bool))
+}
+
 // UnmarshalJSON performs some custom deserialization of JSON into BoolOrSchema
 func (a *BoolOrSchema) UnmarshalJSON(data []byte) error {
 	if b, ok := peekToken(data).(bool); ok {
@@ -123,8 +126,8 @@ func (t TagMap) GetString(k string) (s string) {
 	return
 }
 
-// Unmarshal unmarshals the json at the provided key into the provided interface (which should be a pointer amenable to
-// json.Unmarshal. If the key is not present, the pointer will be untouched, and false and nil will be returned. If the
+// Read unmarshals the json at the provided key into the provided interface (which should be a pointer amenable to
+// json.Read. If the key is not present, the pointer will be untouched, and false and nil will be returned. If the
 // deserialization fails, an error will be returned.
 func (t TagMap) Unmarshal(k string, val interface{}) (bool, error) {
 	msg, ok := t[k]
@@ -144,7 +147,6 @@ func NewRefOrSchema(s *Schema, ref *string) *RefOrSchema {
 type RefOrSchema struct {
 	ref    *string
 	schema *Schema
-	curLoc *url.URL
 }
 
 // UnmarshalJSON conditionally deserializes the JSON, either into a reference or a schema.
@@ -174,7 +176,7 @@ func (r *RefOrSchema) Resolve(ctx context.Context, referer *Schema, loader Loade
 		return nil, fmt.Errorf("parse $ref: %w", err)
 	}
 
-	return loader.Load(ctx, referer.Loc.ResolveReference(parsed2))
+	return loader.Load(ctx, referer.Src.ResolveReference(parsed2))
 }
 
 // Schema is the core representation of the JSONSchema meta schema.
@@ -183,8 +185,10 @@ type Schema struct {
 	Ref *string `json:"$ref,omitempty"`
 
 	// meta
-	ID     string `json:"id,omitempty"`
-	Schema string `json:"$schema,omitempty"`
+	ID     *url.URL `json:"-"` // set either from "$id", "id", or calculated based on parent (see IDCalc); never nil
+	IDCalc bool     `json:"-"` // whether this ID was calculated
+	Src    *url.URL `json:"-"` // the resource from which this schema was loaded; never nil
+	Schema string   `json:"$schema,omitempty"`
 
 	// number qualifiers
 	MultipleOf       *float64 `json:"multipleOf,omitempty"`
@@ -231,11 +235,6 @@ type Schema struct {
 
 	// user extensible
 	Annotations TagMap `json:"-"`
-
-	// Loc -- internal bookkeeping, the resource from which this schema was loaded
-	Loc *url.URL `json:"-"`
-	// CalcID -- the calculated ID of the resource
-	CalcID *url.URL `json:"-"`
 }
 
 // Config is a series of jsonschema2go user extensions
@@ -244,6 +243,8 @@ type Config struct {
 	Exclude       bool          `json:"exclude"`
 	Discriminator Discriminator `json:"Discriminator"`
 	NoValidate    bool          `json:"noValidate"`
+	PromoteFields bool          `json:"promoteFields"`
+	NoOmitEmpty   bool          `json:"noOmitEmpty"`
 }
 
 // Discriminator is jsonschema2go specific info for discriminating between multiple oneOf objects
@@ -257,77 +258,94 @@ func (d *Discriminator) IsSet() bool {
 	return d.PropertyName != ""
 }
 
-// SetLoc sets the location at which the schema was found and recursively sets appropriate locations on any concrete
-// children schema
-func (s *Schema) SetLoc(loc *url.URL) {
-	type urlSchema struct {
-		*url.URL
-		*Schema
+func (s *Schema) setSrc(u *url.URL) {
+	s.Src = u
+	for _, c := range s.children() {
+		if c.schema != nil {
+			c.schema.setSrc(u)
+		}
 	}
+}
 
-	var schemas []*urlSchema
-	push := func(r *RefOrSchema, id *url.URL, keys ...interface{}) {
-		if r != nil && r.schema != nil {
-			if id != nil && r.schema.CalcID == nil {
-				sKeys := make([]string, 0, len(keys))
-				for _, k := range keys {
-					sKeys = append(sKeys, fmt.Sprintf("%v", k))
-				}
-				id, _ = id.Parse(id.String())
-				if len(sKeys) > 0 {
-					id.Fragment += "/" + strings.Join(sKeys, "/")
-				}
-				r.schema.CalcID = id
-			}
-			schemas = append(schemas, &urlSchema{r.schema.CalcID, r.schema})
+func (s *Schema) calculateID() {
+	for _, c := range s.children() {
+		if c.schema == nil {
+			continue
 		}
+		if c.schema.ID == nil {
+			childID, _ := s.ID.Parse(s.ID.String()) // silly deep copy
+			if len(c.path) > 0 {
+				fragment := make([]string, 0, len(c.path))
+				for _, v := range c.path {
+					fragment = append(fragment, fmt.Sprint(v))
+				}
+				childID.Fragment += "/" + strings.Join(fragment, "/")
+			}
+			c.schema.ID = childID
+			c.schema.IDCalc = true
+		}
+		c.schema.calculateID()
 	}
-	push(&RefOrSchema{schema: s}, s.CalcID)
-	for len(schemas) > 0 {
-		s := schemas[0].Schema
-		u := schemas[0].URL
-		schemas = schemas[1:]
+}
 
-		s.Loc = loc
-		if s.AdditionalItems != nil {
-			push(s.AdditionalItems.Schema, u, "additionalItems")
+type child struct {
+	*RefOrSchema
+	path []interface{}
+}
+
+func (s *Schema) children() (children []child) {
+	push := func(s *RefOrSchema, path ...interface{}) {
+		if s != nil {
+			children = append(children, child{s, path})
 		}
-		if s.Items != nil {
-			push(s.Items.Items, u, "items")
-			for i, f := range s.Items.TupleFields {
-				push(f, u, "items", i)
-			}
-		}
-		if s.AdditionalProperties != nil {
-			push(s.AdditionalProperties.Schema, u, "additionalProperties")
-		}
-		for _, m := range []struct {
-			name    string
-			schemas map[string]*RefOrSchema
-		}{
-			{"definitions", s.Definitions},
-			{"properties", s.Properties},
-			{"patternProperties", s.PatternProperties},
-			{"dependencies", s.Dependencies},
-		} {
-			for k, v := range m.schemas {
-				push(v, u, m.name, k)
-			}
-		}
-		for _, a := range []struct {
-			name    string
-			schemas []*RefOrSchema
-		}{
-			{"allOf", s.AllOf},
-			{"anyOf", s.AnyOf},
-			{"oneOf", s.OneOf},
-		} {
-			for i, v := range a.schemas {
-				push(v, u, a.name, i)
-			}
-		}
-		push(s.Not, u, "not")
 	}
+	if s.AdditionalItems != nil {
+		push(s.AdditionalItems.Schema, "additionalItems")
+	}
+	if s.Items != nil {
+		push(s.Items.Items, "items")
+		for i, f := range s.Items.TupleFields {
+			push(f, "items", i)
+		}
+	}
+	if s.AdditionalProperties != nil {
+		push(s.AdditionalProperties.Schema, "additionalProperties")
+	}
+	for _, m := range []struct {
+		name    string
+		schemas map[string]*RefOrSchema
+	}{
+		{"definitions", s.Definitions},
+		{"properties", s.Properties},
+		{"patternProperties", s.PatternProperties},
+		{"dependencies", s.Dependencies},
+	} {
+		for k, v := range m.schemas {
+			push(v, m.name, k)
+		}
+	}
+	for _, a := range []struct {
+		name    string
+		schemas []*RefOrSchema
+	}{
+		{"allOf", s.AllOf},
+		{"anyOf", s.AnyOf},
+		{"oneOf", s.OneOf},
+	} {
+		for i, v := range a.schemas {
+			push(v, a.name, i)
+		}
+	}
+	push(s.Not, "not")
+	return
+}
+
+// String returns a simple string identifier for the schema
+func (s *Schema) String() string {
+	if s.ID == nil {
+		return "<nil>"
+	}
+	return s.ID.String()
 }
 
 // ChooseType returns the best known type for this field.
@@ -335,7 +353,7 @@ func (s *Schema) ChooseType() (t SimpleType) {
 	if s.Type != nil && len(*s.Type) > 0 {
 		t = (*s.Type)[0]
 	}
-	if len(s.Properties) > 0 {
+	if len(s.Properties) > 0 || s.AdditionalProperties.Present() {
 		return Object // we'll assume object if it has properties
 	}
 	return
@@ -353,13 +371,6 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 		*s = Schema(s2)
 	}
 
-	if s.ID != "" {
-		var err error
-		if s.CalcID, err = url.Parse(s.ID); err != nil {
-			return fmt.Errorf("parsing %q: %w", s.ID, err)
-		}
-	}
-
 	var possAnnos map[string]json.RawMessage
 	if err := json.Unmarshal(data, &possAnnos); err != nil {
 		return fmt.Errorf("unmarshal annotations: %w", err)
@@ -374,14 +385,25 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 		}
 		s.Annotations[field] = v
 	}
-	return nil
-}
 
-// Loader is the contract required to be able to resolve a schema.
-type Loader interface {
-	io.Closer
-	// Load returns a schema for a URL
-	Load(ctx context.Context, u *url.URL) (*Schema, error)
+	for _, key := range []string{"$id", "id"} {
+		idBytes, ok := s.Annotations[key]
+		if !ok {
+			continue
+		}
+		var (
+			id  string
+			err error
+		)
+		if err = json.Unmarshal(idBytes, &id); err != nil {
+			return err
+		}
+		if s.ID, err = url.Parse(id); err != nil {
+			return err
+		}
+		break
+	}
+	return nil
 }
 
 func getJSONFieldNames(val interface{}) (fields []string) {

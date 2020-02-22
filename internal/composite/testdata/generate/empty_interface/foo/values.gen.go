@@ -6,6 +6,7 @@ import (
 )
 
 // Bar gives you some dumb info
+// generated from https://example.com/testdata/generate/empty_interface/foo/bar.json
 type Bar struct {
 	Name  *string     `json:"name,omitempty"`
 	Value interface{} `json:"value,omitempty"`

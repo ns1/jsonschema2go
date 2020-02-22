@@ -35,7 +35,7 @@ func PlanOneOfDiffTypes(ctx context.Context, helper gen.Helper, schema *gen.Sche
 		return nil, fmt.Errorf("schema type is unknown: %w", gen.ErrContinue)
 	}
 
-	s := &StructPlan{TypeInfo: tInfo, ID: schema.CalcID}
+	s := &StructPlan{TypeInfo: tInfo, ID: schema.ID}
 	s.Comment = schema.Annotations.GetString("description")
 
 	f := StructField{Name: "Value", Type: gen.TypeInfo{Name: "interface{}"}}

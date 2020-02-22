@@ -32,7 +32,7 @@ func Build(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Plan
 			return nil, err
 		}
 	}
-	a := Plan{TypeInfo: tInfo, ID: schema.CalcID}
+	a := Plan{TypeInfo: tInfo, ID: schema.ID}
 	a.Comment = schema.Annotations.GetString("description")
 	if itemSchema != nil {
 		if a.ItemType = helper.TypeInfo(itemSchema); a.ItemType.Unknown() {

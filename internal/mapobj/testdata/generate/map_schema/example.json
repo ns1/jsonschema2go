@@ -1,0 +1,26 @@
+{
+  "description": "Bar contains some info",
+  "id": "https://example.com/testdata/generate/map_schema/foo/bar.json",
+  "properties": {
+    "baz": {
+      "type": "object",
+      "minProperties": 3,
+      "maxProperties": 10,
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^abc"
+      }
+    },
+    "biz": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  }
+}

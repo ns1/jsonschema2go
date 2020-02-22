@@ -1,9 +1,7 @@
 {
+  "id": "https://example.com/testdata/generate/nested/foo/bar.json",
   "description": "Bar gives you some dumb info",
   "type": "object",
-  "x-jsonschema2go": {
-    "gopath": "github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/nested/foo#Bar"
-  },
   "properties": {
     "foo": {
       "$ref": "foo.json"

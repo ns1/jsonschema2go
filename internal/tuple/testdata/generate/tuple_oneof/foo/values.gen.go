@@ -8,6 +8,7 @@ import (
 	"regexp"
 )
 
+// generated from https://example.com/testdata/generate/tuple_oneof/foo/bar.json#/items/2
 type Baz struct {
 	Value interface{}
 }
@@ -45,6 +46,7 @@ func (m *Baz) MarshalJSON() ([]byte, error) {
 }
 
 // Bar gives you some dumb info
+// generated from https://example.com/testdata/generate/tuple_oneof/foo/bar.json
 type Bar [3]interface{}
 
 var (

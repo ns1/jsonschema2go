@@ -1,8 +1,6 @@
 {
+  "id": "https://example.com/testdata/generate/oneof_diff_types/foo/bar.json",
   "description": "Bar gives you some dumb info",
-  "x-jsonschema2go": {
-    "gopath": "github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/oneof_diff_types/foo#Bar"
-  },
   "oneOf": [
     {
       "x-jsonschema2go": {

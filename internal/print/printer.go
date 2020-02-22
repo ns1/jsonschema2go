@@ -10,11 +10,13 @@ import (
 	"text/template"
 )
 
+var baseImports = []string{"fmt"} // used for error messaging
+
 type Printer interface {
 	Print(ctx context.Context, w io.Writer, goPath string, plans []gen.Plan) error
 }
 
-//go:generatego run ../cmd/embedtmpl/embedtmpl.go print values.tmpl tmpl.gen.go
+//go:generate go run ../cmd/embedtmpl/embedtmpl.go print values.tmpl tmpl.gen.go
 func New(t *template.Template) Printer {
 	if t == nil {
 		t = tmpl
@@ -27,7 +29,8 @@ type printer struct {
 }
 
 func (p *printer) Print(ctx context.Context, w io.Writer, goPath string, plans []gen.Plan) error {
-	var depPaths []string
+	depPaths := make([]string, len(baseImports))
+	copy(depPaths, baseImports)
 	for _, pl := range plans {
 		for _, d := range pl.Deps() {
 			depPaths = append(depPaths, d.GoPath)

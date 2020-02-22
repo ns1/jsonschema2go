@@ -1,7 +1,5 @@
 {
-  "x-jsonschema2go": {
-    "gopath": "github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/composite_validation/foo#Blob"
-  },
+  "id": "https://example.com/testdata/generate/composite_validation/foo/blob.json",
   "type": "object",
   "properties": {
     "count": {

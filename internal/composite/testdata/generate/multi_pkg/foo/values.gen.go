@@ -7,6 +7,7 @@ import (
 )
 
 // Bar gives you some dumb info
+// generated from https://example.com/testdata/generate/multi_pkg/foo/bar.json
 type Bar struct {
 	Name *string `json:"name,omitempty"`
 	foobar.Blob

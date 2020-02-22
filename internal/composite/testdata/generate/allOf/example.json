@@ -1,10 +1,11 @@
 {
   "description": "Bar gives you some dumb info",
-  "x-jsonschema2go": {
-    "gopath": "github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/allOf/foo#Bar"
-  },
+  "id": "https://example.com/testdata/generate/allOf/foo/bar.json",
   "allOf": [
     {
+      "x-jsonschema2go": {
+        "promoteFields": true
+      },
       "properties": {
         "bar": {
           "type": "integer"
@@ -15,6 +16,9 @@
       ]
     },
     {
+      "x-jsonschema2go": {
+        "promoteFields": true
+      },
       "properties": {
         "foo": {
           "type": "string"

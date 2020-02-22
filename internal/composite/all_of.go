@@ -26,7 +26,7 @@ func PlanAllOfObject(ctx context.Context, helper gen.Helper, schema *gen.Schema)
 	}
 	// we've matched
 
-	s := &StructPlan{TypeInfo: tInfo, ID: schema.CalcID}
+	s := &StructPlan{TypeInfo: tInfo, ID: schema.ID}
 	s.Comment = schema.Annotations.GetString("description")
 
 	fields, err := deriveStructFields(ctx, helper, schema)
@@ -36,8 +36,7 @@ func PlanAllOfObject(ctx context.Context, helper gen.Helper, schema *gen.Schema)
 	s.Fields = fields
 
 	for _, subSchema := range schemas {
-		tInfo := helper.TypeInfo(subSchema)
-		if tInfo.Unknown() {
+		if subSchema.ChooseType() == gen.Object && subSchema.Config.PromoteFields {
 			// this is an anonymous struct; add all of its inner fields to parent
 			fields, err := deriveStructFields(ctx, helper, subSchema)
 			if err != nil {
@@ -46,6 +45,7 @@ func PlanAllOfObject(ctx context.Context, helper gen.Helper, schema *gen.Schema)
 			s.Fields = append(s.Fields, fields...)
 			continue
 		}
+		tInfo := helper.TypeInfo(subSchema)
 		// this is a named type, add an embedded field for the subschema type
 		s.Fields = append(s.Fields, StructField{Type: tInfo, FieldValidators: []validator.Validator{validator.SubschemaValidator}})
 		if err := helper.Dep(ctx, subSchema); err != nil {

@@ -6,23 +6,25 @@ import (
 )
 
 // Bar gives you some dumb info
+// generated from https://example.com/testdata/generate/composite/foo/bar.json
 type Bar struct {
 	Name *string `json:"name,omitempty"`
-	Blob
+	ExplicitNameStruct
 }
 
 func (m *Bar) Validate() error {
-	if err := m.Blob.Validate(); err != nil {
+	if err := m.ExplicitNameStruct.Validate(); err != nil {
 		return err
 	}
 	return nil
 }
 
-type Blob struct {
+// generated from https://example.com/testdata/generate/composite/foo/other.json
+type ExplicitNameStruct struct {
 	Count *int64 `json:"count,omitempty"`
 }
 
-func (m *Blob) Validate() error {
+func (m *ExplicitNameStruct) Validate() error {
 	return nil
 }
 

@@ -29,11 +29,30 @@ func RunGenerateTests(t *testing.T, testDataDir, root, goPath string) {
 	if err != nil {
 		t.Fatalf("unable to list dir: %v", err)
 	}
+
+	filter := func(name string) bool {
+		return true
+	}
+	if v, ok := os.LookupEnv("TEST_FILTER"); ok {
+		names := strings.Split(v, ":")
+		set := make(map[string]bool, len(names))
+		for _, n := range names {
+			set[n] = true
+		}
+		filter = func(name string) bool {
+			return set[name[strings.LastIndex(name, "/")+1:]]
+		}
+	}
+
 	for _, e := range ents {
 		if !e.IsDir() {
 			continue
 		}
 		t.Run(path.Base(e.Name()), func(t *testing.T) {
+			if !filter(t.Name()) {
+				t.Skip("skipped by filter")
+			}
+
 			r := require.New(t)
 
 			testDir := path.Join(root, e.Name())
@@ -41,7 +60,7 @@ func RunGenerateTests(t *testing.T, testDataDir, root, goPath string) {
 			args, err := readLines(path.Join(testDir, "args.txt"))
 			r.NoError(err)
 
-			golden := true
+			golden := false
 			paths := make([]string, 0, len(args))
 			for _, a := range args {
 				if a == "GOLDEN" {
@@ -59,10 +78,7 @@ func RunGenerateTests(t *testing.T, testDataDir, root, goPath string) {
 				context.Background(),
 				paths,
 				jsonschema2go.PrefixMap(goPath, dirName),
-				jsonschema2go.TypeFromID(
-					"https://example.com/testdata",
-					goPath,
-				),
+				jsonschema2go.TypeFromID("https://example.com/testdata", goPath),
 				jsonschema2go.Debug(true),
 			))
 			results, err := listAllFiles(dirName, ".gen.go")

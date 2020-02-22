@@ -67,7 +67,6 @@ func (s *StructPlan) Deps() (deps []gen.TypeInfo) {
 	return
 }
 
-
 //go:generate go run ../cmd/embedtmpl/embedtmpl.go composite struct.tmpl tmpl.gen.go
 
 // PlanObject returns a plan if the provided type is an object; otherwise it returns ErrContinue
@@ -81,13 +80,7 @@ func PlanObject(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen
 	}
 	// matched
 
-	if schema.AdditionalProperties != nil &&
-		schema.AdditionalProperties.Bool != nil &&
-		*schema.AdditionalProperties.Bool {
-		// this is just going to be a map
-	}
-
-	s := &StructPlan{TypeInfo: tInfo, ID: schema.CalcID}
+	s := &StructPlan{TypeInfo: tInfo, ID: schema.ID}
 	s.Comment = schema.Annotations.GetString("description")
 	fields, err := deriveStructFields(ctx, helper, schema)
 	if err != nil {
@@ -156,7 +149,16 @@ func deriveStructFields(
 				return nil, err
 			}
 		}
-		tag := fmt.Sprintf(`json:"%s,omitempty"`, name)
+
+		var tag string
+		switch {
+		case name == "": // embedded fields don't get tags
+		case fieldSchema.ChooseType() == gen.Array || fieldSchema.Config.NoOmitEmpty:
+			tag = fmt.Sprintf("`"+`json:"%s"`+"`", name)
+		default:
+			tag = fmt.Sprintf("`"+`json:"%s,omitempty"`+"`", name)
+		}
+
 		if fType.BuiltIn() {
 			switch fType.Name {
 			case "string", "int64", "bool", "float64":
@@ -219,7 +221,7 @@ func (f *enrichedStructField) DerefExpr() string {
 	}
 	v := fmt.Sprintf("m.%s%s", f.Name, valPath)
 	if f.Type.Pointer {
-		v = "*"+v
+		v = "*" + v
 	}
 	return v
 }
@@ -250,20 +252,12 @@ func (f *enrichedStructField) FieldDecl() string {
 	if f.Type.Pointer {
 		typ = "*" + typ
 	}
-	tag := f.Tag
-	if tag != "" {
-		tag = "`" + tag + "`"
-	}
-	return f.Name + " " + typ + tag
+	return f.Name + " " + typ + " " + f.Tag
 }
 
 func (f *enrichedStructField) InnerFieldDecl() string {
 	typName := f.Imports.QualName(f.Type)
-	tag := ""
-	if f.Name != "" { // not an embedded struct
-		tag = fmt.Sprintf("`json:"+`"%s,omitempty"`+"`", f.JSONName)
-	}
-	return fmt.Sprintf("%s %s %s", f.Name, typName, tag)
+	return fmt.Sprintf("%s %s %s", f.Name, typName, f.Tag)
 }
 
 func (f *enrichedStructField) Embedded() bool {

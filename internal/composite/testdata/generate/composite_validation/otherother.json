@@ -1,7 +1,5 @@
 {
-  "x-jsonschema2go": {
-    "gopath": "github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/composite_validation/foo#Baz"
-  },
+  "id": "https://example.com/testdata/generate/composite_validation/foo/baz.json",
   "type": "object",
   "properties": {
     "name": {

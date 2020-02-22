@@ -1,8 +1,6 @@
 {
+  "id": "https://example.com/testdata/generate/nested/foo/foo.json",
   "type": "object",
-  "x-jsonschema2go": {
-    "gopath": "github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/nested/foo#Foo"
-  },
   "properties": {
     "name": {
       "type": "string"

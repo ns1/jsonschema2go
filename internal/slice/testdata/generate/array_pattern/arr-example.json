@@ -1,5 +1,5 @@
 {
-  "id": "https://example.com/testdata/generate/array_pattern/foo/bar.json",
+  "$id": "https://example.com/testdata/generate/array_pattern/foo/bar.json",
   "description": "Bar gives you lots of dumb info",
   "type": "array",
   "items": {

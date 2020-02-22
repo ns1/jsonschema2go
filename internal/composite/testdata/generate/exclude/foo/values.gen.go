@@ -6,6 +6,7 @@ import (
 )
 
 // Bar gives you some dumb info
+// generated from https://example.com/testdata/generate/exclude/foo/bar.json
 type Bar struct {
 	Inner Excluded `json:"inner,omitempty"`
 	Name  *string  `json:"name,omitempty"`

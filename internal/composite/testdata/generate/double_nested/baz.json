@@ -1,7 +1,5 @@
 {
-  "x-jsonschema2go": {
-    "gopath": "github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/double_nested/foo#Baz"
-  },
+  "id": "https://example.com/testdata/generate/double_nested/foo/baz.json",
   "type": "object",
   "properties": {
     "name": {

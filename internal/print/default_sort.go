@@ -5,7 +5,7 @@ import (
 	"github.com/jwilner/jsonschema2go/internal/enum"
 	"github.com/jwilner/jsonschema2go/internal/slice"
 	"github.com/jwilner/jsonschema2go/internal/tuple"
-	gen "github.com/jwilner/jsonschema2go/pkg/gen"
+	"github.com/jwilner/jsonschema2go/pkg/gen"
 	"sort"
 )
 

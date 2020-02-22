@@ -63,7 +63,6 @@ func Test_getJSONFieldNames(t *testing.T) {
 			val:  Schema{},
 			wantFields: []string{
 				"$ref",
-				"id",
 				"$schema",
 				"multipleOf",
 				"maximum",

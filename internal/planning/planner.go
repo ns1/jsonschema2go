@@ -6,10 +6,13 @@ import (
 	"fmt"
 	"github.com/jwilner/jsonschema2go/internal/composite"
 	"github.com/jwilner/jsonschema2go/internal/enum"
+	"github.com/jwilner/jsonschema2go/internal/mapobj"
 	"github.com/jwilner/jsonschema2go/internal/slice"
 	"github.com/jwilner/jsonschema2go/internal/tuple"
 	"github.com/jwilner/jsonschema2go/pkg/gen"
 	"log"
+	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode"
@@ -17,6 +20,7 @@ import (
 
 var (
 	Composite = CompositePlanner{
+		plannerFunc("map", mapobj.PlanMap),
 		plannerFunc("allOfObject", composite.PlanAllOfObject),
 		plannerFunc("object", composite.PlanObject),
 		plannerFunc("tuple", tuple.PlanTuple),
@@ -39,7 +43,7 @@ func (c CompositePlanner) Plan(ctx context.Context, helper gen.Helper, schema *g
 		pl, err := p.Plan(ctx, helper, schema)
 		if errors.Is(err, gen.ErrContinue) {
 			if gen.IsDebug(ctx) {
-				log.Printf("planner %v: skipping planner: %v", name, err)
+				log.Printf("planner %v for %v: %v", name, schema, err)
 			}
 			continue
 		}
@@ -56,11 +60,7 @@ func (c CompositePlanner) Plan(ctx context.Context, helper gen.Helper, schema *g
 	}
 	// we require types for objects and arrays
 	if t := schema.ChooseType(); t == gen.Object || t == gen.Array {
-		id := schema.Loc
-		if schema.CalcID != nil {
-			id = schema.CalcID
-		}
-		return nil, fmt.Errorf("unable to plan %v", id)
+		return nil, fmt.Errorf("unable to plan %v", schema)
 	}
 	return nil, nil
 }
@@ -215,7 +215,7 @@ func (n *Namer) exportedIdentifier(parts [][]rune) string {
 	return strings.Join(words, "")
 }
 
-var DefaultTyper = Typer{NewNamer([]string{"id", "http"}), DefaultTypeFunc, map[gen.SimpleType]string{
+var DefaultTyper = Typer{NewNamer([]string{"id", "http"}), MakeTypeFromID(nil), map[gen.SimpleType]string{
 	gen.Boolean: "bool",
 	gen.Integer: "int64",
 	gen.Number:  "float64",
@@ -229,6 +229,20 @@ func DefaultTypeFunc(s *gen.Schema) gen.TypeInfo {
 		return gen.TypeInfo{GoPath: parts[0], Name: parts[1]}
 	}
 	return gen.TypeInfo{}
+}
+
+func MakeTypeFromID(pairs [][2]string) func(s *gen.Schema) gen.TypeInfo {
+	// TypeFromID defines how to map to type information from IDs
+	mapper := TypeFromId(pairs)
+	return func(schema *gen.Schema) gen.TypeInfo {
+		if t := DefaultTypeFunc(schema); !t.Unknown() {
+			return t
+		}
+		if path, name := mapper(schema.ID.String()); name != "" {
+			return gen.TypeInfo{GoPath: path, Name: name}
+		}
+		return gen.TypeInfo{}
+	}
 }
 
 type Typer struct {
@@ -255,4 +269,55 @@ func (d Typer) TypeInfoHinted(s *gen.Schema, t gen.SimpleType) gen.TypeInfo {
 
 func (d Typer) Primitive(s gen.SimpleType) string {
 	return d.Primitives[s]
+}
+
+func TypeFromId(pairs [][2]string) func(string) (string, string) {
+	mapper := PrefixMapper(pairs)
+	return func(s string) (string, string) {
+		s = mapper(s)
+		u, err := url.Parse(s)
+		if err != nil {
+			return "", ""
+		}
+		pathParts := strings.Split(u.Host+u.Path, "/")
+		if len(pathParts) < 2 {
+			return "", ""
+		}
+		// drop the extension
+		nameParts := strings.SplitN(pathParts[len(pathParts)-1], ".", 2)
+		if len(nameParts) == 0 {
+			return "", ""
+		}
+		path, name := strings.Join(pathParts[:len(pathParts)-1], "/"), nameParts[0]
+		// add any fragment info
+		if u.Fragment != "" {
+			frags := strings.Split(u.Fragment, "/")
+			for _, frag := range frags {
+				if frag == "" || frag == "properties" {
+					continue
+				}
+				runes := []rune(frag)
+				runes[0] = unicode.ToUpper(runes[0])
+				name += string(runes)
+			}
+		}
+		return path, name
+	}
+}
+
+func PrefixMapper(prefixes [][2]string) func(string) string {
+	sort.Slice(prefixes, func(i, j int) bool {
+		return prefixes[i][0] < prefixes[j][0]
+	})
+	return func(path string) string {
+		i := sort.Search(len(prefixes), func(i int) bool {
+			return prefixes[i][0] > path
+		})
+		for i = i - 1; i >= 0; i-- {
+			if strings.HasPrefix(path, prefixes[i][0]) {
+				return prefixes[i][1] + path[len(prefixes[i][0]):]
+			}
+		}
+		return path
+	}
 }

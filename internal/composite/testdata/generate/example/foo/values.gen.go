@@ -7,6 +7,7 @@ import (
 )
 
 // Bar contains some info
+// generated from https://example.com/testdata/generate/example/foo/bar.json
 type Bar struct {
 	Baz   *string `json:"baz,omitempty"`
 	Count *int64  `json:"count,omitempty"`

@@ -147,7 +147,7 @@ var _ valErr = new(validationError)
 				&composite.StructPlan{
 					Comment: "Bob does lots of cool things",
 					Fields: []composite.StructField{
-						{Name: "Count", Type: gen.TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
+						{Name: "Count", Type: gen.TypeInfo{Name: "int"}, Tag: tag(`json:"count,omitempty"`)},
 					},
 					TypeInfo: gen.TypeInfo{
 						Name: "Bob",
@@ -179,14 +179,14 @@ func (m *Bob) Validate() error {
 				&composite.StructPlan{
 					Comment: "Bob does lots of cool things",
 					Fields: []composite.StructField{
-						{Name: "Count", Type: gen.TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
+						{Name: "Count", Type: gen.TypeInfo{Name: "int"}, Tag: tag(`json:"count,omitempty"`)},
 						{
 							Name: "Other",
 							Type: gen.TypeInfo{
 								GoPath: "github.com/jwilner/jsonschema2go/blah",
 								Name:   "OtherType",
 							},
-							Tag: `json:"other,omitempty"`,
+							Tag: tag(`json:"other,omitempty"`),
 						},
 					},
 					TypeInfo: gen.TypeInfo{
@@ -222,7 +222,7 @@ func (m *Bob) Validate() error {
 				&composite.StructPlan{
 					Comment: "Bob does lots of cool things",
 					Fields: []composite.StructField{
-						{Name: "Count", Type: gen.TypeInfo{Name: "int"}, Tag: `json:"count,omitempty"`},
+						{Name: "Count", Type: gen.TypeInfo{Name: "int"}, Tag: tag(`json:"count,omitempty"`)},
 						{
 							Name: "Other",
 							Type: gen.TypeInfo{
@@ -230,7 +230,7 @@ func (m *Bob) Validate() error {
 								Name:    "OtherType",
 								Pointer: true,
 							},
-							Tag: `json:"other,omitempty"`,
+							Tag: tag(`json:"other,omitempty"`),
 						},
 						{
 							Name: "OtherOther",
@@ -238,7 +238,7 @@ func (m *Bob) Validate() error {
 								GoPath: "github.com/jwilner/jsonschema2go/bob/blah",
 								Name:   "AnotherType",
 							},
-							Tag: `json:"another,omitempty"`,
+							Tag: tag(`json:"another,omitempty"`),
 						},
 					},
 					TypeInfo: gen.TypeInfo{
@@ -329,7 +329,7 @@ func (m *Bob) Validate() error {
 				&composite.StructPlan{
 					Comment: "OtherType does lots of cool things",
 					Fields: []composite.StructField{
-						{Type: gen.TypeInfo{Name: "int"}, Name: "Count", Tag: `json:"count,omitempty"`},
+						{Type: gen.TypeInfo{Name: "int"}, Name: "Count", Tag: tag(`json:"count,omitempty"`)},
 					},
 					TypeInfo: gen.TypeInfo{
 						Name: "OtherType",
@@ -381,7 +381,7 @@ func (m *OtherType) Validate() error {
 				&composite.StructPlan{
 					Comment: "OtherType does lots of cool things",
 					Fields: []composite.StructField{
-						{Type: gen.TypeInfo{Name: "int"}, Name: "Count", Tag: `json:"count,omitempty"`},
+						{Type: gen.TypeInfo{Name: "int"}, Name: "Count", Tag: tag(`json:"count,omitempty"`)},
 					},
 					TypeInfo: gen.TypeInfo{
 						Name: "OtherType",
@@ -426,9 +426,9 @@ func (m Bob) Validate() error {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var w bytes.Buffer
-			err := New(nil).Print(context.Background(), &w, tt.goPath, tt.plans)
+			err := New(nil).Print(gen.SetDebug(context.Background()), &w, tt.goPath, tt.plans)
 			if (err != nil) != tt.wantErr {
-				t.Fatalf("printStruct() error = %v, wantErr %v", err, tt.wantErr)
+				t.Fatalf("printStruct() error = %v, wantErr %v, output: %s", err, tt.wantErr, w.String())
 			}
 			formatted, err := format.Source(w.Bytes())
 			if err != nil {
@@ -443,103 +443,6 @@ func (m Bob) Validate() error {
 	}
 }
 
-func Test_mapPath(t *testing.T) {
-	tests := []struct {
-		name     string
-		path     string
-		prefixes [][2]string
-		want     string
-	}{
-		{"empty", "blah", nil, "blah"},
-		{"one", "github.com/jsonschema2go/foo/bar", [][2]string{{"github.com/jsonschema2go", "code"}}, "code/foo/bar"},
-		{
-			"greater",
-			"github.com/jsonschema2go/foo/bar",
-			[][2]string{{"github.com/jsonschema2go", "code"}, {"github.com/otherpath", "blob"}},
-			"code/foo/bar",
-		},
-		{
-			"less",
-			"github.com/jsonschema2go/foo/bar",
-			[][2]string{{"github.com/a", "other"}, {"github.com/jsonschema2go", "code"}},
-			"code/foo/bar",
-		},
-		{
-			"takes longest",
-			"github.com/jsonschema2go/foo/bar",
-			[][2]string{{"github.com/", "other"}, {"github.com/jsonschema2go", "code"}},
-			"code/foo/bar",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := PathMapper(tt.prefixes)(tt.path); got != tt.want {
-				t.Errorf("mapPath() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_typeFromID(t *testing.T) {
-	for _, tt := range []struct {
-		name                   string
-		pairs                  [][2]string
-		id, wantPath, wantName string
-	}{
-		{
-			name:     "maps",
-			pairs:    [][2]string{{"https://example.com/v1/", "github.com/example/"}},
-			id:       "https://example.com/v1/blah/bar.json",
-			wantPath: "github.com/example/blah",
-			wantName: "bar",
-		},
-		{
-			name:     "maps no extension",
-			pairs:    [][2]string{{"https://example.com/v1/", "github.com/example/"}},
-			id:       "https://example.com/v1/blah/bar",
-			wantPath: "github.com/example/blah",
-			wantName: "bar",
-		},
-		{
-			name:     "maps no pairs",
-			pairs:    [][2]string{},
-			id:       "https://example.com/v1/blah/bar",
-			wantPath: "example.com/v1/blah",
-			wantName: "bar",
-		},
-		{
-			name:     "maps no scheme",
-			pairs:    [][2]string{},
-			id:       "example.com/v1/blah/bar",
-			wantPath: "example.com/v1/blah",
-			wantName: "bar",
-		},
-		{
-			name:     "maps empty fragment",
-			pairs:    [][2]string{{"https://example.com/v1/", "github.com/example/"}},
-			id:       "https://example.com/v1/blah/bar.json#",
-			wantPath: "github.com/example/blah",
-			wantName: "bar",
-		},
-		{
-			name:     "maps properties fragment",
-			pairs:    [][2]string{{"https://example.com/v1/", "github.com/example/"}},
-			id:       "https://example.com/v1/blah/bar.json#/properties/baz",
-			wantPath: "github.com/example/blah",
-			wantName: "barBaz",
-		},
-		{
-			name:     "maps extended fragment",
-			pairs:    [][2]string{{"https://example.com/v1/", "github.com/example/"}},
-			id:       "https://example.com/v1/blah/bar.json#/properties/baz/items/2/properties/hello",
-			wantPath: "github.com/example/blah",
-			wantName: "barBazItems2Hello",
-		},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			if path, name := TypeFromId(tt.pairs)(tt.id); tt.wantName != name || tt.wantPath != path {
-				t.Errorf("wanted (%q, %q) got (%q, %q)", tt.wantPath, tt.wantName, path, name)
-			}
-		})
-	}
+func tag(s string) string {
+	return "`" + s + "`"
 }

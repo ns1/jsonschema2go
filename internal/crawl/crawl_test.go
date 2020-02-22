@@ -15,7 +15,13 @@ import (
 	"testing"
 )
 
+func tag(s string) string {
+	return "`" + s + "`"
+}
+
 func TestSchemaToPlan(t *testing.T) {
+	u, _ := url.Parse("https://hi.json")
+	c, _ := url.Parse("https://hi.json#/properties/child")
 	tests := []struct {
 		name    string
 		schema  *gen.Schema
@@ -25,6 +31,7 @@ func TestSchemaToPlan(t *testing.T) {
 		{
 			name: "simple",
 			schema: &gen.Schema{
+				ID:   u,
 				Type: &gen.TypeField{gen.Object},
 				Properties: map[string]*gen.RefOrSchema{
 					"count": makeSchema(gen.Schema{Type: &gen.TypeField{gen.Integer}}),
@@ -38,6 +45,7 @@ func TestSchemaToPlan(t *testing.T) {
 			},
 			want: []gen.Plan{
 				&composite.StructPlan{
+					ID: u,
 					TypeInfo: gen.TypeInfo{
 						GoPath: "github.com/jwilner/jsonschema2go/example",
 						Name:   "Awesome",
@@ -51,7 +59,7 @@ func TestSchemaToPlan(t *testing.T) {
 								Name:    "int64",
 							},
 							JSONName: "count",
-							Tag:      `json:"count,omitempty"`,
+							Tag:      tag(`json:"count,omitempty"`),
 						},
 					},
 				},
@@ -60,9 +68,11 @@ func TestSchemaToPlan(t *testing.T) {
 		{
 			name: "nested struct",
 			schema: &gen.Schema{
+				ID:   u,
 				Type: &gen.TypeField{gen.Object},
 				Properties: map[string]*gen.RefOrSchema{
 					"nested": makeSchema(gen.Schema{
+						ID: c,
 						Config: gen.Config{
 							GoPath: "github.com/jwilner/jsonschema2go/example#NestedType",
 						},
@@ -81,6 +91,7 @@ func TestSchemaToPlan(t *testing.T) {
 			},
 			want: []gen.Plan{
 				&composite.StructPlan{
+					ID: u,
 					TypeInfo: gen.TypeInfo{
 						GoPath: "github.com/jwilner/jsonschema2go/example",
 						Name:   "Awesome",
@@ -94,12 +105,13 @@ func TestSchemaToPlan(t *testing.T) {
 								GoPath: "github.com/jwilner/jsonschema2go/example",
 								Name:   "NestedType",
 							},
-							Tag:             `json:"nested,omitempty"`,
+							Tag:             tag(`json:"nested,omitempty"`),
 							FieldValidators: []validator.Validator{validator.SubschemaValidator},
 						},
 					},
 				},
 				&composite.StructPlan{
+					ID: c,
 					TypeInfo: gen.TypeInfo{
 						GoPath: "github.com/jwilner/jsonschema2go/example",
 						Name:   "NestedType",
@@ -112,7 +124,7 @@ func TestSchemaToPlan(t *testing.T) {
 								Pointer: true,
 								Name:    "int64",
 							},
-							Tag: `json:"count,omitempty"`,
+							Tag: tag(`json:"count,omitempty"`),
 						},
 					},
 				},
@@ -121,12 +133,18 @@ func TestSchemaToPlan(t *testing.T) {
 		{
 			name: "composed anonymous struct",
 			schema: &gen.Schema{
+				ID: u,
 				Config: gen.Config{
 					GoPath: "github.com/jwilner/jsonschema2go/example#AwesomeWithID",
 				},
 				AllOf: []*gen.RefOrSchema{
 					makeSchema(
 						gen.Schema{
+							ID: c,
+							Config: gen.Config{
+								GoPath:        "github.com/jwilner/jsonschema2go/example#Awesome2",
+								PromoteFields: true,
+							},
 							Type: &gen.TypeField{gen.Object},
 							Properties: map[string]*gen.RefOrSchema{
 								"id": makeSchema(gen.Schema{Type: &gen.TypeField{gen.Integer}}),
@@ -164,11 +182,12 @@ func TestSchemaToPlan(t *testing.T) {
 								Pointer: true,
 								Name:    "int64",
 							},
-							Tag: `json:"count,omitempty"`,
+							Tag: tag(`json:"count,omitempty"`),
 						},
 					},
 				},
 				&composite.StructPlan{
+					ID: u,
 					TypeInfo: gen.TypeInfo{
 						GoPath: "github.com/jwilner/jsonschema2go/example",
 						Name:   "AwesomeWithID",
@@ -181,7 +200,7 @@ func TestSchemaToPlan(t *testing.T) {
 								Pointer: true,
 								Name:    "int64",
 							},
-							Tag: `json:"id,omitempty"`,
+							Tag: tag(`json:"id,omitempty"`),
 						},
 						{
 							Type: gen.TypeInfo{
@@ -197,6 +216,7 @@ func TestSchemaToPlan(t *testing.T) {
 		{
 			name: "enum",
 			schema: &gen.Schema{
+				ID: u,
 				Config: gen.Config{
 					GoPath: "github.com/jwilner/jsonschema2go/example#Letter",
 				},
@@ -209,6 +229,7 @@ func TestSchemaToPlan(t *testing.T) {
 			},
 			want: []gen.Plan{
 				&enum.Plan{
+					ID: u,
 					TypeInfo: gen.TypeInfo{
 						GoPath: "github.com/jwilner/jsonschema2go/example",
 						Name:   "Letter",
@@ -225,6 +246,7 @@ func TestSchemaToPlan(t *testing.T) {
 		{
 			name: "nullable built in",
 			schema: &gen.Schema{
+				ID: u,
 				Config: gen.Config{
 					GoPath: "github.com/jwilner/jsonschema2go/example#Awesome",
 				},
@@ -240,6 +262,7 @@ func TestSchemaToPlan(t *testing.T) {
 			},
 			want: []gen.Plan{
 				&composite.StructPlan{
+					ID: u,
 					TypeInfo: gen.TypeInfo{
 						GoPath: "github.com/jwilner/jsonschema2go/example",
 						Name:   "Awesome",
@@ -249,7 +272,7 @@ func TestSchemaToPlan(t *testing.T) {
 							Name:     "Bob",
 							JSONName: "bob",
 							Type:     gen.TypeInfo{Name: "int64", Pointer: true},
-							Tag:      `json:"bob,omitempty"`,
+							Tag:      tag(`json:"bob,omitempty"`),
 						},
 					},
 				},
@@ -258,7 +281,13 @@ func TestSchemaToPlan(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			results := crawl(context.Background(), planning.Composite, mockLoader{}, planning.DefaultTyper, schemaChan(tt.schema))
+			results := crawl(
+				gen.SetDebug(context.Background()),
+				planning.Composite,
+				mockLoader{},
+				planning.DefaultTyper,
+				schemaChan(tt.schema),
+			)
 			var (
 				got []gen.Plan
 				err error
