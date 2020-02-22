@@ -86,6 +86,10 @@ type BoolOrSchema struct {
 	Schema *RefOrSchema
 }
 
+func (a *BoolOrSchema) Present() bool {
+	return a != nil && (a.Schema != nil || (a.Bool != nil && *a.Bool))
+}
+
 // UnmarshalJSON performs some custom deserialization of JSON into BoolOrSchema
 func (a *BoolOrSchema) UnmarshalJSON(data []byte) error {
 	if b, ok := peekToken(data).(bool); ok {
@@ -348,7 +352,7 @@ func (s *Schema) ChooseType() (t SimpleType) {
 	if s.Type != nil && len(*s.Type) > 0 {
 		t = (*s.Type)[0]
 	}
-	if len(s.Properties) > 0 {
+	if len(s.Properties) > 0 || s.AdditionalProperties.Present() {
 		return Object // we'll assume object if it has properties
 	}
 	return

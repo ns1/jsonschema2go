@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/jwilner/jsonschema2go/internal/composite"
 	"github.com/jwilner/jsonschema2go/internal/enum"
+	"github.com/jwilner/jsonschema2go/internal/mapobj"
 	"github.com/jwilner/jsonschema2go/internal/slice"
 	"github.com/jwilner/jsonschema2go/internal/tuple"
 	"github.com/jwilner/jsonschema2go/pkg/gen"
@@ -19,6 +20,7 @@ import (
 
 var (
 	Composite = CompositePlanner{
+		plannerFunc("map", mapobj.PlanMap),
 		plannerFunc("allOfObject", composite.PlanAllOfObject),
 		plannerFunc("object", composite.PlanObject),
 		plannerFunc("tuple", tuple.PlanTuple),
