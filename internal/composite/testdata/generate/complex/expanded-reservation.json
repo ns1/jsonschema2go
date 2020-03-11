@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "allOf": [
+    {
+      "$ref": "reservation.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "address_details": {
+          "$ref": "address-details.json"
+        }
+      }
+    }
+  ],
+  "$id": "https://example.com/testdata/generate/complex/foo/expanded-reservation.json"
+}

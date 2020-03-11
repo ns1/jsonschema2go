@@ -77,12 +77,12 @@ func (t TupleItem) Validators() []validator.Validator {
 }
 
 func PlanTuple(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Plan, error) {
-	if schema.ChooseType() != gen.Array {
+	if schema.ChooseType() != gen.JSONArray {
 		return nil, fmt.Errorf("not an array: %w", gen.ErrContinue)
 	}
-	tInfo := helper.TypeInfo(schema)
-	if tInfo.Unknown() {
-		return nil, fmt.Errorf("type unknown: %w", gen.ErrContinue)
+	tInfo, err := helper.TypeInfo(schema)
+	if err != nil {
+		return nil, err
 	}
 	if schema.Items == nil || len(schema.Items.TupleFields) == 0 {
 		return nil, fmt.Errorf("not a tuple: %w", gen.ErrContinue)
@@ -94,7 +94,10 @@ func PlanTuple(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.
 
 	var items []*TupleItem
 	for _, s := range schemas {
-		t := helper.TypeInfo(s)
+		t, err := helper.TypeInfo(s)
+		if err != nil {
+			return nil, err
+		}
 		if t.Unknown() {
 			t.Name = "interface{}"
 			items = append(items, &TupleItem{
@@ -158,22 +161,22 @@ func loadSchemaList(
 	helper gen.Helper,
 	parent *gen.Schema,
 	schemas []*gen.RefOrSchema,
-) (gen.SimpleType, []*gen.Schema, error) {
+) (gen.JSONType, []*gen.Schema, error) {
 	var (
 		resolved  []*gen.Schema
-		foundType gen.SimpleType
+		foundType gen.JSONType
 	)
 	for _, s := range schemas {
 		r, err := s.Resolve(ctx, parent, helper)
 		if err != nil {
-			return gen.Unknown, nil, err
+			return gen.JSONUnknown, nil, err
 		}
 		resolved = append(resolved, r)
 		t := r.ChooseType()
-		if t == gen.Unknown {
+		if t == gen.JSONUnknown {
 			continue
 		}
-		if foundType == gen.Unknown {
+		if foundType == gen.JSONUnknown {
 			foundType = t
 			continue
 		}

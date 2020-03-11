@@ -20,14 +20,17 @@ func Print(
 	var childRoutines sync.WaitGroup
 	defer childRoutines.Wait()
 
+	var cncl context.CancelFunc
+	ctx, cncl = context.WithCancel(ctx)
+	defer cncl()
+
 	mapper := planning.PrefixMapper(prefixes)
-	done := make(chan struct{})
-	errs := make(chan error, 1)
+	errs := make(chan error, len(grouped))
 	for k, group := range grouped {
 		childRoutines.Add(1)
 		go func(k string, group []gen.Plan) {
 			defer childRoutines.Done()
-			if err := func() error {
+			err := func() error {
 				path := mapper(k)
 				if path == "" {
 					return fmt.Errorf("unable to map go path: %q", k)
@@ -45,23 +48,16 @@ func Print(
 				defer f.Close()
 
 				if err := printer.Print(ctx, f, k, group); err != nil {
-					return fmt.Errorf("unable to print: %w", err)
+					return fmt.Errorf("unable to print %v %v: %w", p, k, err)
 				}
 				if gen.IsDebug(ctx) {
 					log.Printf("printer: successfully printed %d plans to %v", len(group), p)
 				}
 				return nil
-			}(); err != nil {
-				select {
-				case errs <- err:
-				default:
-				}
-				return
-			}
-
+			}();
 			select {
+			case errs <- err:
 			case <-ctx.Done():
-			case done <- struct{}{}:
 			}
 		}(k, group)
 	}
@@ -71,8 +67,9 @@ func Print(
 		case <-ctx.Done():
 			return ctx.Err()
 		case err := <-errs:
-			return err
-		case <-done:
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

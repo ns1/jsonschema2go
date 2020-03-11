@@ -22,11 +22,11 @@ type Validator struct {
 
 func Validators(schema *gen.Schema) (styles []Validator) {
 	switch typ := schema.ChooseType(); typ {
-	case gen.Array, gen.Object:
+	case gen.JSONArray, gen.JSONObject:
 		if !schema.Config.NoValidate && schema.AdditionalProperties == nil {
 			styles = append(styles, SubschemaValidator)
 		}
-	case gen.String:
+	case gen.JSONString:
 		if schema.Pattern != nil {
 			pattern := *schema.Pattern
 			styles = append(styles, Validator{
@@ -60,9 +60,9 @@ func Validators(schema *gen.Schema) (styles []Validator) {
 				ImpliedType: "string",
 			})
 		}
-	case gen.Integer, gen.Number:
+	case gen.JSONInteger, gen.JSONNumber:
 		impliedType := "int64"
-		if typ == gen.Number {
+		if typ == gen.JSONNumber {
 			impliedType = "float64"
 		}
 		if schema.MultipleOf != nil {
@@ -70,7 +70,7 @@ func Validators(schema *gen.Schema) (styles []Validator) {
 
 			var deps []gen.TypeInfo
 			expr := TemplateStr(`{{ .QualifiedName }}%` + multipleOf + ` != 0`)
-			if schema.ChooseType() == gen.Number {
+			if schema.ChooseType() == gen.JSONNumber {
 				deps = []gen.TypeInfo{{GoPath: "math", Name: "Mod"}}
 				expr = TemplateStr(`math.Mod({{ .QualifiedName }}, ` + multipleOf + `) != 0`)
 			}

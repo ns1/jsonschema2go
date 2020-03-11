@@ -13,7 +13,7 @@ import (
 //go:generate go run ../cmd/embedtmpl/embedtmpl.go mapobj map.tmpl map.gen.go
 
 func PlanMap(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Plan, error) {
-	if schema.ChooseType() != gen.Object &&
+	if schema.ChooseType() != gen.JSONObject &&
 		len(schema.Properties) != 0 ||
 		schema.AdditionalProperties == nil ||
 		(schema.AdditionalProperties.Schema == nil &&
@@ -21,9 +21,9 @@ func PlanMap(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Pl
 		return nil, fmt.Errorf("not a object with only additional properties: %w", gen.ErrContinue)
 	}
 
-	typ := helper.TypeInfo(schema)
-	if typ.Unknown() {
-		return nil, fmt.Errorf("unknown type: %w", gen.ErrContinue)
+	typ, err := helper.TypeInfo(schema)
+	if err != nil {
+		return nil, err
 	}
 
 	var validators []validator.Validator
@@ -33,11 +33,15 @@ func PlanMap(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Pl
 		if err != nil {
 			return nil, fmt.Errorf("unable to load addl property schema: %w", err)
 		}
-		if err := helper.Dep(ctx, valSchema); err != nil {
-			return nil, fmt.Errorf("unable to submit new dependency: %w", err)
+		valType, err = helper.TypeInfo(valSchema)
+		if err != nil {
+			return nil, err
 		}
-		valType = helper.TypeInfo(valSchema)
-
+		if !valType.BuiltIn() {
+			if err := helper.Dep(ctx, valSchema); err != nil {
+				return nil, fmt.Errorf("unable to submit new dependency: %w", err)
+			}
+		}
 		validators = validator.Validators(valSchema)
 		validator.Sorted(validators)
 	}

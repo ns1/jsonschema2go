@@ -1,0 +1,8 @@
+{
+  "id": "https://example.com/testdata/generate/array_all_of/foo/barz.json",
+  "description": "Barz gives you lots of dumb info",
+  "type": "array",
+  "items": {
+    "$ref": "example.json"
+  }
+}

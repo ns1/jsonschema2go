@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "DNS integration",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "description": "Flag to enable NS1 DNS integration"
+    },
+    "qualifying_suffix": {
+      "type": "string",
+      "description": "Related qualifying suffix (domain name)"
+    },
+    "generated_prefix": {
+      "type": "string",
+      "description": "Custom hostname prefix is used if no hostname option provided by the host"
+    }
+  },
+  "$id": "https://example.com/testdata/generate/complex/foo/dhcp-scope-group-settings-synthesize-dns-records.json"
+}

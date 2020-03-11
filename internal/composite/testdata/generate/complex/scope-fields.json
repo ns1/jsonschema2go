@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "address_id": {
+      "type": "integer",
+      "description": "the id of the scope address; must be not have host bits set"
+    },
+    "scope_group_id": {
+      "type": "integer",
+      "description": "the id of the scope group; if set and the scope group is active, the scope will be used for leases"
+    },
+    "valid_lifetime_secs": {
+      "type": "integer",
+      "description": "The number of seconds for which a lease is valid."
+    },
+    "options": {
+      "type": "array",
+      "description": "the options assigned to this scope",
+      "items": {
+        "$ref": "dhcp-option.json"
+      }
+    }
+  },
+  "required": [
+    "address_id",
+    "options"
+  ],
+  "$id": "https://example.com/testdata/generate/complex/foo/scope-fields.json"
+}

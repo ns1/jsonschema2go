@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "address_id": {
+      "type": "integer",
+      "description": "the id of the address which is being reserved"
+    },
+    "scope_group_id": {
+      "type": "integer",
+      "description": "the id of the scope group; if present, this reservation will be published"
+    },
+    "mac": {
+      "type": "string",
+      "description": "A mac address for which an address is reserved",
+      "pattern": "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$",
+      "example": "a1:b2:c3:d4:e5:f6"
+    },
+    "options": {
+      "type": "array",
+      "description": "the options assigned to this reservation",
+      "items": {
+        "$ref": "dhcp-option.json"
+      }
+    },
+    "dhcpv6": {
+      "type": "boolean",
+      "description": "the protocol with which to serve the reservation. Inferred from address and options if unset, `dhcpv4` if false, `dhcpv6` if true."
+    }
+  },
+  "required": [
+    "options"
+  ],
+  "$id": "https://example.com/testdata/generate/complex/foo/reservation-fields.json"
+}

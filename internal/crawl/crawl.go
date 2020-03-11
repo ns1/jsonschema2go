@@ -2,16 +2,13 @@ package crawl
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/jwilner/jsonschema2go/internal/planning"
 	gen "github.com/jwilner/jsonschema2go/pkg/gen"
-	"log"
 	"net/url"
-	"sync"
-	"sync/atomic"
 )
 
-// Crawl traverses a set of JSON Schemas, lazily loading their children in concurrent goroutines as need be.
 func Crawl(
 	ctx context.Context,
 	planner gen.Planner,
@@ -19,175 +16,158 @@ func Crawl(
 	typer planning.Typer,
 	uris []string,
 ) (map[string][]gen.Plan, error) {
-	var childRoutines sync.WaitGroup
-	defer childRoutines.Wait()
-
-	loaded, errC := initialLoad(ctx, &childRoutines, loader, uris)
-
-	results := crawl(ctx, planner, loader, typer, loaded)
-
-	return group(ctx, results, errC)
-}
-
-func initialLoad(
-	ctx context.Context,
-	wg *sync.WaitGroup,
-	loader gen.Loader,
-	uris []string,
-) (<-chan *gen.Schema, <-chan error) {
-	// load all initial schemas concurrently
-	loaded := make(chan *gen.Schema)
-	errC := make(chan error, 1)
-	var sent int64 // used to track completion of tasks
+	var schemas []*gen.Schema
 	for _, uri := range uris {
-		wg.Add(1)
-		go func(uri string) {
-			defer wg.Done()
-
-			u, err := url.Parse(uri)
-			if err != nil {
-				errC <- err
-				return
-			}
-
-			schema, err := loader.Load(ctx, u)
-			if err != nil {
-				errC <- fmt.Errorf("unable to resolve schema from %q: %w", uri, err)
-				return
-			}
-			select {
-			case <-ctx.Done():
-			case loaded <- schema:
-				if atomic.AddInt64(&sent, 1) == int64(len(uris)) {
-					close(loaded)
-				}
-			}
-		}(uri)
+		u, err := url.Parse(uri)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse %q: %w", uri, err)
+		}
+		sch, err := loader.Load(ctx, u)
+		if err != nil {
+			return nil, fmt.Errorf("unable to load %q: %w", uri, err)
+		}
+		schemas = append(schemas, sch)
 	}
-	return loaded, errC
+
+	plans, err := crawl(ctx, loader, typer, planner, schemas)
+	if err != nil {
+		return nil, err
+	}
+
+	grouped := make(map[string][]gen.Plan)
+	for _, p := range plans {
+		grouped[p.Type().GoPath] = append(grouped[p.Type().GoPath], p)
+	}
+	return grouped, nil
 }
 
 func crawl(
 	ctx context.Context,
-	planner gen.Planner,
 	loader gen.Loader,
 	typer planning.Typer,
-	schemas <-chan *gen.Schema,
-) <-chan crawlResult {
-	helper := planning.NewHelper(ctx, loader, typer, schemas)
+	planner gen.Planner,
+	schemas []*gen.Schema,
+) ([]gen.Plan, error) {
+	{
+		q := make([]*gen.Schema, len(schemas))
+		copy(q, schemas)
+		schemas = q
+	}
 
-	results := make(chan crawlResult)
+	var plans []gen.Plan
+	seen := make(map[string]bool)
+	for len(schemas) > 0 {
+		s := schemas[0]
+		schemas = schemas[1:]
 
-	go func() {
-		defer close(results)
+		k := s.ID.String()
+		if seen[k] {
+			continue
+		}
+		seen[k] = true
 
-		var (
-			wg           sync.WaitGroup
-			allCopied    bool
-			inFlight     int
-			innerResults = make(chan crawlResult)
-		)
-
-		defer wg.Wait()
-
-		derivePlan := func(s *gen.Schema) {
-			plan, err := planner.Plan(ctx, helper, s)
-			select {
-			case innerResults <- crawlResult{plan, err}:
-			case <-ctx.Done():
-				return
-			}
+		if s.Config.Exclude {
+			continue
 		}
 
-		forward := func(result crawlResult) {
-			select {
-			case <-ctx.Done():
-			case results <- result:
-			}
+		helper := &SimpleHelper{loader, typer, nil}
+		p, err := planner.Plan(ctx, helper, s)
+		if err != nil {
+			return nil, fmt.Errorf("unable to plan %v: %w", s, err)
+		}
+		if p == nil {
+			return nil, fmt.Errorf("received a nil plan for %v", s)
 		}
 
-		seen := make(map[gen.TypeInfo]bool)
-		for {
-			if allCopied && inFlight == 0 {
-				return
-			}
+		schemas = append(schemas, helper.deps...)
+		plans = append(plans, p)
+	}
 
-			select {
-			case s := <-helper.Schemas():
-				t := helper.TypeInfo(s)
-				if seen[t] {
-					if gen.IsDebug(ctx) {
-						log.Printf("crawler: skipping %v -- already seen", t)
-					}
-					continue
-				}
-				seen[t] = true
-
-				if s.Config.Exclude {
-					if gen.IsDebug(ctx) {
-						log.Printf("crawler: excluding %v by request", t)
-					}
-					continue
-				}
-
-				if gen.IsDebug(ctx) {
-					log.Printf("crawler: planning %v", t)
-				}
-				inFlight++
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					derivePlan(s)
-				}()
-			case <-helper.Submitted():
-				allCopied = true
-			case res := <-innerResults:
-				if res.Err != nil {
-					forward(res)
-					return
-				}
-				inFlight--
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					forward(res)
-				}()
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-
-	return results
+	return plans, nil
 }
 
-func group(ctx context.Context, results <-chan crawlResult, errC <-chan error) (map[string][]gen.Plan, error) {
-	// group together results
-	grouped := make(map[string][]gen.Plan)
-	for {
-		select {
-		case err := <-errC:
-			return nil, err
-		case result, ok := <-results:
-			if !ok {
-				return grouped, nil
-			}
-			if result.Err != nil {
-				return nil, result.Err
-			}
-			if result.Plan == nil {
+type SimpleHelper struct {
+	gen.Loader
+	planning.Typer
+	deps []*gen.Schema
+}
+
+func (h *SimpleHelper) Dep(ctx context.Context, schemas ...*gen.Schema) error {
+	h.deps = append(h.deps, schemas...)
+	return nil
+}
+
+
+func (h *SimpleHelper) DetectGoBaseType(ctx context.Context, schema *gen.Schema) (gen.GoBaseType, error) {
+	if len(schema.AllOf) > 0 || len(schema.OneOf) > 0 || len(schema.AnyOf) > 0 {
+		return gen.GoStruct, nil
+	}
+
+	jTyp, err := h.DetectSimpleType(ctx, schema)
+	if err != nil {
+		return gen.GoUnknown, err
+	}
+	switch jTyp {
+	case gen.JSONBoolean:
+		return gen.GoBool, nil
+	case gen.JSONInteger:
+		return gen.GoInt64, nil
+	case gen.JSONNumber:
+		return gen.GoFloat64, nil
+	case gen.JSONString:
+		return gen.GoString, nil
+	case gen.JSONNull:
+		return gen.GoEmpty, nil
+	case gen.JSONArray:
+		if schema.Items != nil && schema.Items.TupleFields != nil {
+			return gen.GoArray, nil
+		}
+		return gen.GoSlice, nil
+	case gen.JSONObject:
+		if len(schema.Properties) > 0 {
+			return gen.GoStruct, nil
+		}
+		return gen.GoMap, nil
+	}
+	return gen.GoUnknown, nil
+}
+
+func (h *SimpleHelper) DetectSimpleType(ctx context.Context, schema *gen.Schema) (gen.JSONType, error) {
+	level := []*gen.Schema{schema}
+	for len(level) > 0 {
+		found := gen.JSONUnknown
+		for _, s := range level {
+			myT := s.ChooseType()
+			if myT == gen.JSONUnknown {
 				continue
 			}
-			plan := result.Plan
-			goPath := plan.Type().GoPath
-			grouped[goPath] = append(grouped[goPath], plan)
-		case <-ctx.Done():
-			return nil, ctx.Err()
+			if found != gen.JSONUnknown && found != myT {
+				return gen.JSONUnknown, errors.New("conflicting type")
+			}
+			found = myT
 		}
+		if found != gen.JSONUnknown {
+			return found, nil
+		}
+
+		var candidates []*gen.Schema
+		for _, s := range level {
+			for _, sub := range s.AllOf {
+				c, err := sub.Resolve(ctx, s, h)
+				if err != nil {
+					return gen.JSONUnknown, err
+				}
+				candidates = append(candidates, c)
+			}
+		}
+
+		level = candidates
 	}
+	return gen.JSONUnknown, fmt.Errorf("%v: %w", schema, errTypeUnknown)
 }
 
-type crawlResult struct {
-	Plan gen.Plan
-	Err  error
+var errTypeUnknown = errors.New("unknown type")
+
+func (h *SimpleHelper) ErrSimpleTypeUnknown(err error) bool {
+	return errors.Is(err, errTypeUnknown)
 }

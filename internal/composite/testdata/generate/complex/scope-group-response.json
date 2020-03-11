@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "allOf": [
+    {
+      "$ref": "scope-group-updateable.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "description": "scope group identifier"
+        },
+        "network_id": {
+          "type": "integer",
+          "description": "the network id which scopes are set to this scope group"
+        }
+      }
+    }
+  ],
+  "required": [
+    "id",
+    "name",
+    "dhcpv4",
+    "dhcpv6"
+  ],
+  "$id": "https://example.com/testdata/generate/complex/foo/scope-group-response.json"
+}

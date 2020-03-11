@@ -1,0 +1,20 @@
+{
+  "id": "https://example.com/testdata/generate/array_all_of/foo/bar.json",
+  "description": "Bar gives you some dumb info",
+  "allOf": [
+    {
+      "properties": {
+        "id": {
+          "type": "integer"
+        }
+      }
+    },
+    {
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    }
+  ]
+}

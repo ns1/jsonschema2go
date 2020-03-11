@@ -32,9 +32,9 @@ func TestSchemaToPlan(t *testing.T) {
 			name: "simple",
 			schema: &gen.Schema{
 				ID:   u,
-				Type: &gen.TypeField{gen.Object},
+				Type: &gen.TypeField{gen.JSONObject},
 				Properties: map[string]*gen.RefOrSchema{
-					"count": makeSchema(gen.Schema{Type: &gen.TypeField{gen.Integer}}),
+					"count": makeSchema(gen.Schema{Type: &gen.TypeField{gen.JSONInteger}}),
 				},
 				Config: gen.Config{
 					GoPath: "github.com/jwilner/jsonschema2go/example#Awesome",
@@ -69,16 +69,16 @@ func TestSchemaToPlan(t *testing.T) {
 			name: "nested struct",
 			schema: &gen.Schema{
 				ID:   u,
-				Type: &gen.TypeField{gen.Object},
+				Type: &gen.TypeField{gen.JSONObject},
 				Properties: map[string]*gen.RefOrSchema{
 					"nested": makeSchema(gen.Schema{
 						ID: c,
 						Config: gen.Config{
 							GoPath: "github.com/jwilner/jsonschema2go/example#NestedType",
 						},
-						Type: &gen.TypeField{gen.Object},
+						Type: &gen.TypeField{gen.JSONObject},
 						Properties: map[string]*gen.RefOrSchema{
-							"count": makeSchema(gen.Schema{Type: &gen.TypeField{gen.Integer}}),
+							"count": makeSchema(gen.Schema{Type: &gen.TypeField{gen.JSONInteger}}),
 						},
 					}),
 				},
@@ -102,8 +102,9 @@ func TestSchemaToPlan(t *testing.T) {
 							Name:     "Nested",
 							JSONName: "nested",
 							Type: gen.TypeInfo{
-								GoPath: "github.com/jwilner/jsonschema2go/example",
-								Name:   "NestedType",
+								GoPath:  "github.com/jwilner/jsonschema2go/example",
+								Name:    "NestedType",
+								Pointer: true,
 							},
 							Tag:             tag(`json:"nested,omitempty"`),
 							FieldValidators: []validator.Validator{validator.SubschemaValidator},
@@ -145,17 +146,17 @@ func TestSchemaToPlan(t *testing.T) {
 								GoPath:        "github.com/jwilner/jsonschema2go/example#Awesome2",
 								PromoteFields: true,
 							},
-							Type: &gen.TypeField{gen.Object},
+							Type: &gen.TypeField{gen.JSONObject},
 							Properties: map[string]*gen.RefOrSchema{
-								"id": makeSchema(gen.Schema{Type: &gen.TypeField{gen.Integer}}),
+								"id": makeSchema(gen.Schema{Type: &gen.TypeField{gen.JSONInteger}}),
 							},
 						},
 					),
 					makeSchema(
 						gen.Schema{
-							Type: &gen.TypeField{gen.Object},
+							Type: &gen.TypeField{gen.JSONObject},
 							Properties: map[string]*gen.RefOrSchema{
-								"count": makeSchema(gen.Schema{Type: &gen.TypeField{gen.Integer}}),
+								"count": makeSchema(gen.Schema{Type: &gen.TypeField{gen.JSONInteger}}),
 							},
 							Annotations: annos(map[string]string{
 								"description": "i am bob",
@@ -169,6 +170,7 @@ func TestSchemaToPlan(t *testing.T) {
 			},
 			want: []gen.Plan{
 				&composite.StructPlan{
+					ID: &url.URL{},
 					TypeInfo: gen.TypeInfo{
 						GoPath: "github.com/jwilner/jsonschema2go/example",
 						Name:   "Awesome",
@@ -220,7 +222,7 @@ func TestSchemaToPlan(t *testing.T) {
 				Config: gen.Config{
 					GoPath: "github.com/jwilner/jsonschema2go/example#Letter",
 				},
-				Type: &gen.TypeField{gen.String},
+				Type: &gen.TypeField{gen.JSONString},
 				Enum: []interface{}{
 					"a",
 					"b",
@@ -250,12 +252,12 @@ func TestSchemaToPlan(t *testing.T) {
 				Config: gen.Config{
 					GoPath: "github.com/jwilner/jsonschema2go/example#Awesome",
 				},
-				Type: &gen.TypeField{gen.Object},
+				Type: &gen.TypeField{gen.JSONObject},
 				Properties: map[string]*gen.RefOrSchema{
 					"bob": makeSchema(gen.Schema{
 						OneOf: []*gen.RefOrSchema{
-							makeSchema(gen.Schema{Type: &gen.TypeField{gen.Null}}),
-							makeSchema(gen.Schema{Type: &gen.TypeField{gen.Integer}}),
+							makeSchema(gen.Schema{Type: &gen.TypeField{gen.JSONNull}}),
+							makeSchema(gen.Schema{Type: &gen.TypeField{gen.JSONInteger}}),
 						},
 					}),
 				},
@@ -281,25 +283,13 @@ func TestSchemaToPlan(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			results := crawl(
+			got, err := crawl(
 				gen.SetDebug(context.Background()),
-				planning.Composite,
 				mockLoader{},
 				planning.DefaultTyper,
-				schemaChan(tt.schema),
+				planning.Composite,
+				[]*gen.Schema{tt.schema},
 			)
-			var (
-				got []gen.Plan
-				err error
-			)
-			for r := range results {
-				if r.Plan != nil {
-					got = append(got, r.Plan)
-				}
-				if r.Err != nil {
-					err = r.Err
-				}
-			}
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SchemaToPlan() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -321,17 +311,6 @@ func TestSchemaToPlan(t *testing.T) {
 	}
 }
 
-func schemaChan(schemas ...*gen.Schema) <-chan *gen.Schema {
-	schemaC := make(chan *gen.Schema)
-	go func() {
-		for _, s := range schemas {
-			schemaC <- s
-		}
-		close(schemaC)
-	}()
-	return schemaC
-}
-
 func annos(annos map[string]string) gen.TagMap {
 	m := make(map[string]json.RawMessage)
 	for k, v := range annos {
@@ -341,6 +320,9 @@ func annos(annos map[string]string) gen.TagMap {
 }
 
 func makeSchema(s gen.Schema) *gen.RefOrSchema {
+	if s.ID == nil {
+		s.ID = &url.URL{}
+	}
 	return gen.NewRefOrSchema(&s, nil)
 }
 

@@ -80,6 +80,13 @@ func (m *Bar) UnmarshalJSON(data []byte) error {
 		}
 		m.Value = f
 		return nil
+	case bool:
+		var b bool
+		if err := json.Unmarshal(data, &b); err != nil {
+			return err
+		}
+		m.Value = b
+		return nil
 	}
 	if tok == nil {
 		return nil

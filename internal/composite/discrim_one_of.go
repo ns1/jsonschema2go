@@ -20,13 +20,13 @@ func PlanDiscriminatedOneOfObject(ctx context.Context, helper gen.Helper, schema
 	if len(schemas) == 0 {
 		return nil, fmt.Errorf("no schemas: %w", gen.ErrContinue)
 	}
-	if composedTyp != gen.Object {
+	if composedTyp != gen.JSONObject {
 		return nil, fmt.Errorf("composed type is not object: %w", gen.ErrContinue)
 	}
 
-	tInfo := helper.TypeInfo(schema)
-	if tInfo.Unknown() {
-		return nil, fmt.Errorf("schema type is unknown: %w", gen.ErrContinue)
+	tInfo, err := helper.TypeInfo(schema)
+	if err != nil {
+		return nil, err
 	}
 
 	typeToNames := make(map[string][]string)
@@ -38,7 +38,10 @@ func PlanDiscriminatedOneOfObject(ctx context.Context, helper gen.Helper, schema
 	s := &StructPlan{TypeInfo: tInfo, ID: schema.ID}
 	s.Comment = schema.Annotations.GetString("description")
 	for _, subSchema := range schemas {
-		tInfo := helper.TypeInfo(subSchema)
+		tInfo, err := helper.TypeInfo(subSchema)
+		if err != nil {
+			return nil, err
+		}
 		names, ok := typeToNames[tInfo.Name]
 		if !ok {
 			return nil, fmt.Errorf("no discriminators for type: %v", tInfo.Name)

@@ -16,12 +16,12 @@ import (
 
 // Build attempts to generate the plan for a slice from the provided schema
 func Build(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Plan, error) {
-	if schema.ChooseType() != gen.Array {
+	if schema.ChooseType() != gen.JSONArray {
 		return nil, fmt.Errorf("not an array: %w", gen.ErrContinue)
 	}
-	tInfo := helper.TypeInfo(schema)
-	if tInfo.Unknown() {
-		return nil, fmt.Errorf("type unknown: %w", gen.ErrContinue)
+	tInfo, err := helper.TypeInfo(schema)
+	if err != nil {
+		return nil, err
 	}
 
 	// we've matched
@@ -35,8 +35,12 @@ func Build(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Plan
 	a := Plan{TypeInfo: tInfo, ID: schema.ID}
 	a.Comment = schema.Annotations.GetString("description")
 	if itemSchema != nil {
-		if a.ItemType = helper.TypeInfo(itemSchema); a.ItemType.Unknown() {
-			return nil, nil
+		typ, err := helper.DetectSimpleType(ctx, itemSchema)
+		if err != nil {
+			return nil, err
+		}
+		if a.ItemType = helper.TypeInfoHinted(itemSchema, typ); a.ItemType.Unknown() {
+			a.ItemType = gen.TypeInfo{Name: "interface{}"}
 		}
 	} else {
 		a.ItemType = gen.TypeInfo{Name: "interface{}"}

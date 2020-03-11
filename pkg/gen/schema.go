@@ -20,34 +20,34 @@ func init() {
 	}
 }
 
-// SimpleType is the enumeration of JSONSchema's supported types.
-type SimpleType uint8
+// JSONType is the enumeration of JSONSchema's supported types.
+type JSONType uint8
 
-// Each of these is a core type of JSONSchema, except for Unknown, which is a useful zero value.
+// Each of these is a core type of JSONSchema, except for JSONUnknown, which is a useful zero value.
 const (
-	Unknown SimpleType = iota
-	Array
-	Boolean
-	Integer
-	Null
-	Number
-	Object
-	String
+	JSONUnknown JSONType = iota
+	JSONArray
+	JSONBoolean
+	JSONInteger
+	JSONNull
+	JSONNumber
+	JSONObject
+	JSONString
 )
 
-var simpleTypeNames = map[string]SimpleType{
-	"array":   Array,
-	"boolean": Boolean,
-	"integer": Integer,
-	"null":    Null,
-	"number":  Number,
-	"object":  Object,
-	"string":  String,
+var simpleTypeNames = map[string]JSONType{
+	"array":   JSONArray,
+	"boolean": JSONBoolean,
+	"integer": JSONInteger,
+	"null":    JSONNull,
+	"number":  JSONNumber,
+	"object":  JSONObject,
+	"string":  JSONString,
 }
 
 // TypeField wraps the type field in JSONSchema, supporting either an array of types or a single type as the metaschema
 // allows
-type TypeField []SimpleType
+type TypeField []JSONType
 
 // UnmarshalJSON unmarshals JSON into the TypeField
 func (t *TypeField) UnmarshalJSON(b []byte) error {
@@ -62,7 +62,7 @@ func (t *TypeField) UnmarshalJSON(b []byte) error {
 	case []interface{}:
 		*t = make(TypeField, 0, len(v))
 		for _, v := range v {
-			var typ SimpleType
+			var typ JSONType
 			if s, ok := v.(string); ok {
 				typ = simpleTypeNames[s]
 			}
@@ -105,6 +105,10 @@ func (a *BoolOrSchema) UnmarshalJSON(data []byte) error {
 type ItemsField struct {
 	Items       *RefOrSchema
 	TupleFields []*RefOrSchema
+}
+
+func (i *ItemsField) Present() bool {
+	return i != nil && (i.Items != nil || len(i.TupleFields) > 0)
 }
 
 // UnmarshalJSON conditionally deserializes into ItemsField according to the shape of the provided JSON
@@ -349,14 +353,27 @@ func (s *Schema) String() string {
 }
 
 // ChooseType returns the best known type for this field.
-func (s *Schema) ChooseType() (t SimpleType) {
-	if s.Type != nil && len(*s.Type) > 0 {
-		t = (*s.Type)[0]
+func (s *Schema) ChooseType() JSONType {
+	switch {
+	case s.Type != nil && len(*s.Type) > 0:
+		return (*s.Type)[0]
+	case len(s.Properties) > 0,
+		s.AdditionalProperties.Present(),
+		len(s.PatternProperties) > 0,
+		s.MinProperties > 0,
+		s.MaxProperties != nil:
+		return JSONObject
+	case s.Items.Present(),
+		s.UniqueItems,
+		s.MinItems != 0,
+		s.MaxItems != nil:
+		return JSONArray
+	case s.Pattern != nil,
+		s.MinLength > 0,
+		s.MaxLength != nil:
+		return JSONString
 	}
-	if len(s.Properties) > 0 || s.AdditionalProperties.Present() {
-		return Object // we'll assume object if it has properties
-	}
-	return
+	return JSONUnknown
 }
 
 // UnmarshalJSON is custom JSON deserialization for the Schema type

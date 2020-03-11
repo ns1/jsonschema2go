@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "allOf": [
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "description": "the id of the reserved address"
+        }
+      }
+    },
+    {
+      "$ref": "reservation-fields.json"
+    }
+  ],
+  "required": [
+    "id"
+  ],
+  "$id": "https://example.com/testdata/generate/complex/foo/reservation.json"
+}

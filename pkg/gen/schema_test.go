@@ -134,17 +134,17 @@ func TestSchema_UnmarshalJSON(t *testing.T) {
 		{
 			name: "simple",
 			data: `{"type": "string"}`,
-			want: Schema{Type: &TypeField{String}},
+			want: Schema{Type: &TypeField{JSONString}},
 		},
 		{
 			name: "simple",
 			data: `{"type": "array", "items": {"type": "string"}}`,
-			want: Schema{Type: &TypeField{Array}, Items: &ItemsField{Items: schema(Schema{Type: &TypeField{String}})}},
+			want: Schema{Type: &TypeField{JSONArray}, Items: &ItemsField{Items: schema(Schema{Type: &TypeField{JSONString}})}},
 		},
 		{
 			name: "annos",
 			data: `{"type": "string", "i-am-an-annotation": "hi"}`,
-			want: Schema{Type: &TypeField{String}, Annotations: annos(map[string]string{"i-am-an-annotation": "hi"})},
+			want: Schema{Type: &TypeField{JSONString}, Annotations: annos(map[string]string{"i-am-an-annotation": "hi"})},
 		},
 		{
 			name: "recursive",
@@ -169,8 +169,8 @@ func TestSchema_UnmarshalJSON(t *testing.T) {
 			want: Schema{
 				Items: &ItemsField{
 					TupleFields: []*RefOrSchema{
-						schema(Schema{Type: &TypeField{Integer}}),
-						schema(Schema{Type: &TypeField{String}}),
+						schema(Schema{Type: &TypeField{JSONInteger}}),
+						schema(Schema{Type: &TypeField{JSONString}}),
 					},
 				},
 			},
@@ -180,7 +180,7 @@ func TestSchema_UnmarshalJSON(t *testing.T) {
 			data: `{"items": {"type": "integer"}}`,
 			want: Schema{
 				Items: &ItemsField{
-					Items: schema(Schema{Type: &TypeField{Integer}}),
+					Items: schema(Schema{Type: &TypeField{JSONInteger}}),
 				},
 			},
 		},

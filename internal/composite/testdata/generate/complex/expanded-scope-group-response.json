@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "allOf": [
+    {
+      "$ref": "scope-group-response.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "scopes": {
+          "type": "array",
+          "items": {
+            "$ref": "expanded-scope.json"
+          }
+        },
+        "reservations": {
+          "type": "array",
+          "items": {
+            "$ref": "expanded-reservation.json"
+          }
+        }
+      }
+    }
+  ],
+  "$id": "https://example.com/testdata/generate/complex/foo/expanded-scope-group-response.json"
+}
