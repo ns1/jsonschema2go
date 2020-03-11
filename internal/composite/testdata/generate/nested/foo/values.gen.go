@@ -8,20 +8,22 @@ import (
 // Bar gives you some dumb info
 // generated from https://example.com/testdata/generate/nested/foo/bar.json
 type Bar struct {
-	Foo Foo `json:"foo,omitempty"`
+	Foo *Foo `json:"foo,omitempty"`
 }
 
 func (m *Bar) Validate() error {
-	if err := m.Foo.Validate(); err != nil {
-		if err, ok := err.(valErr); ok {
-			return &validationError{
-				errType:  err.ErrType(),
-				message:  err.Message(),
-				path:     append([]interface{}{"Foo"}, err.Path()...),
-				jsonPath: append([]interface{}{"foo"}, err.JSONPath()...),
+	if m.Foo != nil {
+		if err := m.Foo.Validate(); err != nil {
+			if err, ok := err.(valErr); ok {
+				return &validationError{
+					errType:  err.ErrType(),
+					message:  err.Message(),
+					path:     append([]interface{}{"Foo"}, err.Path()...),
+					jsonPath: append([]interface{}{"foo"}, err.JSONPath()...),
+				}
 			}
+			return err
 		}
-		return err
 	}
 	return nil
 }

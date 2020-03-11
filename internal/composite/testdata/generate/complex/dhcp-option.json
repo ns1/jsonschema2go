@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "a namespaced DHCP option name"
+    },
+    "value": {
+      "description": "the DHCP option value; must match the schema for the option definition."
+    },
+    "always_send": {
+      "type": "boolean",
+      "description": "Optional. If TRUE, then the defined option will be send back in the response for the client request"
+    }
+  },
+  "example": {
+    "name": "dhcpv4/bootfile-name",
+    "value": "/boot.img"
+  },
+  "required": [
+    "name",
+    "value"
+  ],
+  "$id": "https://example.com/testdata/generate/complex/foo/dhcp-option.json"
+}

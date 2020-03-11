@@ -28,8 +28,11 @@ type Planner interface {
 type Helper interface {
 	Loader
 	Dep(ctx context.Context, schemas ...*Schema) error
-	TypeInfo(s *Schema) TypeInfo
-	TypeInfoHinted(s *Schema, t SimpleType) TypeInfo
+	TypeInfo(s *Schema) (TypeInfo, error)
+	ErrSimpleTypeUnknown(err error) bool
+	DetectSimpleType(ctx context.Context, s *Schema) (JSONType, error)
+	DetectGoBaseType(ctx context.Context, s *Schema) (GoBaseType, error)
+	TypeInfoHinted(s *Schema, t JSONType) TypeInfo
 	JSONPropertyExported(name string) string
-	Primitive(s SimpleType) string
+	Primitive(s JSONType) string
 }

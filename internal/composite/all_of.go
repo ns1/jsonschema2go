@@ -17,7 +17,7 @@ func PlanAllOfObject(ctx context.Context, helper gen.Helper, schema *gen.Schema)
 	if len(schemas) == 0 {
 		return nil, fmt.Errorf("no allOf schemas: %w", gen.ErrContinue)
 	}
-	if composedTyp != gen.Object {
+	if composedTyp != gen.JSONObject {
 		return nil, fmt.Errorf("not an object: %w", gen.ErrContinue)
 	}
 	tInfo := helper.TypeInfoHinted(schema, composedTyp)
@@ -36,7 +36,7 @@ func PlanAllOfObject(ctx context.Context, helper gen.Helper, schema *gen.Schema)
 	s.Fields = fields
 
 	for _, subSchema := range schemas {
-		if subSchema.ChooseType() == gen.Object && subSchema.Config.PromoteFields {
+		if subSchema.Config.PromoteFields {
 			// this is an anonymous struct; add all of its inner fields to parent
 			fields, err := deriveStructFields(ctx, helper, subSchema)
 			if err != nil {
@@ -45,7 +45,7 @@ func PlanAllOfObject(ctx context.Context, helper gen.Helper, schema *gen.Schema)
 			s.Fields = append(s.Fields, fields...)
 			continue
 		}
-		tInfo := helper.TypeInfo(subSchema)
+		tInfo := helper.TypeInfoHinted(subSchema, gen.JSONObject)
 		// this is a named type, add an embedded field for the subschema type
 		s.Fields = append(s.Fields, StructField{Type: tInfo, FieldValidators: []validator.Validator{validator.SubschemaValidator}})
 		if err := helper.Dep(ctx, subSchema); err != nil {

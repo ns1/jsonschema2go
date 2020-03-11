@@ -3,7 +3,6 @@ package composite
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"github.com/jwilner/jsonschema2go/internal/validator"
 	"github.com/jwilner/jsonschema2go/pkg/gen"
@@ -71,12 +70,16 @@ func (s *StructPlan) Deps() (deps []gen.TypeInfo) {
 
 // PlanObject returns a plan if the provided type is an object; otherwise it returns ErrContinue
 func PlanObject(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Plan, error) {
-	if schema.ChooseType() != gen.Object {
+	jType, err := helper.DetectSimpleType(ctx, schema)
+	if err != nil {
+		return nil, err
+	}
+	if jType != gen.JSONObject {
 		return nil, fmt.Errorf("not an object: %w", gen.ErrContinue)
 	}
-	tInfo := helper.TypeInfo(schema)
-	if tInfo.Unknown() {
-		return nil, fmt.Errorf("type unknown: %w", gen.ErrContinue)
+	tInfo, err := helper.TypeInfo(schema)
+	if err != nil {
+		return nil, err
 	}
 	// matched
 
@@ -112,9 +115,13 @@ func deriveStructFields(
 		if err != nil {
 			return nil, err
 		}
-		fType := helper.TypeInfo(fieldSchema)
+		fType, _ := helper.TypeInfo(fieldSchema)
 		if fType.Unknown() && len(fieldSchema.OneOf) == 2 {
 			oneOfA, err := fieldSchema.OneOf[0].Resolve(ctx, fieldSchema, helper)
+			if err != nil {
+				return nil, err
+			}
+			typeA, err := helper.DetectSimpleType(ctx, oneOfA)
 			if err != nil {
 				return nil, err
 			}
@@ -122,26 +129,34 @@ func deriveStructFields(
 			if err != nil {
 				return nil, err
 			}
-			if oneOfA.ChooseType() == gen.Null || oneOfB.ChooseType() == gen.Null {
+			typeB, err := helper.DetectSimpleType(ctx, oneOfB)
+			if err != nil {
+				return nil, err
+			}
+			if typeA == gen.JSONNull || typeB == gen.JSONNull {
 				// this is a nillable field
 				valueSchema := oneOfA
-				if valueSchema.ChooseType() == gen.Null {
+				if typeA == gen.JSONNull {
 					valueSchema = oneOfB
 				}
-				if fType = helper.TypeInfo(valueSchema); fType.Unknown() {
-					return nil, nil
+				if fType, err = helper.TypeInfo(valueSchema); err != nil {
+					return nil, err
 				}
 				fType.Pointer = true
 			}
 		}
-		if fieldSchema.ChooseType() == gen.Object &&
+		fJType, err := helper.DetectSimpleType(ctx, fieldSchema)
+		if err != nil && !helper.ErrSimpleTypeUnknown(err) {
+			return nil, err
+		}
+		if fJType == gen.JSONObject &&
 			len(fieldSchema.Properties) == 0 &&
 			fieldSchema.AdditionalProperties != nil &&
 			fieldSchema.AdditionalProperties.Bool != nil &&
 			*fieldSchema.AdditionalProperties.Bool {
 			fType = gen.TypeInfo{Name: "map[string]interface{}"}
 		}
-		if fieldSchema.ChooseType() == gen.Unknown && fType.Unknown() {
+		if fJType == gen.JSONUnknown && fType.Unknown() {
 			fType = gen.TypeInfo{Name: "interface{}"}
 		}
 		if !fType.BuiltIn() {
@@ -153,7 +168,7 @@ func deriveStructFields(
 		var tag string
 		switch {
 		case name == "": // embedded fields don't get tags
-		case fieldSchema.ChooseType() == gen.Array || fieldSchema.Config.NoOmitEmpty:
+		case fJType == gen.JSONArray || fieldSchema.Config.NoOmitEmpty:
 			tag = fmt.Sprintf("`"+`json:"%s"`+"`", name)
 		default:
 			tag = fmt.Sprintf("`"+`json:"%s,omitempty"`+"`", name)
@@ -164,6 +179,10 @@ func deriveStructFields(
 			case "string", "int64", "bool", "float64":
 				fType.Pointer = true
 			}
+		}
+		// not a reference type
+		if !fType.BuiltIn() && fJType == gen.JSONObject && len(fieldSchema.Properties) != 0 {
+			fType.Pointer = true
 		}
 		fields = append(
 			fields,
@@ -227,14 +246,11 @@ func (f *enrichedStructField) DerefExpr() string {
 }
 
 func (f *enrichedStructField) TestSetExpr(pos bool) (string, error) {
-	if f.Type.Name == "interface{}" || f.Type.Pointer {
-		op := "!="
-		if !pos {
-			op = "=="
-		}
-		return fmt.Sprintf("m.%s %s nil", f.Name, op), nil
+	op := "!="
+	if !pos {
+		op = "=="
 	}
-	return "", errors.New("no test set expr")
+	return fmt.Sprintf("m.%s %s nil", f.Name, op), nil
 }
 
 func (f *enrichedStructField) NameSpace() string {
@@ -305,22 +321,25 @@ func loadSchemaList(
 	helper gen.Helper,
 	parent *gen.Schema,
 	schemas []*gen.RefOrSchema,
-) (gen.SimpleType, []*gen.Schema, error) {
+) (gen.JSONType, []*gen.Schema, error) {
 	var (
 		resolved  []*gen.Schema
-		foundType gen.SimpleType
+		foundType gen.JSONType
 	)
 	for _, s := range schemas {
 		r, err := s.Resolve(ctx, parent, helper)
 		if err != nil {
-			return gen.Unknown, nil, err
+			return gen.JSONUnknown, nil, err
 		}
 		resolved = append(resolved, r)
-		t := r.ChooseType()
-		if t == gen.Unknown {
+		t, err := helper.DetectSimpleType(ctx, r)
+		if err != nil {
+			return gen.JSONUnknown, nil, err
+		}
+		if t == gen.JSONUnknown {
 			continue
 		}
-		if foundType == gen.Unknown {
+		if foundType == gen.JSONUnknown {
 			foundType = t
 			continue
 		}

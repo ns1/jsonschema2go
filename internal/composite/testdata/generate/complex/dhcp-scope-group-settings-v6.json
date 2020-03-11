@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "DHCPv6 settings",
+  "allOf": [
+    {
+      "$ref": "dhcp-scope-group-settings-common.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "preferred_lifetime_secs": {
+          "type": "integer"
+        },
+        "synthesize_dns_records": {
+          "$ref": "dhcp-scope-group-settings-synthesize-dns-records.json"
+        }
+      }
+    }
+  ],
+  "$id": "https://example.com/testdata/generate/complex/foo/dhcp-scope-group-settings-v6.json"
+}

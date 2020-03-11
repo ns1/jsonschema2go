@@ -9,21 +9,23 @@ import (
 // Bar gives you some dumb info
 // generated from https://example.com/testdata/generate/exclude_external_pkg/foo/example.json
 type Bar struct {
-	Inner other.Excluded `json:"inner,omitempty"`
-	Name  *string        `json:"name,omitempty"`
+	Inner *other.Excluded `json:"inner,omitempty"`
+	Name  *string         `json:"name,omitempty"`
 }
 
 func (m *Bar) Validate() error {
-	if err := m.Inner.Validate(); err != nil {
-		if err, ok := err.(valErr); ok {
-			return &validationError{
-				errType:  err.ErrType(),
-				message:  err.Message(),
-				path:     append([]interface{}{"Inner"}, err.Path()...),
-				jsonPath: append([]interface{}{"inner"}, err.JSONPath()...),
+	if m.Inner != nil {
+		if err := m.Inner.Validate(); err != nil {
+			if err, ok := err.(valErr); ok {
+				return &validationError{
+					errType:  err.ErrType(),
+					message:  err.Message(),
+					path:     append([]interface{}{"Inner"}, err.Path()...),
+					jsonPath: append([]interface{}{"inner"}, err.JSONPath()...),
+				}
 			}
+			return err
 		}
-		return err
 	}
 	return nil
 }

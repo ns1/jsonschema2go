@@ -3,6 +3,7 @@ package jsonschema2go
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/jwilner/jsonschema2go/internal/cachingloader"
 	"github.com/jwilner/jsonschema2go/internal/crawl"
 	"github.com/jwilner/jsonschema2go/internal/planning"
@@ -10,8 +11,43 @@ import (
 	"github.com/jwilner/jsonschema2go/pkg/gen"
 	"net/url"
 	"path/filepath"
+	"sort"
 	"text/template"
 )
+
+func ExtractName(ctx context.Context, uri string, options ...Option) (string, error) {
+	s := &settings{
+		planner: planning.Composite,
+		printer: print.New(nil),
+		typer:   planning.DefaultTyper,
+		loader:  gen.NewLoader(),
+	}
+	for _, o := range options {
+		o(s)
+	}
+	ctx, cncl := context.WithCancel(ctx)
+	defer cncl()
+
+	if s.debug {
+		ctx = gen.SetDebug(ctx)
+	}
+
+	u, err := url.Parse(normalizeURI(uri))
+	if err != nil {
+		return "", fmt.Errorf("invalid uri: %w", err)
+	}
+
+	schema, err := s.loader.Load(ctx, u)
+	if err != nil {
+		return "", err
+	}
+
+	t, err := s.typer.TypeInfo(schema)
+	if errors.Is(err, planning.ErrUnknownType) {
+		err = nil
+	}
+	return t.Name, err
+}
 
 // Generate generates Go source code from the provided JSON schemas. Options can be provided to customize the
 // output behavior
@@ -26,7 +62,7 @@ func Generate(ctx context.Context, uris []string, options ...Option) error {
 	}
 
 	if s.loader == nil {
-		c := cachingloader.New(s.debug)
+		c := cachingloader.NewSimple()
 		defer func() {
 			_ = c.Close()
 		}()
@@ -40,13 +76,14 @@ func Generate(ctx context.Context, uris []string, options ...Option) error {
 	}
 
 	if len(uris) == 0 {
-		return errors.New("called with no URIs")
+		return nil
 	}
 
 	normalized := make([]string, 0, len(uris))
 	for _, u := range uris {
 		normalized = append(normalized, normalizeURI(u))
 	}
+	sort.Strings(normalized)
 
 	grouped, err := crawl.Crawl(ctx, s.planner, s.loader, s.typer, normalized)
 	if err != nil {
@@ -82,7 +119,7 @@ func CustomTypeFunc(typeFunc func(schema *gen.Schema) gen.TypeInfo) Option {
 }
 
 // CustomPrimitivesMap registers a custom map for mapping from JSONSchema simple types to go primitives.
-func CustomPrimitivesMap(primitivesMap map[gen.SimpleType]string) Option {
+func CustomPrimitivesMap(primitivesMap map[gen.JSONType]string) Option {
 	return func(s *settings) {
 		s.typer.Primitives = primitivesMap
 	}

@@ -39,30 +39,30 @@ func (c CompositePlanner) Plan(ctx context.Context, helper gen.Helper, schema *g
 		if p, ok := p.(interface{ Name() string }); ok {
 			name = p.Name()
 		}
-
+		if gen.IsDebug(ctx) {
+			log.Printf("checking planner %v for %v", name, schema)
+		}
 		pl, err := p.Plan(ctx, helper, schema)
-		if errors.Is(err, gen.ErrContinue) {
+		switch {
+		case errors.Is(err, gen.ErrContinue),
+			errors.Is(err, ErrUnknownType),
+			helper.ErrSimpleTypeUnknown(err):
 			if gen.IsDebug(ctx) {
 				log.Printf("planner %v for %v: %v", name, schema, err)
 			}
-			continue
-		}
-		if err != nil {
+		case err != nil:
 			return nil, err
-		}
-		if pl != nil {
+		default:
+			if pl == nil {
+				panic(fmt.Errorf("planner %v returned a nil plan for %v", name, schema))
+			}
 			if gen.IsDebug(ctx) {
 				log.Printf("planner %v: planned %v %v", name, pl.Type().GoPath, pl.Type().Name)
 			}
 			return pl, nil
 		}
-		return nil, fmt.Errorf("planner %v returned nil for plan", name)
 	}
-	// we require types for objects and arrays
-	if t := schema.ChooseType(); t == gen.Object || t == gen.Array {
-		return nil, fmt.Errorf("unable to plan %v", schema)
-	}
-	return nil, nil
+	return nil, fmt.Errorf("unable to plan %v", schema)
 }
 
 func plannerFunc(
@@ -83,73 +83,6 @@ func (p namedPlannerFunc) Name() string {
 
 func (p namedPlannerFunc) Plan(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Plan, error) {
 	return p.f(ctx, helper, schema)
-}
-
-func NewHelper(
-	ctx context.Context,
-	loader gen.Loader,
-	typer Typer,
-	schemas <-chan *gen.Schema,
-) *Helper {
-	// allSchemas represents the merged stream of explicitly requested schemas and their children; it is
-	// in essence the queue which powers a breadth-first search of the object graph
-	allSchemas := make(chan *gen.Schema)
-	// puts all schemas on merged and puts a signal on noMoreComing when no more coming
-	noMoreComing := copyAndSignal(ctx, schemas, allSchemas)
-
-	return &Helper{loader, typer, allSchemas, noMoreComing}
-}
-
-func copyAndSignal(ctx context.Context, schemas <-chan *gen.Schema, merged chan<- *gen.Schema) <-chan struct{} {
-	schemasDone := make(chan struct{})
-	go func() {
-		for {
-			select {
-			case s, ok := <-schemas:
-				if !ok {
-					select {
-					case schemasDone <- struct{}{}:
-					case <-ctx.Done():
-					}
-					return
-				}
-				select {
-				case merged <- s:
-				case <-ctx.Done():
-					return
-				}
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-	return schemasDone
-}
-
-type Helper struct {
-	gen.Loader
-	Typer
-	Deps      chan *gen.Schema
-	submitted <-chan struct{}
-}
-
-func (p *Helper) Schemas() <-chan *gen.Schema {
-	return p.Deps
-}
-
-func (p *Helper) Submitted() <-chan struct{} {
-	return p.submitted
-}
-
-func (p *Helper) Dep(ctx context.Context, schemas ...*gen.Schema) error {
-	for _, s := range schemas {
-		select {
-		case p.Deps <- s:
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-	}
-	return nil
 }
 
 func NewNamer(knownInitialisms []string) *Namer {
@@ -215,12 +148,12 @@ func (n *Namer) exportedIdentifier(parts [][]rune) string {
 	return strings.Join(words, "")
 }
 
-var DefaultTyper = Typer{NewNamer([]string{"id", "http"}), MakeTypeFromID(nil), map[gen.SimpleType]string{
-	gen.Boolean: "bool",
-	gen.Integer: "int64",
-	gen.Number:  "float64",
-	gen.Null:    "interface{}",
-	gen.String:  "string",
+var DefaultTyper = Typer{NewNamer([]string{"id", "http"}), MakeTypeFromID(nil), map[gen.JSONType]string{
+	gen.JSONBoolean: "bool",
+	gen.JSONInteger: "int64",
+	gen.JSONNumber:  "float64",
+	gen.JSONNull:    "interface{}",
+	gen.JSONString:  "string",
 }}
 
 func DefaultTypeFunc(s *gen.Schema) gen.TypeInfo {
@@ -248,26 +181,38 @@ func MakeTypeFromID(pairs [][2]string) func(s *gen.Schema) gen.TypeInfo {
 type Typer struct {
 	*Namer
 	TypeFunc   func(s *gen.Schema) gen.TypeInfo
-	Primitives map[gen.SimpleType]string
+	Primitives map[gen.JSONType]string
 }
 
-func (d Typer) TypeInfo(s *gen.Schema) gen.TypeInfo {
+func (d Typer) typeInfo(s *gen.Schema) gen.TypeInfo {
 	t := s.ChooseType()
-	if t != gen.Array && t != gen.Object && s.Config.GoPath == "" {
+	if t != gen.JSONArray && t != gen.JSONObject && s.Config.GoPath == "" {
 		return gen.TypeInfo{Name: d.Primitive(t)}
 	}
 	return d.TypeInfoHinted(s, t)
 }
 
-func (d Typer) TypeInfoHinted(s *gen.Schema, t gen.SimpleType) gen.TypeInfo {
-	if f := d.TypeFunc(s); f.Name != "" {
-		f.Name = d.Namer.JSONPropertyExported(f.Name)
-		return f
+var ErrUnknownType = errors.New("unknown type")
+
+func (d Typer) TypeInfo(s *gen.Schema) (gen.TypeInfo, error) {
+	t := d.typeInfo(s)
+	if t.Unknown() {
+		return t, fmt.Errorf("%v is unknown: %w", s, ErrUnknownType)
+	}
+	return t, nil
+}
+
+func (d Typer) TypeInfoHinted(s *gen.Schema, t gen.JSONType) gen.TypeInfo {
+	if t == gen.JSONUnknown || t == gen.JSONArray || t == gen.JSONObject || len(s.Enum) > 0 {
+		if f := d.TypeFunc(s); f.Name != "" {
+			f.Name = d.Namer.JSONPropertyExported(f.Name)
+			return f
+		}
 	}
 	return gen.TypeInfo{Name: d.Primitive(t)}
 }
 
-func (d Typer) Primitive(s gen.SimpleType) string {
+func (d Typer) Primitive(s gen.JSONType) string {
 	return d.Primitives[s]
 }
 

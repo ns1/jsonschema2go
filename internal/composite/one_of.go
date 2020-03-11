@@ -19,18 +19,21 @@ func PlanOneOfDiffTypes(ctx context.Context, helper gen.Helper, schema *gen.Sche
 	if len(schemas) == 0 {
 		return nil, fmt.Errorf("no oneOf schemas: %w", gen.ErrContinue)
 	}
-	seen := make(map[gen.SimpleType]bool)
+	seen := make(map[gen.JSONType]bool)
 	for _, s := range schemas {
-		typ := s.ChooseType()
-		if typ == gen.Integer {
-			typ = gen.Number // we cannot be guaranteed to distinguish between floats and ints, so treat same
+		typ, err := helper.DetectSimpleType(ctx, s)
+		if err != nil {
+			return nil, fmt.Errorf("unable to detect simple type for %v: %w", s, err)
+		}
+		if typ == gen.JSONInteger {
+			typ = gen.JSONNumber // we cannot be guaranteed to distinguish between floats and ints, so treat same
 		}
 		if seen[typ] {
 			return nil, fmt.Errorf("type %v seen too many times: %w", typ, gen.ErrContinue)
 		}
 		seen[typ] = true
 	}
-	tInfo := helper.TypeInfoHinted(schema, gen.Object)
+	tInfo := helper.TypeInfoHinted(schema, gen.JSONObject)
 	if tInfo.Unknown() {
 		return nil, fmt.Errorf("schema type is unknown: %w", gen.ErrContinue)
 	}
@@ -45,27 +48,34 @@ func PlanOneOfDiffTypes(ctx context.Context, helper gen.Helper, schema *gen.Sche
 		checkedSubSchema bool
 	)
 	for _, subSchema := range schemas {
-		info := helper.TypeInfo(subSchema)
+		info, err := helper.TypeInfo(subSchema)
+		if err != nil {
+			return nil, err
+		}
 		if !info.BuiltIn() {
 			if err := helper.Dep(ctx, subSchema); err != nil {
 				return nil, err
 			}
 		}
 
-		switch subSchema.ChooseType() {
-		case gen.Object:
+		jType, err := helper.DetectSimpleType(ctx, subSchema)
+		if err != nil {
+			return nil, fmt.Errorf("unable to choose simple type for %v: %w", subSchema, err)
+		}
+		switch jType {
+		case gen.JSONObject:
 			trait.Object = info
-		case gen.Array:
+		case gen.JSONArray:
 			trait.Array = info
-		case gen.String:
+		case gen.JSONString:
 			trait.Primitives = append(trait.Primitives, "string")
-		case gen.Number:
+		case gen.JSONNumber:
 			trait.Primitives = append(trait.Primitives, "float64")
-		case gen.Integer:
+		case gen.JSONInteger:
 			trait.Primitives = append(trait.Primitives, "int64")
-		case gen.Boolean:
+		case gen.JSONBoolean:
 			trait.Primitives = append(trait.Primitives, "bool")
-		case gen.Null:
+		case gen.JSONNull:
 			trait.Nil = true
 		}
 

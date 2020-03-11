@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "properties": {
+    "enabled": {
+      "type": "boolean"
+    },
+    "valid_lifetime_secs": {
+      "type": "integer",
+      "description": "The number of seconds for which a lease is valid. Must be provided if enabled is true"
+    },
+    "renew_timer_secs": {
+      "type": "integer"
+    },
+    "rebind_timer_secs": {
+      "type": "integer"
+    },
+    "options": {
+      "type": "array",
+      "items": {
+        "$ref": "dhcp-option.json"
+      }
+    }
+  },
+  "$id": "https://example.com/testdata/generate/complex/foo/dhcp-scope-group-settings-common.json"
+}

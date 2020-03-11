@@ -10,141 +10,48 @@ import (
 
 // New returns a new thread safe loader which caches requests and can handle either file system or http URIs. If the
 // debug bool flag is set true, messages will be logged concerning every served request.
-func New(debug bool) gen.Loader {
-	c := &cachingLoader{
-		requests: make(chan schemaRequest),
-		closeC:   make(chan chan<- error),
-		delegate: gen.NewLoader(),
+func NewSimple() gen.Loader {
+	return &loader{
+		cache:  make(map[string]*gen.Schema),
+		loader: gen.NewLoader(),
 	}
-	go c.run(debug)
-	return c
 }
 
-type cachingLoader struct {
-	requests chan schemaRequest
-	closeC   chan chan<- error
-	delegate gen.Loader
+type loader struct {
+	cache map[string]*gen.Schema
+	mu    sync.RWMutex
+
+	loader gen.Loader
+}
+
+func (l *loader) Close() error {
+	return nil
 }
 
 // Read returns a schema for the provided URL, either filesystem or HTTP
-func (c *cachingLoader) Load(ctx context.Context, u *url.URL) (*gen.Schema, error) {
-	req := make(chan uriSchemaResult)
-	select {
-	case c.requests <- schemaRequest{u, req}:
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	}
-	select {
-	case res := <-req:
-		return res.schema, res.error
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	}
-}
+func (l *loader) Load(ctx context.Context, u *url.URL) (*gen.Schema, error) {
+	k := u.String()
 
-// Close closes the loader and waits for it to stop.
-func (c *cachingLoader) Close() error {
-	errC := make(chan error)
-	c.closeC <- errC
-	err := <-errC
-	if dErr := c.delegate.Close(); dErr != nil && err == nil {
-		err = dErr
-	}
-	return err
-}
+	l.mu.RLock()
+	v := l.cache[k]
+	l.mu.RUnlock()
 
-func (c *cachingLoader) run(debug bool) {
-	ctx, cncl := context.WithCancel(context.Background())
-
-	respond := func(wg *sync.WaitGroup, res uriSchemaResult, c chan<- uriSchemaResult) {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			select {
-			case c <- res:
-			case <-ctx.Done():
-				close(c) // signal we're outta here to downstream
-				return
-			}
-		}()
+	if v != nil {
+		return v, nil
 	}
 
-	fetch := func(wg *sync.WaitGroup, result chan<- uriSchemaResult, u *url.URL) {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			s, err := c.delegate.Load(ctx, u)
-			select {
-			case result <- uriSchemaResult{s, err, u}:
-			case <-ctx.Done():
-			}
-		}()
+	if gen.IsDebug(ctx) {
+		log.Printf("cache miss -- requesting %v", u)
+	}
+	schema, err := l.loader.Load(ctx, u)
+	if err != nil {
+		return nil, err
 	}
 
-	var (
-		childRoutines = new(sync.WaitGroup)
-		activeReqs    = make(map[string][]chan<- uriSchemaResult)
-		fetches       = make(chan uriSchemaResult)
-		cache         = make(map[string]*gen.Schema)
-	)
-
-	for {
-		select {
-		case errC := <-c.closeC:
-			cncl()
-			childRoutines.Wait()
-			errC <- nil
-			return
-
-		case req := <-c.requests:
-			key := req.url.String()
-			if s, ok := cache[key]; ok {
-				if debug {
-					log.Printf("loader: cache hit for %v", req.url)
-				}
-				respond(childRoutines, uriSchemaResult{s, nil, req.url}, req.c)
-				continue
-			}
-
-			activeReqs[key] = append(activeReqs[key], req.c)
-
-			if len(activeReqs[key]) == 1 { // this is the first req, so start a fetch
-				if debug {
-					log.Printf("loader: initiating fetch for %v", req.url)
-				}
-				fetch(childRoutines, fetches, req.url)
-				continue
-			}
-
-		case fet := <-fetches:
-			key := fet.url.String()
-
-			reqs := activeReqs[key]
-			delete(activeReqs, key)
-
-			if debug {
-				log.Printf("loader: serving %v for %d requests", fet.url, len(reqs))
-			}
-
-			for _, r := range reqs {
-				respond(childRoutines, fet, r)
-			}
-
-			// we won't cache errors
-			if fet.error == nil && fet.schema != nil {
-				cache[key] = fet.schema
-			}
-		}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if _, ok := l.cache[k]; !ok {
+		l.cache[k] = schema
 	}
-}
-
-type uriSchemaResult struct {
-	schema *gen.Schema
-	error  error
-	url    *url.URL
-}
-
-type schemaRequest struct {
-	url *url.URL
-	c   chan<- uriSchemaResult
+	return l.cache[k], nil
 }

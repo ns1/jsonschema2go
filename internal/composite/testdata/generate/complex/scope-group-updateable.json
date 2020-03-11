@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "dhcp_service_id": {
+      "type": "integer",
+      "description": "If set, the service to which to assign this scope group. Pass zero to break this assignment."
+    },
+    "dhcpv4": {
+      "$ref": "dhcp-scope-group-settings-v4.json"
+    },
+    "dhcpv6": {
+      "$ref": "dhcp-scope-group-settings-v6.json"
+    },
+    "reverse_dns": {
+      "type": "boolean",
+      "description": "The optional field defines the presence of reverse DNS in scope group if 'true'"
+    }
+  },
+  "$id": "https://example.com/testdata/generate/complex/foo/scope-group-updateable.json"
+}

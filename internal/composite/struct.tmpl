@@ -38,6 +38,7 @@ func (m *{{ $.Type.Name }}) Validate() error {
 {{ if ne .Type.Name "interface{}" -}}
 {{ range $Field.Validators -}}
 {{ if eq .Name "subschema" -}}
+    {{ if and (not $Field.Required) $Field.Type.Pointer -}}if {{ $Field.TestSetExpr true }} { {{ end -}}
     if err := m.{{ $Field.FieldRef }}.Validate(); err != nil {
 		{{ if not $Field.Embedded -}}
 		if err, ok := err.(valErr); ok {
@@ -51,6 +52,7 @@ func (m *{{ $.Type.Name }}) Validate() error {
 		{{ end -}}
 		return err
 	}
+	{{- if and (not $Field.Required) $Field.Type.Pointer -}}} {{- end }}
 {{ else -}}
     if {{ if not $Field.Required -}}{{ $Field.TestSetExpr true }} &&{{ end -}}{{ .Test ($Field.NameSpace) ($Field.DerefExpr) }} {
 		return &validationError{
