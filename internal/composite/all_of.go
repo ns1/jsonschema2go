@@ -46,7 +46,6 @@ func PlanAllOfObject(ctx context.Context, helper gen.Helper, schema *gen.Schema)
 			continue
 		}
 		tInfo := helper.TypeInfoHinted(subSchema, gen.JSONObject)
-		tInfo.Pointer = true
 		// this is a named type, add an embedded field for the subschema type
 		s.Fields = append(s.Fields, StructField{Type: tInfo, FieldValidators: []validator.Validator{validator.SubschemaValidator}})
 		if err := helper.Dep(ctx, subSchema); err != nil {
