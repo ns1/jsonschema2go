@@ -3,7 +3,7 @@ package testharness
 import (
 	"bufio"
 	"context"
-	"github.com/jwilner/jsonschema2go"
+	"github.com/ns1/jsonschema2go"
 	"github.com/stretchr/testify/require"
 	"io"
 	"io/ioutil"

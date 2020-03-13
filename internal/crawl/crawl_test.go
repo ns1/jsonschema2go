@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/jwilner/jsonschema2go/internal/composite"
-	"github.com/jwilner/jsonschema2go/internal/enum"
-	"github.com/jwilner/jsonschema2go/internal/planning"
-	"github.com/jwilner/jsonschema2go/internal/validator"
-	"github.com/jwilner/jsonschema2go/pkg/gen"
+	"github.com/ns1/jsonschema2go/internal/composite"
+	"github.com/ns1/jsonschema2go/internal/enum"
+	"github.com/ns1/jsonschema2go/internal/planning"
+	"github.com/ns1/jsonschema2go/internal/validator"
+	"github.com/ns1/jsonschema2go/pkg/gen"
 	"github.com/stretchr/testify/require"
 	"net/url"
 	"sort"
@@ -37,7 +37,7 @@ func TestSchemaToPlan(t *testing.T) {
 					"count": makeSchema(gen.Schema{Type: &gen.TypeField{gen.JSONInteger}}),
 				},
 				Config: gen.Config{
-					GoPath: "github.com/jwilner/jsonschema2go/example#Awesome",
+					GoPath: "github.com/ns1/jsonschema2go/example#Awesome",
 				},
 				Annotations: annos(map[string]string{
 					"description": "i am bob",
@@ -47,7 +47,7 @@ func TestSchemaToPlan(t *testing.T) {
 				&composite.StructPlan{
 					ID: u,
 					TypeInfo: gen.TypeInfo{
-						GoPath: "github.com/jwilner/jsonschema2go/example",
+						GoPath: "github.com/ns1/jsonschema2go/example",
 						Name:   "Awesome",
 					},
 					Comment: "i am bob",
@@ -74,7 +74,7 @@ func TestSchemaToPlan(t *testing.T) {
 					"nested": makeSchema(gen.Schema{
 						ID: c,
 						Config: gen.Config{
-							GoPath: "github.com/jwilner/jsonschema2go/example#NestedType",
+							GoPath: "github.com/ns1/jsonschema2go/example#NestedType",
 						},
 						Type: &gen.TypeField{gen.JSONObject},
 						Properties: map[string]*gen.RefOrSchema{
@@ -86,14 +86,14 @@ func TestSchemaToPlan(t *testing.T) {
 					"description": "i am bob",
 				}),
 				Config: gen.Config{
-					GoPath: "github.com/jwilner/jsonschema2go/example#Awesome",
+					GoPath: "github.com/ns1/jsonschema2go/example#Awesome",
 				},
 			},
 			want: []gen.Plan{
 				&composite.StructPlan{
 					ID: u,
 					TypeInfo: gen.TypeInfo{
-						GoPath: "github.com/jwilner/jsonschema2go/example",
+						GoPath: "github.com/ns1/jsonschema2go/example",
 						Name:   "Awesome",
 					},
 					Comment: "i am bob",
@@ -102,7 +102,7 @@ func TestSchemaToPlan(t *testing.T) {
 							Name:     "Nested",
 							JSONName: "nested",
 							Type: gen.TypeInfo{
-								GoPath:  "github.com/jwilner/jsonschema2go/example",
+								GoPath:  "github.com/ns1/jsonschema2go/example",
 								Name:    "NestedType",
 								Pointer: true,
 							},
@@ -114,7 +114,7 @@ func TestSchemaToPlan(t *testing.T) {
 				&composite.StructPlan{
 					ID: c,
 					TypeInfo: gen.TypeInfo{
-						GoPath: "github.com/jwilner/jsonschema2go/example",
+						GoPath: "github.com/ns1/jsonschema2go/example",
 						Name:   "NestedType",
 					},
 					Fields: []composite.StructField{
@@ -136,14 +136,14 @@ func TestSchemaToPlan(t *testing.T) {
 			schema: &gen.Schema{
 				ID: u,
 				Config: gen.Config{
-					GoPath: "github.com/jwilner/jsonschema2go/example#AwesomeWithID",
+					GoPath: "github.com/ns1/jsonschema2go/example#AwesomeWithID",
 				},
 				AllOf: []*gen.RefOrSchema{
 					makeSchema(
 						gen.Schema{
 							ID: c,
 							Config: gen.Config{
-								GoPath:        "github.com/jwilner/jsonschema2go/example#Awesome2",
+								GoPath:        "github.com/ns1/jsonschema2go/example#Awesome2",
 								PromoteFields: true,
 							},
 							Type: &gen.TypeField{gen.JSONObject},
@@ -162,7 +162,7 @@ func TestSchemaToPlan(t *testing.T) {
 								"description": "i am bob",
 							}),
 							Config: gen.Config{
-								GoPath: "github.com/jwilner/jsonschema2go/example#Awesome",
+								GoPath: "github.com/ns1/jsonschema2go/example#Awesome",
 							},
 						},
 					),
@@ -172,7 +172,7 @@ func TestSchemaToPlan(t *testing.T) {
 				&composite.StructPlan{
 					ID: &url.URL{},
 					TypeInfo: gen.TypeInfo{
-						GoPath: "github.com/jwilner/jsonschema2go/example",
+						GoPath: "github.com/ns1/jsonschema2go/example",
 						Name:   "Awesome",
 					},
 					Comment: "i am bob",
@@ -191,7 +191,7 @@ func TestSchemaToPlan(t *testing.T) {
 				&composite.StructPlan{
 					ID: u,
 					TypeInfo: gen.TypeInfo{
-						GoPath: "github.com/jwilner/jsonschema2go/example",
+						GoPath: "github.com/ns1/jsonschema2go/example",
 						Name:   "AwesomeWithID",
 					},
 					Fields: []composite.StructField{
@@ -206,7 +206,7 @@ func TestSchemaToPlan(t *testing.T) {
 						},
 						{
 							Type: gen.TypeInfo{
-								GoPath: "github.com/jwilner/jsonschema2go/example",
+								GoPath: "github.com/ns1/jsonschema2go/example",
 								Name:   "Awesome",
 							},
 							FieldValidators: []validator.Validator{validator.SubschemaValidator},
@@ -220,7 +220,7 @@ func TestSchemaToPlan(t *testing.T) {
 			schema: &gen.Schema{
 				ID: u,
 				Config: gen.Config{
-					GoPath: "github.com/jwilner/jsonschema2go/example#Letter",
+					GoPath: "github.com/ns1/jsonschema2go/example#Letter",
 				},
 				Type: &gen.TypeField{gen.JSONString},
 				Enum: []interface{}{
@@ -233,7 +233,7 @@ func TestSchemaToPlan(t *testing.T) {
 				&enum.Plan{
 					ID: u,
 					TypeInfo: gen.TypeInfo{
-						GoPath: "github.com/jwilner/jsonschema2go/example",
+						GoPath: "github.com/ns1/jsonschema2go/example",
 						Name:   "Letter",
 					},
 					BaseType: gen.TypeInfo{Name: "string"},
@@ -250,7 +250,7 @@ func TestSchemaToPlan(t *testing.T) {
 			schema: &gen.Schema{
 				ID: u,
 				Config: gen.Config{
-					GoPath: "github.com/jwilner/jsonschema2go/example#Awesome",
+					GoPath: "github.com/ns1/jsonschema2go/example#Awesome",
 				},
 				Type: &gen.TypeField{gen.JSONObject},
 				Properties: map[string]*gen.RefOrSchema{
@@ -266,7 +266,7 @@ func TestSchemaToPlan(t *testing.T) {
 				&composite.StructPlan{
 					ID: u,
 					TypeInfo: gen.TypeInfo{
-						GoPath: "github.com/jwilner/jsonschema2go/example",
+						GoPath: "github.com/ns1/jsonschema2go/example",
 						Name:   "Awesome",
 					},
 					Fields: []composite.StructField{

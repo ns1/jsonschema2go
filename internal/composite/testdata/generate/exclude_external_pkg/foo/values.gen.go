@@ -3,7 +3,7 @@ package foo
 
 import (
 	"fmt"
-	"github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/exclude_external_pkg/other"
+	"github.com/ns1/jsonschema2go/internal/composite/testdata/generate/exclude_external_pkg/other"
 )
 
 // Bar gives you some dumb info

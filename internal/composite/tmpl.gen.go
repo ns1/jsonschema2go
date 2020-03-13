@@ -5,7 +5,7 @@ import (
 	"text/template"
 )
 
-var tmpl = template.Must(template.New("").Parse(`{{/* gotype: github.com/jwilner/jsonschema2go.structPlanContext */}}
+var tmpl = template.Must(template.New("").Parse(`{{/* gotype: github.com/ns1/jsonschema2go.structPlanContext */}}
 {{ if .Comment -}}
 // {{ .Comment }}
 {{ end -}}
@@ -153,7 +153,7 @@ func (m *{{ $.Type.Name }}) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	switch {{ if or .Array.Name .Object.Name -}}t :={{ end -}} tok.(type) {
-{{- /*gotype: github.com/jwilner/jsonschema2go.marshalOneOfTrait */ -}}
+{{- /*gotype: github.com/ns1/jsonschema2go.marshalOneOfTrait */ -}}
 {{ if or .Array.Name .Object.Name -}}
 	case json.Delim:
 {{ if .Object.Name -}}

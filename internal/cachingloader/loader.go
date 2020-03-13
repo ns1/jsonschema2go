@@ -2,7 +2,7 @@ package cachingloader
 
 import (
 	"context"
-	"github.com/jwilner/jsonschema2go/pkg/gen"
+	"github.com/ns1/jsonschema2go/pkg/gen"
 	"log"
 	"net/url"
 	"sync"

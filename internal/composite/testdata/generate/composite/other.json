@@ -1,7 +1,7 @@
 {
   "id": "https://example.com/testdata/generate/composite/foo/other.json",
   "x-jsonschema2go": {
-    "gopath": "github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/composite/foo#ExplicitNameStruct"
+    "gopath": "github.com/ns1/jsonschema2go/internal/composite/testdata/generate/composite/foo#ExplicitNameStruct"
   },
   "type": "object",
   "properties": {

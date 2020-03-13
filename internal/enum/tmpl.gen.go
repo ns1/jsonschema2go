@@ -5,7 +5,7 @@ import (
 	"text/template"
 )
 
-var tmpl = template.Must(template.New("").Parse(`{{/* gotype: github.com/jwilner/jsonschema2go.enumPlanContext */}}
+var tmpl = template.Must(template.New("").Parse(`{{/* gotype: github.com/ns1/jsonschema2go.enumPlanContext */}}
 {{ if .Comment -}}
 // {{ .Comment }}
 {{ end -}}

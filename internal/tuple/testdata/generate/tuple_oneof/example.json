@@ -13,7 +13,7 @@
     },
     {
       "x-jsonschema2go": {
-        "gopath": "github.com/jwilner/jsonschema2go/internal/tuple/testdata/generate/tuple_oneof/foo#Baz"
+        "gopath": "github.com/ns1/jsonschema2go/internal/tuple/testdata/generate/tuple_oneof/foo#Baz"
       },
       "oneOf": [
         {

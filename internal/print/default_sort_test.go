@@ -1,9 +1,9 @@
 package print
 
 import (
-	"github.com/jwilner/jsonschema2go/internal/composite"
-	"github.com/jwilner/jsonschema2go/internal/slice"
-	"github.com/jwilner/jsonschema2go/pkg/gen"
+	"github.com/ns1/jsonschema2go/internal/composite"
+	"github.com/ns1/jsonschema2go/internal/slice"
+	"github.com/ns1/jsonschema2go/pkg/gen"
 	"github.com/stretchr/testify/require"
 	"strings"
 	"testing"

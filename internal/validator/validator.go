@@ -3,7 +3,7 @@ package validator
 import (
 	"bytes"
 	"fmt"
-	"github.com/jwilner/jsonschema2go/pkg/gen"
+	"github.com/ns1/jsonschema2go/pkg/gen"
 	"sort"
 	"strconv"
 	"strings"

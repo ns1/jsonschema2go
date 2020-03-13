@@ -2,7 +2,7 @@
   "id": "https://example.com/testdata/generate/oneof_object/foo/example.json",
   "description": "Bar gives you some dumb info",
   "x-jsonschema2go": {
-    "gopath": "github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/oneof_object/foo#Bar",
+    "gopath": "github.com/ns1/jsonschema2go/internal/composite/testdata/generate/oneof_object/foo#Bar",
     "discriminator": {
       "propertyName": "direction",
       "mapping": {
@@ -14,7 +14,7 @@
   "oneOf": [
     {
       "x-jsonschema2go": {
-        "gopath": "github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/oneof_object/foo#Left"
+        "gopath": "github.com/ns1/jsonschema2go/internal/composite/testdata/generate/oneof_object/foo#Left"
       },
       "type": "object",
       "properties": {
@@ -29,7 +29,7 @@
     },
     {
       "x-jsonschema2go": {
-        "gopath": "github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/oneof_object/foo#Right"
+        "gopath": "github.com/ns1/jsonschema2go/internal/composite/testdata/generate/oneof_object/foo#Right"
       },
       "type": "object",
       "properties": {

@@ -5,7 +5,7 @@
   "properties": {
     "foo": {
       "x-jsonschema2go": {
-        "gopath": "github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/double_nested/foo#Foo"
+        "gopath": "github.com/ns1/jsonschema2go/internal/composite/testdata/generate/double_nested/foo#Foo"
       },
       "type": "object",
       "properties": {

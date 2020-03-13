@@ -3,7 +3,7 @@ package composite
 import (
 	"context"
 	"fmt"
-	"github.com/jwilner/jsonschema2go/pkg/gen"
+	"github.com/ns1/jsonschema2go/pkg/gen"
 )
 
 // PlanDiscriminatedOneOfObject generates a value for a oneOf array of object schemas, provided discriminator config

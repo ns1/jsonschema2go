@@ -3,9 +3,9 @@ package print
 import (
 	"bytes"
 	"context"
-	"github.com/jwilner/jsonschema2go/internal/composite"
-	"github.com/jwilner/jsonschema2go/internal/slice"
-	"github.com/jwilner/jsonschema2go/pkg/gen"
+	"github.com/ns1/jsonschema2go/internal/composite"
+	"github.com/ns1/jsonschema2go/internal/slice"
+	"github.com/ns1/jsonschema2go/pkg/gen"
 	"github.com/stretchr/testify/require"
 	"go/format"
 	"testing"
@@ -20,25 +20,25 @@ func TestImports_List(t *testing.T) {
 	}{
 		{
 			"empty",
-			"github.com/jwilner/jsonschema2go",
+			"github.com/ns1/jsonschema2go",
 			[]string{},
 			nil,
 		},
 		{
 			"alias",
-			"github.com/jwilner/jsonschema2go",
+			"github.com/ns1/jsonschema2go",
 			[]string{
-				"github.com/jwilner/jsonschema2go/example",
-				"github.com/jwilner/jsonschema2go/foo/example",
+				"github.com/ns1/jsonschema2go/example",
+				"github.com/ns1/jsonschema2go/foo/example",
 			},
 			[]gen.Import{
-				{"github.com/jwilner/jsonschema2go/example", ""},
-				{"github.com/jwilner/jsonschema2go/foo/example", "example2"},
+				{"github.com/ns1/jsonschema2go/example", ""},
+				{"github.com/ns1/jsonschema2go/foo/example", "example2"},
 			},
 		},
 		{
 			"multiple",
-			"github.com/jwilner/jsonschema2go",
+			"github.com/ns1/jsonschema2go",
 			[]string{"encoding/json", "encoding/json"},
 			[]gen.Import{
 				{"encoding/json", ""},
@@ -62,30 +62,30 @@ func TestImports_QualName(t *testing.T) {
 	}{
 		{
 			"builtin",
-			"github.com/jwilner/jsonschema2go",
-			[]string{"github.com/jwilner/jsonschema2go/example", "github.com/jwilner/jsonschema2go/foo/example"},
+			"github.com/ns1/jsonschema2go",
+			[]string{"github.com/ns1/jsonschema2go/example", "github.com/ns1/jsonschema2go/foo/example"},
 			gen.TypeInfo{Name: "int"},
 			"int",
 		},
 		{
 			"external",
-			"github.com/jwilner/jsonschema2go",
-			[]string{"github.com/jwilner/jsonschema2go/example", "github.com/jwilner/jsonschema2go/foo/example"},
-			gen.TypeInfo{GoPath: "github.com/jwilner/jsonschema2go", Name: "Bob"},
+			"github.com/ns1/jsonschema2go",
+			[]string{"github.com/ns1/jsonschema2go/example", "github.com/ns1/jsonschema2go/foo/example"},
+			gen.TypeInfo{GoPath: "github.com/ns1/jsonschema2go", Name: "Bob"},
 			"Bob",
 		},
 		{
 			"external",
-			"github.com/jwilner/jsonschema2go",
-			[]string{"github.com/jwilner/jsonschema2go/example", "github.com/jwilner/jsonschema2go/foo/example"},
-			gen.TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/example", Name: "Bob"},
+			"github.com/ns1/jsonschema2go",
+			[]string{"github.com/ns1/jsonschema2go/example", "github.com/ns1/jsonschema2go/foo/example"},
+			gen.TypeInfo{GoPath: "github.com/ns1/jsonschema2go/example", Name: "Bob"},
 			"example.Bob",
 		},
 		{
 			"external with alias",
-			"github.com/jwilner/jsonschema2go",
-			[]string{"github.com/jwilner/jsonschema2go/example", "github.com/jwilner/jsonschema2go/foo/example"},
-			gen.TypeInfo{GoPath: "github.com/jwilner/jsonschema2go/foo/example", Name: "Bob"},
+			"github.com/ns1/jsonschema2go",
+			[]string{"github.com/ns1/jsonschema2go/example", "github.com/ns1/jsonschema2go/foo/example"},
+			gen.TypeInfo{GoPath: "github.com/ns1/jsonschema2go/foo/example", Name: "Bob"},
 			"example2.Bob",
 		},
 	}
@@ -142,7 +142,7 @@ var _ valErr = new(validationError)
 	}{
 		{
 			name:   "simple struct",
-			goPath: "github.com/jwilner/jsonschema2go",
+			goPath: "github.com/ns1/jsonschema2go",
 			plans: []gen.Plan{
 				&composite.StructPlan{
 					Comment: "Bob does lots of cool things",
@@ -174,7 +174,7 @@ func (m *Bob) Validate() error {
 		},
 		{
 			name:   "struct with qualified field",
-			goPath: "github.com/jwilner/jsonschema2go",
+			goPath: "github.com/ns1/jsonschema2go",
 			plans: []gen.Plan{
 				&composite.StructPlan{
 					Comment: "Bob does lots of cool things",
@@ -183,7 +183,7 @@ func (m *Bob) Validate() error {
 						{
 							Name: "Other",
 							Type: gen.TypeInfo{
-								GoPath: "github.com/jwilner/jsonschema2go/blah",
+								GoPath: "github.com/ns1/jsonschema2go/blah",
 								Name:   "OtherType",
 							},
 							Tag: tag(`json:"other,omitempty"`),
@@ -200,7 +200,7 @@ package jsonschema2go
 
 import (
 	"fmt"
-	"github.com/jwilner/jsonschema2go/blah"
+	"github.com/ns1/jsonschema2go/blah"
 )
 
 // Bob does lots of cool things
@@ -217,7 +217,7 @@ func (m *Bob) Validate() error {
 		},
 		{
 			name:   "struct with aliased import",
-			goPath: "github.com/jwilner/jsonschema2go",
+			goPath: "github.com/ns1/jsonschema2go",
 			plans: []gen.Plan{
 				&composite.StructPlan{
 					Comment: "Bob does lots of cool things",
@@ -226,7 +226,7 @@ func (m *Bob) Validate() error {
 						{
 							Name: "Other",
 							Type: gen.TypeInfo{
-								GoPath:  "github.com/jwilner/jsonschema2go/blah",
+								GoPath:  "github.com/ns1/jsonschema2go/blah",
 								Name:    "OtherType",
 								Pointer: true,
 							},
@@ -235,7 +235,7 @@ func (m *Bob) Validate() error {
 						{
 							Name: "OtherOther",
 							Type: gen.TypeInfo{
-								GoPath: "github.com/jwilner/jsonschema2go/bob/blah",
+								GoPath: "github.com/ns1/jsonschema2go/bob/blah",
 								Name:   "AnotherType",
 							},
 							Tag: tag(`json:"another,omitempty"`),
@@ -252,8 +252,8 @@ package jsonschema2go
 
 import (
 	"fmt"
-	"github.com/jwilner/jsonschema2go/blah"
-	blah2 "github.com/jwilner/jsonschema2go/bob/blah"
+	"github.com/ns1/jsonschema2go/blah"
+	blah2 "github.com/ns1/jsonschema2go/bob/blah"
 )
 
 // Bob does lots of cool things
@@ -271,14 +271,14 @@ func (m *Bob) Validate() error {
 		},
 		{
 			name:   "struct with embedded",
-			goPath: "github.com/jwilner/jsonschema2go",
+			goPath: "github.com/ns1/jsonschema2go",
 			plans: []gen.Plan{
 				&composite.StructPlan{
 					Comment: "Bob does lots of cool things",
 					Fields: []composite.StructField{
 						{
 							Type: gen.TypeInfo{
-								GoPath: "github.com/jwilner/jsonschema2go/blah",
+								GoPath: "github.com/ns1/jsonschema2go/blah",
 								Name:   "OtherType",
 							},
 						},
@@ -294,7 +294,7 @@ package jsonschema2go
 
 import (
 	"fmt"
-	"github.com/jwilner/jsonschema2go/blah"
+	"github.com/ns1/jsonschema2go/blah"
 )
 
 // Bob does lots of cool things
@@ -310,14 +310,14 @@ func (m *Bob) Validate() error {
 		},
 		{
 			name:   "struct with embedded",
-			goPath: "github.com/jwilner/jsonschema2go",
+			goPath: "github.com/ns1/jsonschema2go",
 			plans: []gen.Plan{
 				&composite.StructPlan{
 					Comment: "Bob does lots of cool things",
 					Fields: []composite.StructField{
 						{
 							Type: gen.TypeInfo{
-								GoPath: "github.com/jwilner/jsonschema2go",
+								GoPath: "github.com/ns1/jsonschema2go",
 								Name:   "OtherType",
 							},
 						},
@@ -366,7 +366,7 @@ func (m *OtherType) Validate() error {
 		},
 		{
 			name:   "array with struct",
-			goPath: "github.com/jwilner/jsonschema2go",
+			goPath: "github.com/ns1/jsonschema2go",
 			plans: []gen.Plan{
 				&slice.Plan{
 					TypeInfo: gen.TypeInfo{
@@ -374,7 +374,7 @@ func (m *OtherType) Validate() error {
 					},
 					Comment: "Bob does lots of cool things",
 					ItemType: gen.TypeInfo{
-						GoPath: "github.com/jwilner/jsonschema2go",
+						GoPath: "github.com/ns1/jsonschema2go",
 						Name:   "OtherType",
 					},
 				},

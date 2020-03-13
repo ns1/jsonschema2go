@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jwilner/jsonschema2go/internal/planning"
-	gen "github.com/jwilner/jsonschema2go/pkg/gen"
+	"github.com/ns1/jsonschema2go/internal/planning"
+	gen "github.com/ns1/jsonschema2go/pkg/gen"
 	"net/url"
 )
 

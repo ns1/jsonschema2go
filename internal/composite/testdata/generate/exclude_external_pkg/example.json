@@ -3,7 +3,7 @@
   "description": "Bar gives you some dumb info",
   "type": "object",
   "x-jsonschema2go": {
-    "gopath": "github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/exclude_external_pkg/foo#Bar"
+    "gopath": "github.com/ns1/jsonschema2go/internal/composite/testdata/generate/exclude_external_pkg/foo#Bar"
   },
   "properties": {
     "name": {
@@ -11,7 +11,7 @@
     },
     "inner": {
       "x-jsonschema2go": {
-        "gopath": "github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/exclude_external_pkg/other#Excluded",
+        "gopath": "github.com/ns1/jsonschema2go/internal/composite/testdata/generate/exclude_external_pkg/other#Excluded",
         "exclude": true
       },
       "type": "object",

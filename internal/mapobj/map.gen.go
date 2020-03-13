@@ -5,7 +5,7 @@ import (
 	"text/template"
 )
 
-var tmpl = template.Must(template.New("").Parse(`{{/* gotype: github.com/jwilner/jsonschema2go/internal/mapobj.mapPlanContext */}}
+var tmpl = template.Must(template.New("").Parse(`{{/* gotype: github.com/ns1/jsonschema2go/internal/mapobj.mapPlanContext */}}
 {{ if .Comment -}}
 // {{ .Comment }}
 {{ end -}}

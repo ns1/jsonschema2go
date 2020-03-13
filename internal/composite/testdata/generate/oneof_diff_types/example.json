@@ -4,7 +4,7 @@
   "oneOf": [
     {
       "x-jsonschema2go": {
-        "gopath": "github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/oneof_diff_types/foo#Baz"
+        "gopath": "github.com/ns1/jsonschema2go/internal/composite/testdata/generate/oneof_diff_types/foo#Baz"
       },
       "type": "object",
       "properties": {
@@ -15,7 +15,7 @@
     },
     {
       "x-jsonschema2go": {
-        "gopath": "github.com/jwilner/jsonschema2go/internal/composite/testdata/generate/oneof_diff_types/foo#Bazes"
+        "gopath": "github.com/ns1/jsonschema2go/internal/composite/testdata/generate/oneof_diff_types/foo#Bazes"
       },
       "type": "array",
       "items": {

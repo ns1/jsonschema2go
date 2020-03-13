@@ -3,8 +3,8 @@ package composite
 import (
 	"context"
 	"fmt"
-	"github.com/jwilner/jsonschema2go/internal/validator"
-	"github.com/jwilner/jsonschema2go/pkg/gen"
+	"github.com/ns1/jsonschema2go/internal/validator"
+	"github.com/ns1/jsonschema2go/pkg/gen"
 	"sort"
 )
 
