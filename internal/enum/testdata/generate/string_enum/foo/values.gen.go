@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// generated from https://example.com/testdata/generate/string_enum/foo/letter.json
+// Letter is generated from https://example.com/testdata/generate/string_enum/foo/letter.json
 type Letter string
 
 const (
@@ -14,6 +14,7 @@ const (
 	LetterC Letter = "c"
 )
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/string_enum/foo/letter.json
 func (m Letter) Validate() error {
 	switch m {
 	case LetterA:

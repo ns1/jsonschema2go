@@ -8,8 +8,8 @@ import (
 	"regexp"
 )
 
+// Bar is generated from https://example.com/testdata/generate/oneof_diff_types/foo/bar.json
 // Bar gives you some dumb info
-// generated from https://example.com/testdata/generate/oneof_diff_types/foo/bar.json
 type Bar struct {
 	Value interface{}
 }
@@ -18,6 +18,7 @@ var (
 	barValuePattern = regexp.MustCompile(`^[0-9]{22}$`)
 )
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/oneof_diff_types/foo/bar.json
 func (m *Bar) Validate() error {
 	if v, ok := m.Value.(float64); ok {
 		if v < 3.7 {
@@ -98,25 +99,20 @@ func (m *Bar) MarshalJSON() ([]byte, error) {
 	return json.Marshal(m.Value)
 }
 
-// generated from https://example.com/testdata/generate/oneof_diff_types/foo/bar.json#/oneOf/0
+// Baz is generated from https://example.com/testdata/generate/oneof_diff_types/foo/bar.json#/oneOf/0
 type Baz struct {
 	Baz *string `json:"baz,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/oneof_diff_types/foo/bar.json#/oneOf/0
 func (m *Baz) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/oneof_diff_types/foo/bar.json#/oneOf/1
+// Bazes is generated from https://example.com/testdata/generate/oneof_diff_types/foo/bar.json#/oneOf/1
 type Bazes []string
 
-func (m Bazes) MarshalJSON() ([]byte, error) {
-	if m == nil {
-		return []byte(`[]`), nil
-	}
-	return json.Marshal([]string(m))
-}
-
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/oneof_diff_types/foo/bar.json#/oneOf/1
 func (m Bazes) Validate() error {
 	return nil
 }

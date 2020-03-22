@@ -1,0 +1,9 @@
+{
+  "id": "https://example.com/testdata/generate/expanded/foo/bar.json",
+  "type": "object",
+  "properties": {
+    "bar": {
+      "type": "string"
+    }
+  }
+}

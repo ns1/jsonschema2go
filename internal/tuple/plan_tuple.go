@@ -18,7 +18,7 @@ type TuplePlan struct {
 	Items []*TupleItem
 }
 
-//go:generatego run ../cmd/embedtmpl/embedtmpl.go tuple tuple.tmpl tmpl.gen.go
+//go:generate go run ../cmd/embedtmpl/embedtmpl.go tuple tuple.tmpl tmpl.gen.go
 func (t *TuplePlan) Execute(imports *gen.Imports) (string, error) {
 	var w bytes.Buffer
 	err := tmpl.Execute(&w, &TuplePlanContext{imports, t})

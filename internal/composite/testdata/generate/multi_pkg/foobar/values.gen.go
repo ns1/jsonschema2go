@@ -5,11 +5,12 @@ import (
 	"fmt"
 )
 
-// generated from https://example.com/testdata/generate/multi_pkg/foobar/blob.json
+// Blob is generated from https://example.com/testdata/generate/multi_pkg/foobar/blob.json
 type Blob struct {
 	Count *int64 `json:"count,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/multi_pkg/foobar/blob.json
 func (m *Blob) Validate() error {
 	return nil
 }

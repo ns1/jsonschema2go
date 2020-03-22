@@ -6,11 +6,12 @@ import (
 )
 
 var tmpl = template.Must(template.New("").Parse(`{{/* gotype: github.com/ns1/jsonschema2go.tuplePlanContext */}}
-{{ if .Comment -}}
-// {{ .Comment }}
-{{ end -}}
+
 {{ if .ID -}}
-// generated from {{ .ID }}
+// {{ .Type.Name }} is generated from {{ .ID }}
+{{ end -}}
+{{ if .Comment -}}
+    // {{ .Comment }}
 {{ end -}}
 type {{ .Type.Name }} [{{ .ArrayLength }}]interface{}
 
@@ -24,6 +25,7 @@ type {{ .Type.Name }} [{{ .ArrayLength }}]interface{}
     )
 {{ end -}}
 
+// Validate returns an error if this value is invalid according to rules defined in {{ .ID }}
 func (t *{{ .Type.Name }}) Validate() error {
 {{ range $idx, $Item := .Items -}}
 {{ range $Item.Validators -}}

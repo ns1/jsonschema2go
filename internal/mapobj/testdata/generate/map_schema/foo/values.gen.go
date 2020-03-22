@@ -6,33 +6,36 @@ import (
 	"regexp"
 )
 
+// Bar is generated from https://example.com/testdata/generate/map_schema/foo/bar.json
 // Bar contains some info
-// generated from https://example.com/testdata/generate/map_schema/foo/bar.json
 type Bar struct {
 	Baz BarBaz `json:"baz,omitempty"`
 	Biz BarBiz `json:"biz,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/map_schema/foo/bar.json
 func (m *Bar) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/map_schema/foo/bar.json#/properties/biz/additionalProperties
+// BarBizAdditionalProperties is generated from https://example.com/testdata/generate/map_schema/foo/bar.json#/properties/biz/additionalProperties
 type BarBizAdditionalProperties struct {
 	ID *int64 `json:"id,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/map_schema/foo/bar.json#/properties/biz/additionalProperties
 func (m *BarBizAdditionalProperties) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/map_schema/foo/bar.json#/properties/baz
+// BarBaz is generated from https://example.com/testdata/generate/map_schema/foo/bar.json#/properties/baz
 type BarBaz map[string]string
 
 var (
 	barBazPattern = regexp.MustCompile(`^abc`)
 )
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/map_schema/foo/bar.json#/properties/baz
 func (m BarBaz) Validate() error {
 	if len(m) < 3 {
 		return &validationError{
@@ -66,9 +69,10 @@ func (m BarBaz) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/map_schema/foo/bar.json#/properties/biz
+// BarBiz is generated from https://example.com/testdata/generate/map_schema/foo/bar.json#/properties/biz
 type BarBiz map[string]BarBizAdditionalProperties
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/map_schema/foo/bar.json#/properties/biz
 func (m BarBiz) Validate() error {
 	keys := make([]string, 0, len(m))
 	for k := range m {

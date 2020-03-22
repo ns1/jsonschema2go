@@ -2,14 +2,13 @@
 package foo
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 	"regexp"
 )
 
+// Bar is generated from https://example.com/testdata/generate/field_validators/foo/bar.json
 // Bar gives you some dumb info
-// generated from https://example.com/testdata/generate/field_validators/foo/bar.json
 type Bar struct {
 	Array       BarArray `json:"array"`
 	ExclInteger *int64   `json:"exclInteger,omitempty"`
@@ -23,6 +22,7 @@ var (
 	barStringPattern = regexp.MustCompile(`^(123|456)$`)
 )
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/field_validators/foo/bar.json
 func (m *Bar) Validate() error {
 	if m.String == nil {
 		return &validationError{
@@ -150,16 +150,10 @@ func (m *Bar) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/field_validators/foo/bar.json#/properties/array
+// BarArray is generated from https://example.com/testdata/generate/field_validators/foo/bar.json#/properties/array
 type BarArray []string
 
-func (m BarArray) MarshalJSON() ([]byte, error) {
-	if m == nil {
-		return []byte(`[]`), nil
-	}
-	return json.Marshal([]string(m))
-}
-
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/field_validators/foo/bar.json#/properties/array
 func (m BarArray) Validate() error {
 	if len(m) > 10 {
 		return &validationError{

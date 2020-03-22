@@ -15,7 +15,7 @@ import (
 	"text/template"
 )
 
-func ExtractName(ctx context.Context, uri string, options ...Option) (string, error) {
+func ExtractName(ctx context.Context, uri string, options ...Option) (string, string, error) {
 	s := &settings{
 		planner: planning.Composite,
 		printer: print.New(nil),
@@ -34,19 +34,19 @@ func ExtractName(ctx context.Context, uri string, options ...Option) (string, er
 
 	u, err := url.Parse(normalizeURI(uri))
 	if err != nil {
-		return "", fmt.Errorf("invalid uri: %w", err)
+		return "", "", fmt.Errorf("invalid uri: %w", err)
 	}
 
 	schema, err := s.loader.Load(ctx, u)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	t, err := s.typer.TypeInfo(schema)
 	if errors.Is(err, planning.ErrUnknownType) {
 		err = nil
 	}
-	return t.Name, err
+	return t.GoPath, t.Name, err
 }
 
 // Generate generates Go source code from the provided JSON schemas. Options can be provided to customize the

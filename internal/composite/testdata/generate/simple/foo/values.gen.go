@@ -5,12 +5,13 @@ import (
 	"fmt"
 )
 
+// Bar is generated from https://example.com/testdata/generate/simple/foo/bar.json
 // Bar gives you some dumb info
-// generated from https://example.com/testdata/generate/simple/foo/bar.json
 type Bar struct {
 	Name *string `json:"name,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/simple/foo/bar.json
 func (m *Bar) Validate() error {
 	return nil
 }

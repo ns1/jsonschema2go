@@ -162,11 +162,13 @@ import (
 	"fmt"
 )
 
+// Bob is generated from <nil>
 // Bob does lots of cool things
 type Bob struct {
 	Count int ` + "`" + `json:"count,omitempty"` + "`" + `
 }
 
+// Validate returns an error if this value is invalid according to rules defined in <nil>
 func (m *Bob) Validate() error {
 	return nil
 }
@@ -203,12 +205,14 @@ import (
 	"github.com/ns1/jsonschema2go/blah"
 )
 
+// Bob is generated from <nil>
 // Bob does lots of cool things
 type Bob struct {
 	Count int 				` + "`" + `json:"count,omitempty"` + "`" + `
 	Other blah.OtherType 	` + "`" + `json:"other,omitempty"` + "`" + `
 }
 
+// Validate returns an error if this value is invalid according to rules defined in <nil>
 func (m *Bob) Validate() error {
 	return nil
 }
@@ -256,6 +260,7 @@ import (
 	blah2 "github.com/ns1/jsonschema2go/bob/blah"
 )
 
+// Bob is generated from <nil>
 // Bob does lots of cool things
 type Bob struct {
 	Count 		int 				` + "`" + `json:"count,omitempty"` + "`" + `
@@ -263,6 +268,7 @@ type Bob struct {
 	OtherOther 	blah2.AnotherType 	` + "`" + `json:"another,omitempty"` + "`" + `
 }
 
+// Validate returns an error if this value is invalid according to rules defined in <nil>
 func (m *Bob) Validate() error {
 	return nil
 }
@@ -297,11 +303,13 @@ import (
 	"github.com/ns1/jsonschema2go/blah"
 )
 
+// Bob is generated from <nil>
 // Bob does lots of cool things
 type Bob struct {
 	blah.OtherType
 }
 
+// Validate returns an error if this value is invalid according to rules defined in <nil>
 func (m *Bob) Validate() error {
 	return nil
 }
@@ -344,20 +352,24 @@ import (
 	"fmt"
 )
 
+// Bob is generated from <nil>
 // Bob does lots of cool things
 type Bob struct {
 	OtherType
 }
 
+// Validate returns an error if this value is invalid according to rules defined in <nil>
 func (m *Bob) Validate() error {
 	return nil
 }
 
+// OtherType is generated from <nil>
 // OtherType does lots of cool things
 type OtherType struct {
 	Count int ` + "`" + `json:"count,omitempty"` + "`" + `
 }
 
+// Validate returns an error if this value is invalid according to rules defined in <nil>
 func (m *OtherType) Validate() error {
 	return nil
 }
@@ -374,8 +386,9 @@ func (m *OtherType) Validate() error {
 					},
 					Comment: "Bob does lots of cool things",
 					ItemType: gen.TypeInfo{
-						GoPath: "github.com/ns1/jsonschema2go",
-						Name:   "OtherType",
+						GoPath:  "github.com/ns1/jsonschema2go",
+						Name:    "OtherType",
+						Pointer: true,
 					},
 				},
 				&composite.StructPlan{
@@ -393,29 +406,25 @@ func (m *OtherType) Validate() error {
 package jsonschema2go
 
 import (
-	"encoding/json"
 	"fmt"
 )
 
+// OtherType is generated from <nil>
 // OtherType does lots of cool things
 type OtherType struct {
 	Count int ` + "`" + `json:"count,omitempty"` + "`" + `
 }
 
+// Validate returns an error if this value is invalid according to rules defined in <nil>
 func (m *OtherType) Validate() error {
 	return nil
 }
 
+// Bob is generated from <nil>
 // Bob does lots of cool things
-type Bob []OtherType
+type Bob []*OtherType
 
-func (m Bob) MarshalJSON() ([]byte, error) {
-	if m == nil {
-		return []byte(` + "`[]`" + `), nil
-	}
-	return json.Marshal([]OtherType(m))
-}
-
+// Validate returns an error if this value is invalid according to rules defined in <nil>
 func (m Bob) Validate() error {
 	return nil
 }

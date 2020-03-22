@@ -5,13 +5,14 @@ import (
 	"fmt"
 )
 
+// Bar is generated from https://example.com/testdata/generate/composite_validation/foo/bar.json
 // Bar gives you some dumb info
-// generated from https://example.com/testdata/generate/composite_validation/foo/bar.json
 type Bar struct {
 	Blob
 	Baz
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/composite_validation/foo/bar.json
 func (m *Bar) Validate() error {
 	if err := m.Blob.Validate(); err != nil {
 		return err
@@ -22,11 +23,12 @@ func (m *Bar) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/composite_validation/foo/baz.json
+// Baz is generated from https://example.com/testdata/generate/composite_validation/foo/baz.json
 type Baz struct {
 	Name *string `json:"name,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/composite_validation/foo/baz.json
 func (m *Baz) Validate() error {
 	if m.Name == nil {
 		return &validationError{
@@ -39,11 +41,12 @@ func (m *Baz) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/composite_validation/foo/blob.json
+// Blob is generated from https://example.com/testdata/generate/composite_validation/foo/blob.json
 type Blob struct {
 	Count *int64 `json:"count,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/composite_validation/foo/blob.json
 func (m *Blob) Validate() error {
 	if m.Count == nil {
 		return &validationError{

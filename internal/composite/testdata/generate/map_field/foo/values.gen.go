@@ -5,12 +5,13 @@ import (
 	"fmt"
 )
 
+// Bar is generated from https://example.com/testdata/generate/map_field/foo/bar.json
 // Bar contains some info
-// generated from https://example.com/testdata/generate/map_field/foo/bar.json
 type Bar struct {
 	Baz map[string]interface{} `json:"baz,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/map_field/foo/bar.json
 func (m *Bar) Validate() error {
 	return nil
 }

@@ -5,12 +5,21 @@ import (
 	"fmt"
 )
 
-// generated from https://example.com/testdata/generate/simple_nested/foo/a.json
+// A is generated from https://example.com/testdata/generate/simple_nested/foo/a.json
 type A struct {
-	B AB `json:"b,omitempty"`
+	B *AB `json:"b,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/simple_nested/foo/a.json
 func (m *A) Validate() error {
+	if m.B == nil {
+		return &validationError{
+			errType:  "required",
+			message:  "field required",
+			path:     []interface{}{"B"},
+			jsonPath: []interface{}{"b"},
+		}
+	}
 	if err := m.B.Validate(); err != nil {
 		if err, ok := err.(valErr); ok {
 			return &validationError{
@@ -25,10 +34,11 @@ func (m *A) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/simple_nested/foo/a.json#/properties/b
+// AB is generated from https://example.com/testdata/generate/simple_nested/foo/a.json#/properties/b
 type AB struct {
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/simple_nested/foo/a.json#/properties/b
 func (m *AB) Validate() error {
 	return nil
 }

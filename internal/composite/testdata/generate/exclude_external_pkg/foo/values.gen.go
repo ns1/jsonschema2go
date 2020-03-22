@@ -6,13 +6,14 @@ import (
 	"github.com/ns1/jsonschema2go/internal/composite/testdata/generate/exclude_external_pkg/other"
 )
 
+// Bar is generated from https://example.com/testdata/generate/exclude_external_pkg/foo/example.json
 // Bar gives you some dumb info
-// generated from https://example.com/testdata/generate/exclude_external_pkg/foo/example.json
 type Bar struct {
 	Inner *other.Excluded `json:"inner,omitempty"`
 	Name  *string         `json:"name,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/exclude_external_pkg/foo/example.json
 func (m *Bar) Validate() error {
 	if m.Inner != nil {
 		if err := m.Inner.Validate(); err != nil {
