@@ -12,7 +12,7 @@ import (
 	"strconv"
 )
 
-//go:generatego run ../cmd/embedtmpl/embedtmpl.go slice slice.tmpl tmpl.gen.go
+//go:generate go run ../cmd/embedtmpl/embedtmpl.go slice slice.tmpl tmpl.gen.go
 
 // Build attempts to generate the plan for a slice from the provided schema
 func Build(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Plan, error) {
@@ -41,6 +41,13 @@ func Build(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Plan
 		}
 		if a.ItemType = helper.TypeInfoHinted(itemSchema, typ); a.ItemType.Unknown() {
 			a.ItemType = gen.TypeInfo{Name: "interface{}"}
+		}
+		gTyp, err := helper.DetectGoBaseType(ctx, itemSchema)
+		if err != nil {
+			return nil, err
+		}
+		if gTyp == gen.GoStruct {
+			a.ItemType.Pointer = true
 		}
 	} else {
 		a.ItemType = gen.TypeInfo{Name: "interface{}"}
@@ -100,7 +107,7 @@ func (p *Plan) Type() gen.TypeInfo {
 
 // Deps returns any known dependencies of this plan
 func (p *Plan) Deps() []gen.TypeInfo {
-	return []gen.TypeInfo{p.ItemType, {Name: "Marshal", GoPath: "encoding/json"}, {Name: "Sprintf", GoPath: "fmt"}}
+	return []gen.TypeInfo{p.ItemType, {Name: "Sprintf", GoPath: "fmt"}}
 }
 
 // Validators returns validators of the slice itself

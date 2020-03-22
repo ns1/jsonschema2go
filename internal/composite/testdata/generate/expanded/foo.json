@@ -1,0 +1,8 @@
+{
+  "id": "https://example.com/testdata/generate/expanded/foo/foo.json",
+  "allOf": [
+    {
+      "$ref": "bar.json"
+    }
+  ]
+}

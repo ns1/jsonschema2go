@@ -5,13 +5,14 @@ import (
 	"fmt"
 )
 
+// Bar is generated from https://example.com/testdata/generate/exclude/foo/bar.json
 // Bar gives you some dumb info
-// generated from https://example.com/testdata/generate/exclude/foo/bar.json
 type Bar struct {
 	Inner *Excluded `json:"inner,omitempty"`
 	Name  *string   `json:"name,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/exclude/foo/bar.json
 func (m *Bar) Validate() error {
 	if m.Inner != nil {
 		if err := m.Inner.Validate(); err != nil {

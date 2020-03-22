@@ -6,8 +6,8 @@ import (
 	"regexp"
 )
 
+// Bar is generated from https://example.com/testdata/generate/example/foo/bar.json
 // Bar contains some info
-// generated from https://example.com/testdata/generate/example/foo/bar.json
 type Bar struct {
 	Baz   *string `json:"baz,omitempty"`
 	Count *int64  `json:"count,omitempty"`
@@ -17,6 +17,7 @@ var (
 	barBazPattern = regexp.MustCompile(`^[0-9a-fA-F]{10}$`)
 )
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/example/foo/bar.json
 func (m *Bar) Validate() error {
 	if m.Baz == nil {
 		return &validationError{

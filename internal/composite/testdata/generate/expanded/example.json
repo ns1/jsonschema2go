@@ -1,0 +1,17 @@
+{
+  "id": "https://example.com/testdata/generate/expanded/foo/bar.json",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "foo.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "parent": {
+          "$ref": "foo.json"
+        }
+      }
+    }
+  ]
+}

@@ -2,31 +2,25 @@
 package foo
 
 import (
-	"encoding/json"
 	"fmt"
 )
 
+// Bar is generated from https://example.com/testdata/generate/array/foo/bar.json
 // Bar gives you some dumb info
-// generated from https://example.com/testdata/generate/array/foo/bar.json
 type Bar struct {
 	Name *string `json:"name,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/array/foo/bar.json
 func (m *Bar) Validate() error {
 	return nil
 }
 
+// Barz is generated from https://example.com/testdata/generate/array/foo/barz.json
 // Barz gives you lots of dumb info
-// generated from https://example.com/testdata/generate/array/foo/barz.json
-type Barz []Bar
+type Barz []*Bar
 
-func (m Barz) MarshalJSON() ([]byte, error) {
-	if m == nil {
-		return []byte(`[]`), nil
-	}
-	return json.Marshal([]Bar(m))
-}
-
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/array/foo/barz.json
 func (m Barz) Validate() error {
 	for i := range m {
 		if err := m[i].Validate(); err != nil {

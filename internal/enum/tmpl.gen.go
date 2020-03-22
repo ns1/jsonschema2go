@@ -6,11 +6,9 @@ import (
 )
 
 var tmpl = template.Must(template.New("").Parse(`{{/* gotype: github.com/ns1/jsonschema2go.enumPlanContext */}}
+// {{ .Type.Name }} is generated from {{ .ID }}
 {{ if .Comment -}}
 // {{ .Comment }}
-{{ end -}}
-{{ if .ID -}}
-// generated from {{ .ID }}
 {{ end -}}
 type {{ .Type.Name }} {{ $.QualName .BaseType }}
 
@@ -20,6 +18,7 @@ const (
 {{ end }}
 )
 
+// Validate returns an error if this value is invalid according to rules defined in {{ .ID }}
 func (m {{ .Type.Name }}) Validate() error {
 {{ if .Members -}}
     switch m {
@@ -33,4 +32,5 @@ func (m {{ .Type.Name }}) Validate() error {
         errType: "unknown_member",
         message: fmt.Sprintf("unknown value provided for {{ $.Type.Name }}: %v", m),
     }
-}`))
+}
+`))

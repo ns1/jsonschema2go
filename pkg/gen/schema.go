@@ -361,7 +361,8 @@ func (s *Schema) ChooseType() JSONType {
 		s.AdditionalProperties.Present(),
 		len(s.PatternProperties) > 0,
 		s.MinProperties > 0,
-		s.MaxProperties != nil:
+		s.MaxProperties != nil,
+		len(s.AllOf) > 0:
 		return JSONObject
 	case s.Items.Present(),
 		s.UniqueItems,

@@ -5,13 +5,14 @@ import (
 	"fmt"
 )
 
+// Bar is generated from https://example.com/testdata/generate/composite/foo/bar.json
 // Bar gives you some dumb info
-// generated from https://example.com/testdata/generate/composite/foo/bar.json
 type Bar struct {
 	Name *string `json:"name,omitempty"`
 	ExplicitNameStruct
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/composite/foo/bar.json
 func (m *Bar) Validate() error {
 	if err := m.ExplicitNameStruct.Validate(); err != nil {
 		return err
@@ -19,11 +20,12 @@ func (m *Bar) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/composite/foo/other.json
+// ExplicitNameStruct is generated from https://example.com/testdata/generate/composite/foo/other.json
 type ExplicitNameStruct struct {
 	Count *int64 `json:"count,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/composite/foo/other.json
 func (m *ExplicitNameStruct) Validate() error {
 	return nil
 }

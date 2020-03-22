@@ -53,4 +53,5 @@ func (e *validationError) Error() string {
     return fmt.Sprintf("%v: %v", e.path, e.message)
 }
 
-var _ valErr = new(validationError)`))
+var _ valErr = new(validationError)
+`))

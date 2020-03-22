@@ -6,12 +6,13 @@ import (
 	"fmt"
 )
 
+// Bar is generated from https://example.com/testdata/generate/oneof_object/foo/example.json
 // Bar gives you some dumb info
-// generated from https://example.com/testdata/generate/oneof_object/foo/example.json
 type Bar struct {
 	Direction interface{}
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/oneof_object/foo/example.json
 func (m *Bar) Validate() error {
 	return nil
 }
@@ -38,22 +39,24 @@ func (m *Bar) MarshalJSON() ([]byte, error) {
 	return json.Marshal(m.Direction)
 }
 
-// generated from https://example.com/testdata/generate/oneof_object/foo/example.json#/oneOf/0
+// Left is generated from https://example.com/testdata/generate/oneof_object/foo/example.json#/oneOf/0
 type Left struct {
 	Direction *string `json:"direction,omitempty"`
 	Value     *int64  `json:"value,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/oneof_object/foo/example.json#/oneOf/0
 func (m *Left) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/oneof_object/foo/example.json#/oneOf/1
+// Right is generated from https://example.com/testdata/generate/oneof_object/foo/example.json#/oneOf/1
 type Right struct {
 	Direction *string  `json:"direction,omitempty"`
 	Value     *float64 `json:"value,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/oneof_object/foo/example.json#/oneOf/1
 func (m *Right) Validate() error {
 	return nil
 }

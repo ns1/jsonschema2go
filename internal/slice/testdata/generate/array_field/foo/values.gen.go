@@ -2,15 +2,15 @@
 package foo
 
 import (
-	"encoding/json"
 	"fmt"
 )
 
-// generated from https://example.com/testdata/generate/array_field/foo/example.json
+// Example is generated from https://example.com/testdata/generate/array_field/foo/example.json
 type Example struct {
 	Options ExampleOptions `json:"options"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/array_field/foo/example.json
 func (m *Example) Validate() error {
 	if err := m.Options.Validate(); err != nil {
 		if err, ok := err.(valErr); ok {
@@ -26,26 +26,21 @@ func (m *Example) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/array_field/foo/inner.json
+// Inner is generated from https://example.com/testdata/generate/array_field/foo/inner.json
 type Inner struct {
 	Name  *string     `json:"name,omitempty"`
 	Value interface{} `json:"value,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/array_field/foo/inner.json
 func (m *Inner) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/array_field/foo/example.json#/properties/options
-type ExampleOptions []Inner
+// ExampleOptions is generated from https://example.com/testdata/generate/array_field/foo/example.json#/properties/options
+type ExampleOptions []*Inner
 
-func (m ExampleOptions) MarshalJSON() ([]byte, error) {
-	if m == nil {
-		return []byte(`[]`), nil
-	}
-	return json.Marshal([]Inner(m))
-}
-
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/array_field/foo/example.json#/properties/options
 func (m ExampleOptions) Validate() error {
 	for i := range m {
 		if err := m[i].Validate(); err != nil {

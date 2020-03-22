@@ -181,7 +181,7 @@ func deriveStructFields(
 			}
 		}
 		// not a reference type
-		if !fType.BuiltIn() && fJType == gen.JSONObject && len(fieldSchema.Properties) != 0 {
+		if !fType.BuiltIn() && fJType == gen.JSONObject && !fieldSchema.AdditionalProperties.Present() {
 			fType.Pointer = true
 		}
 		fields = append(

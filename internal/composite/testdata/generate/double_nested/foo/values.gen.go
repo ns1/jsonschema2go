@@ -5,12 +5,13 @@ import (
 	"fmt"
 )
 
+// Bar is generated from https://example.com/testdata/generate/double_nested/foo/bar.json
 // Bar gives you some dumb info
-// generated from https://example.com/testdata/generate/double_nested/foo/bar.json
 type Bar struct {
 	Foo *Foo `json:"foo,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/double_nested/foo/bar.json
 func (m *Bar) Validate() error {
 	if m.Foo != nil {
 		if err := m.Foo.Validate(); err != nil {
@@ -28,20 +29,22 @@ func (m *Bar) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/double_nested/foo/baz.json
+// Baz is generated from https://example.com/testdata/generate/double_nested/foo/baz.json
 type Baz struct {
 	Name *string `json:"name,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/double_nested/foo/baz.json
 func (m *Baz) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/double_nested/foo/bar.json#/properties/foo
+// Foo is generated from https://example.com/testdata/generate/double_nested/foo/bar.json#/properties/foo
 type Foo struct {
 	Baz *Baz `json:"baz,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/double_nested/foo/bar.json#/properties/foo
 func (m *Foo) Validate() error {
 	if m.Baz != nil {
 		if err := m.Baz.Validate(); err != nil {

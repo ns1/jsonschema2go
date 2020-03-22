@@ -6,13 +6,14 @@ import (
 	"github.com/ns1/jsonschema2go/internal/composite/testdata/generate/multi_pkg/foobar"
 )
 
+// Bar is generated from https://example.com/testdata/generate/multi_pkg/foo/bar.json
 // Bar gives you some dumb info
-// generated from https://example.com/testdata/generate/multi_pkg/foo/bar.json
 type Bar struct {
 	Name *string `json:"name,omitempty"`
 	foobar.Blob
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/multi_pkg/foo/bar.json
 func (m *Bar) Validate() error {
 	if err := m.Blob.Validate(); err != nil {
 		return err

@@ -7,14 +7,15 @@ import (
 	"regexp"
 )
 
+// Bar is generated from https://example.com/testdata/generate/tuple/foo/bar.json
 // Bar gives you some dumb info
-// generated from https://example.com/testdata/generate/tuple/foo/bar.json
 type Bar [2]interface{}
 
 var (
 	bar0Pattern = regexp.MustCompile(`^abcdef$`)
 )
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/tuple/foo/bar.json
 func (t *Bar) Validate() error {
 	if v, ok := m[0].(string); !ok {
 		return &validationError{

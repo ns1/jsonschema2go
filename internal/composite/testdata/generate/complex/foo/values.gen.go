@@ -2,28 +2,29 @@
 package foo
 
 import (
-	"encoding/json"
 	"fmt"
 	"regexp"
 )
 
-// generated from https://example.com/testdata/generate/complex/foo/address-details.json
+// AddressDetails is generated from https://example.com/testdata/generate/complex/foo/address-details.json
 type AddressDetails struct {
 	Name   *string `json:"name,omitempty"`
 	Prefix *string `json:"prefix,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/address-details.json
 func (m *AddressDetails) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/complex/foo/dhcp-option.json
+// DhcpOption is generated from https://example.com/testdata/generate/complex/foo/dhcp-option.json
 type DhcpOption struct {
 	AlwaysSend *bool       `json:"always_send,omitempty"`
 	Name       *string     `json:"name,omitempty"`
 	Value      interface{} `json:"value,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/dhcp-option.json
 func (m *DhcpOption) Validate() error {
 	if m.Name == nil {
 		return &validationError{
@@ -44,12 +45,132 @@ func (m *DhcpOption) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/complex/foo/expanded-reservation.json
+// DhcpScopeGroupSettingsCommon is generated from https://example.com/testdata/generate/complex/foo/dhcp-scope-group-settings-common.json
+type DhcpScopeGroupSettingsCommon struct {
+	Enabled           *bool                               `json:"enabled,omitempty"`
+	Options           DhcpScopeGroupSettingsCommonOptions `json:"options"`
+	RebindTimerSecs   *int64                              `json:"rebind_timer_secs,omitempty"`
+	RenewTimerSecs    *int64                              `json:"renew_timer_secs,omitempty"`
+	ValidLifetimeSecs *int64                              `json:"valid_lifetime_secs,omitempty"`
+}
+
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/dhcp-scope-group-settings-common.json
+func (m *DhcpScopeGroupSettingsCommon) Validate() error {
+	if err := m.Options.Validate(); err != nil {
+		if err, ok := err.(valErr); ok {
+			return &validationError{
+				errType:  err.ErrType(),
+				message:  err.Message(),
+				path:     append([]interface{}{"Options"}, err.Path()...),
+				jsonPath: append([]interface{}{"options"}, err.JSONPath()...),
+			}
+		}
+		return err
+	}
+	return nil
+}
+
+// DhcpScopeGroupSettingsSynthesizeDnsRecords is generated from https://example.com/testdata/generate/complex/foo/dhcp-scope-group-settings-synthesize-dns-records.json
+type DhcpScopeGroupSettingsSynthesizeDnsRecords struct {
+	Enabled          *bool   `json:"enabled,omitempty"`
+	GeneratedPrefix  *string `json:"generated_prefix,omitempty"`
+	QualifyingSuffix *string `json:"qualifying_suffix,omitempty"`
+}
+
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/dhcp-scope-group-settings-synthesize-dns-records.json
+func (m *DhcpScopeGroupSettingsSynthesizeDnsRecords) Validate() error {
+	return nil
+}
+
+// DhcpScopeGroupSettingsV4 is generated from https://example.com/testdata/generate/complex/foo/dhcp-scope-group-settings-v4.json
+type DhcpScopeGroupSettingsV4 struct {
+	DhcpScopeGroupSettingsCommon
+	DhcpScopeGroupSettingsV4AllOf1
+}
+
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/dhcp-scope-group-settings-v4.json
+func (m *DhcpScopeGroupSettingsV4) Validate() error {
+	if err := m.DhcpScopeGroupSettingsCommon.Validate(); err != nil {
+		return err
+	}
+	if err := m.DhcpScopeGroupSettingsV4AllOf1.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// DhcpScopeGroupSettingsV4AllOf1 is generated from https://example.com/testdata/generate/complex/foo/dhcp-scope-group-settings-v4.json#/allOf/1
+type DhcpScopeGroupSettingsV4AllOf1 struct {
+	EchoClientID         *bool                                       `json:"echo_client_id,omitempty"`
+	SynthesizeDnsRecords *DhcpScopeGroupSettingsSynthesizeDnsRecords `json:"synthesize_dns_records,omitempty"`
+}
+
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/dhcp-scope-group-settings-v4.json#/allOf/1
+func (m *DhcpScopeGroupSettingsV4AllOf1) Validate() error {
+	if m.SynthesizeDnsRecords != nil {
+		if err := m.SynthesizeDnsRecords.Validate(); err != nil {
+			if err, ok := err.(valErr); ok {
+				return &validationError{
+					errType:  err.ErrType(),
+					message:  err.Message(),
+					path:     append([]interface{}{"SynthesizeDnsRecords"}, err.Path()...),
+					jsonPath: append([]interface{}{"synthesize_dns_records"}, err.JSONPath()...),
+				}
+			}
+			return err
+		}
+	}
+	return nil
+}
+
+// DhcpScopeGroupSettingsV6 is generated from https://example.com/testdata/generate/complex/foo/dhcp-scope-group-settings-v6.json
+type DhcpScopeGroupSettingsV6 struct {
+	DhcpScopeGroupSettingsCommon
+	DhcpScopeGroupSettingsV6AllOf1
+}
+
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/dhcp-scope-group-settings-v6.json
+func (m *DhcpScopeGroupSettingsV6) Validate() error {
+	if err := m.DhcpScopeGroupSettingsCommon.Validate(); err != nil {
+		return err
+	}
+	if err := m.DhcpScopeGroupSettingsV6AllOf1.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// DhcpScopeGroupSettingsV6AllOf1 is generated from https://example.com/testdata/generate/complex/foo/dhcp-scope-group-settings-v6.json#/allOf/1
+type DhcpScopeGroupSettingsV6AllOf1 struct {
+	PreferredLifetimeSecs *int64                                      `json:"preferred_lifetime_secs,omitempty"`
+	SynthesizeDnsRecords  *DhcpScopeGroupSettingsSynthesizeDnsRecords `json:"synthesize_dns_records,omitempty"`
+}
+
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/dhcp-scope-group-settings-v6.json#/allOf/1
+func (m *DhcpScopeGroupSettingsV6AllOf1) Validate() error {
+	if m.SynthesizeDnsRecords != nil {
+		if err := m.SynthesizeDnsRecords.Validate(); err != nil {
+			if err, ok := err.(valErr); ok {
+				return &validationError{
+					errType:  err.ErrType(),
+					message:  err.Message(),
+					path:     append([]interface{}{"SynthesizeDnsRecords"}, err.Path()...),
+					jsonPath: append([]interface{}{"synthesize_dns_records"}, err.JSONPath()...),
+				}
+			}
+			return err
+		}
+	}
+	return nil
+}
+
+// ExpandedReservation is generated from https://example.com/testdata/generate/complex/foo/expanded-reservation.json
 type ExpandedReservation struct {
 	Reservation
 	ExpandedReservationAllOf1
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/expanded-reservation.json
 func (m *ExpandedReservation) Validate() error {
 	if err := m.Reservation.Validate(); err != nil {
 		return err
@@ -60,11 +181,12 @@ func (m *ExpandedReservation) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/complex/foo/expanded-reservation.json#/allOf/1
+// ExpandedReservationAllOf1 is generated from https://example.com/testdata/generate/complex/foo/expanded-reservation.json#/allOf/1
 type ExpandedReservationAllOf1 struct {
 	AddressDetails *AddressDetails `json:"address_details,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/expanded-reservation.json#/allOf/1
 func (m *ExpandedReservationAllOf1) Validate() error {
 	if m.AddressDetails != nil {
 		if err := m.AddressDetails.Validate(); err != nil {
@@ -82,12 +204,13 @@ func (m *ExpandedReservationAllOf1) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/complex/foo/expanded-scope.json
+// ExpandedScope is generated from https://example.com/testdata/generate/complex/foo/expanded-scope.json
 type ExpandedScope struct {
 	Scope
 	ExpandedScopeAllOf1
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/expanded-scope.json
 func (m *ExpandedScope) Validate() error {
 	if err := m.Scope.Validate(); err != nil {
 		return err
@@ -98,11 +221,12 @@ func (m *ExpandedScope) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/complex/foo/expanded-scope.json#/allOf/1
+// ExpandedScopeAllOf1 is generated from https://example.com/testdata/generate/complex/foo/expanded-scope.json#/allOf/1
 type ExpandedScopeAllOf1 struct {
 	AddressDetails *AddressDetails `json:"address_details,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/expanded-scope.json#/allOf/1
 func (m *ExpandedScopeAllOf1) Validate() error {
 	if m.AddressDetails != nil {
 		if err := m.AddressDetails.Validate(); err != nil {
@@ -120,12 +244,13 @@ func (m *ExpandedScopeAllOf1) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/complex/foo/expanded-scope-group-response.json
+// ExpandedScopeGroupResponse is generated from https://example.com/testdata/generate/complex/foo/expanded-scope-group-response.json
 type ExpandedScopeGroupResponse struct {
 	ScopeGroupResponse
 	ExpandedScopeGroupResponseAllOf1
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/expanded-scope-group-response.json
 func (m *ExpandedScopeGroupResponse) Validate() error {
 	if err := m.ScopeGroupResponse.Validate(); err != nil {
 		return err
@@ -136,12 +261,13 @@ func (m *ExpandedScopeGroupResponse) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/complex/foo/expanded-scope-group-response.json#/allOf/1
+// ExpandedScopeGroupResponseAllOf1 is generated from https://example.com/testdata/generate/complex/foo/expanded-scope-group-response.json#/allOf/1
 type ExpandedScopeGroupResponseAllOf1 struct {
 	Reservations ExpandedScopeGroupResponseAllOf1Reservations `json:"reservations"`
 	Scopes       ExpandedScopeGroupResponseAllOf1Scopes       `json:"scopes"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/expanded-scope-group-response.json#/allOf/1
 func (m *ExpandedScopeGroupResponseAllOf1) Validate() error {
 	if err := m.Reservations.Validate(); err != nil {
 		if err, ok := err.(valErr); ok {
@@ -168,12 +294,13 @@ func (m *ExpandedScopeGroupResponseAllOf1) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/complex/foo/reservation.json
+// Reservation is generated from https://example.com/testdata/generate/complex/foo/reservation.json
 type Reservation struct {
 	ReservationAllOf0
 	ReservationFields
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/reservation.json
 func (m *Reservation) Validate() error {
 	if err := m.ReservationAllOf0.Validate(); err != nil {
 		return err
@@ -184,16 +311,17 @@ func (m *Reservation) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/complex/foo/reservation.json#/allOf/0
+// ReservationAllOf0 is generated from https://example.com/testdata/generate/complex/foo/reservation.json#/allOf/0
 type ReservationAllOf0 struct {
 	ID *int64 `json:"id,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/reservation.json#/allOf/0
 func (m *ReservationAllOf0) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/complex/foo/reservation-fields.json
+// ReservationFields is generated from https://example.com/testdata/generate/complex/foo/reservation-fields.json
 type ReservationFields struct {
 	AddressID    *int64                   `json:"address_id,omitempty"`
 	Dhcpv6       *bool                    `json:"dhcpv6,omitempty"`
@@ -206,6 +334,7 @@ var (
 	reservationFieldsMacPattern = regexp.MustCompile(`^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$`)
 )
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/reservation-fields.json
 func (m *ReservationFields) Validate() error {
 	if m.Options == nil {
 		return &validationError{
@@ -237,12 +366,13 @@ func (m *ReservationFields) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/complex/foo/scope.json
+// Scope is generated from https://example.com/testdata/generate/complex/foo/scope.json
 type Scope struct {
 	ScopeAllOf0
 	ScopeFields
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/scope.json
 func (m *Scope) Validate() error {
 	if err := m.ScopeAllOf0.Validate(); err != nil {
 		return err
@@ -253,16 +383,17 @@ func (m *Scope) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/complex/foo/scope.json#/allOf/0
+// ScopeAllOf0 is generated from https://example.com/testdata/generate/complex/foo/scope.json#/allOf/0
 type ScopeAllOf0 struct {
 	ID *int64 `json:"id,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/scope.json#/allOf/0
 func (m *ScopeAllOf0) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/complex/foo/scope-fields.json
+// ScopeFields is generated from https://example.com/testdata/generate/complex/foo/scope-fields.json
 type ScopeFields struct {
 	AddressID         *int64             `json:"address_id,omitempty"`
 	Options           ScopeFieldsOptions `json:"options"`
@@ -270,6 +401,7 @@ type ScopeFields struct {
 	ValidLifetimeSecs *int64             `json:"valid_lifetime_secs,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/scope-fields.json
 func (m *ScopeFields) Validate() error {
 	if m.AddressID == nil {
 		return &validationError{
@@ -301,12 +433,13 @@ func (m *ScopeFields) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/complex/foo/scope-group-response.json
+// ScopeGroupResponse is generated from https://example.com/testdata/generate/complex/foo/scope-group-response.json
 type ScopeGroupResponse struct {
 	ScopeGroupUpdateable
 	ScopeGroupResponseAllOf1
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/scope-group-response.json
 func (m *ScopeGroupResponse) Validate() error {
 	if err := m.ScopeGroupUpdateable.Validate(); err != nil {
 		return err
@@ -317,68 +450,125 @@ func (m *ScopeGroupResponse) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/complex/foo/scope-group-response.json#/allOf/1
+// ScopeGroupResponseAllOf1 is generated from https://example.com/testdata/generate/complex/foo/scope-group-response.json#/allOf/1
 type ScopeGroupResponseAllOf1 struct {
 	ID        *int64 `json:"id,omitempty"`
 	NetworkID *int64 `json:"network_id,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/scope-group-response.json#/allOf/1
 func (m *ScopeGroupResponseAllOf1) Validate() error {
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/complex/foo/scope-group-updateable.json
+// ScopeGroupUpdateable is generated from https://example.com/testdata/generate/complex/foo/scope-group-updateable.json
 type ScopeGroupUpdateable struct {
-	DhcpServiceID *int64 `json:"dhcp_service_id,omitempty"`
-	Dhcpv4        `json:"dhcpv4,omitempty"`
-	Dhcpv6        `json:"dhcpv6,omitempty"`
-	Name          *string `json:"name,omitempty"`
-	ReverseDns    *bool   `json:"reverse_dns,omitempty"`
+	DhcpServiceID *int64                    `json:"dhcp_service_id,omitempty"`
+	Dhcpv4        *DhcpScopeGroupSettingsV4 `json:"dhcpv4,omitempty"`
+	Dhcpv6        *DhcpScopeGroupSettingsV6 `json:"dhcpv6,omitempty"`
+	Name          *string                   `json:"name,omitempty"`
+	ReverseDns    *bool                     `json:"reverse_dns,omitempty"`
 }
 
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/scope-group-updateable.json
 func (m *ScopeGroupUpdateable) Validate() error {
+	if m.Dhcpv4 != nil {
+		if err := m.Dhcpv4.Validate(); err != nil {
+			if err, ok := err.(valErr); ok {
+				return &validationError{
+					errType:  err.ErrType(),
+					message:  err.Message(),
+					path:     append([]interface{}{"Dhcpv4"}, err.Path()...),
+					jsonPath: append([]interface{}{"dhcpv4"}, err.JSONPath()...),
+				}
+			}
+			return err
+		}
+	}
+	if m.Dhcpv6 != nil {
+		if err := m.Dhcpv6.Validate(); err != nil {
+			if err, ok := err.(valErr); ok {
+				return &validationError{
+					errType:  err.ErrType(),
+					message:  err.Message(),
+					path:     append([]interface{}{"Dhcpv6"}, err.Path()...),
+					jsonPath: append([]interface{}{"dhcpv6"}, err.JSONPath()...),
+				}
+			}
+			return err
+		}
+	}
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/complex/foo/expanded-scope-group-response.json#/allOf/1/properties/reservations
-type ExpandedScopeGroupResponseAllOf1Reservations []ExpandedReservation
+// DhcpScopeGroupSettingsCommonOptions is generated from https://example.com/testdata/generate/complex/foo/dhcp-scope-group-settings-common.json#/properties/options
+type DhcpScopeGroupSettingsCommonOptions []*DhcpOption
 
-func (m ExpandedScopeGroupResponseAllOf1Reservations) MarshalJSON() ([]byte, error) {
-	if m == nil {
-		return []byte(`[]`), nil
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/dhcp-scope-group-settings-common.json#/properties/options
+func (m DhcpScopeGroupSettingsCommonOptions) Validate() error {
+	for i := range m {
+		if err := m[i].Validate(); err != nil {
+			if err, ok := err.(valErr); ok {
+				return &validationError{
+					errType:  err.ErrType(),
+					message:  err.Message(),
+					path:     append([]interface{}{i}, err.Path()...),
+					jsonPath: append([]interface{}{i}, err.JSONPath()...),
+				}
+			}
+			return err
+		}
 	}
-	return json.Marshal([]ExpandedReservation(m))
+	return nil
 }
 
+// ExpandedScopeGroupResponseAllOf1Reservations is generated from https://example.com/testdata/generate/complex/foo/expanded-scope-group-response.json#/allOf/1/properties/reservations
+type ExpandedScopeGroupResponseAllOf1Reservations []*ExpandedReservation
+
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/expanded-scope-group-response.json#/allOf/1/properties/reservations
 func (m ExpandedScopeGroupResponseAllOf1Reservations) Validate() error {
+	for i := range m {
+		if err := m[i].Validate(); err != nil {
+			if err, ok := err.(valErr); ok {
+				return &validationError{
+					errType:  err.ErrType(),
+					message:  err.Message(),
+					path:     append([]interface{}{i}, err.Path()...),
+					jsonPath: append([]interface{}{i}, err.JSONPath()...),
+				}
+			}
+			return err
+		}
+	}
 	return nil
 }
 
-// generated from https://example.com/testdata/generate/complex/foo/expanded-scope-group-response.json#/allOf/1/properties/scopes
-type ExpandedScopeGroupResponseAllOf1Scopes []ExpandedScope
+// ExpandedScopeGroupResponseAllOf1Scopes is generated from https://example.com/testdata/generate/complex/foo/expanded-scope-group-response.json#/allOf/1/properties/scopes
+type ExpandedScopeGroupResponseAllOf1Scopes []*ExpandedScope
 
-func (m ExpandedScopeGroupResponseAllOf1Scopes) MarshalJSON() ([]byte, error) {
-	if m == nil {
-		return []byte(`[]`), nil
-	}
-	return json.Marshal([]ExpandedScope(m))
-}
-
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/expanded-scope-group-response.json#/allOf/1/properties/scopes
 func (m ExpandedScopeGroupResponseAllOf1Scopes) Validate() error {
+	for i := range m {
+		if err := m[i].Validate(); err != nil {
+			if err, ok := err.(valErr); ok {
+				return &validationError{
+					errType:  err.ErrType(),
+					message:  err.Message(),
+					path:     append([]interface{}{i}, err.Path()...),
+					jsonPath: append([]interface{}{i}, err.JSONPath()...),
+				}
+			}
+			return err
+		}
+	}
 	return nil
 }
 
+// ReservationFieldsOptions is generated from https://example.com/testdata/generate/complex/foo/reservation-fields.json#/properties/options
 // the options assigned to this reservation
-// generated from https://example.com/testdata/generate/complex/foo/reservation-fields.json#/properties/options
-type ReservationFieldsOptions []DhcpOption
+type ReservationFieldsOptions []*DhcpOption
 
-func (m ReservationFieldsOptions) MarshalJSON() ([]byte, error) {
-	if m == nil {
-		return []byte(`[]`), nil
-	}
-	return json.Marshal([]DhcpOption(m))
-}
-
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/reservation-fields.json#/properties/options
 func (m ReservationFieldsOptions) Validate() error {
 	for i := range m {
 		if err := m[i].Validate(); err != nil {
@@ -396,17 +586,11 @@ func (m ReservationFieldsOptions) Validate() error {
 	return nil
 }
 
+// ScopeFieldsOptions is generated from https://example.com/testdata/generate/complex/foo/scope-fields.json#/properties/options
 // the options assigned to this scope
-// generated from https://example.com/testdata/generate/complex/foo/scope-fields.json#/properties/options
-type ScopeFieldsOptions []DhcpOption
+type ScopeFieldsOptions []*DhcpOption
 
-func (m ScopeFieldsOptions) MarshalJSON() ([]byte, error) {
-	if m == nil {
-		return []byte(`[]`), nil
-	}
-	return json.Marshal([]DhcpOption(m))
-}
-
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/scope-fields.json#/properties/options
 func (m ScopeFieldsOptions) Validate() error {
 	for i := range m {
 		if err := m[i].Validate(); err != nil {
