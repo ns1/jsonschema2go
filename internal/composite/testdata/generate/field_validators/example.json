@@ -10,19 +10,22 @@
       "type": "string",
       "pattern": "^(123|456)$",
       "minLength": 3,
-      "maxLength": 10
+      "maxLength": 10,
+      "enum": ["123", "456"]
     },
     "number": {
       "type": "number",
       "minimum": 1.0,
       "multipleOf": 3.2,
-      "maximum": 10.2
+      "maximum": 10.2,
+      "enum": [3.2, 6.4, 9.6]
     },
     "integer": {
       "type": "integer",
       "minimum": 1,
       "multipleOf": 3,
-      "maximum": 10
+      "maximum": 10,
+      "enum": [3, 6, 9]
     },
     "exclNumber": {
       "type": "number",

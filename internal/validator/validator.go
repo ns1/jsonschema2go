@@ -117,6 +117,66 @@ func Validators(schema *gen.Schema) (styles []Validator) {
 			)
 		}
 	}
+
+	if len(schema.Enum) > 0 {
+		var (
+			m           interface{}
+			names       = make([]string, 0, len(schema.Enum))
+			impliedType string
+		)
+		switch schema.ChooseType() {
+		case gen.JSONNumber:
+			mN := make(map[float64]bool, len(schema.Enum))
+			for _, v := range schema.Enum {
+				v, ok := v.(float64)
+				if !ok {
+					continue
+				}
+				mN[v] = true
+				names = append(names, fmt.Sprintf("%v", v))
+			}
+			m = mN
+			impliedType = "float64"
+		case gen.JSONInteger:
+			mI := make(map[int64]bool, len(schema.Enum))
+			for _, v := range schema.Enum {
+				v, ok := v.(float64)
+				if !ok {
+					continue
+				}
+				mI[int64(v)] = true
+				names = append(names, fmt.Sprintf("%v", int64(v)))
+			}
+			m = mI
+			impliedType = "int64"
+		case gen.JSONString:
+			mS := make(map[string]bool, len(schema.Enum))
+			for _, v := range schema.Enum {
+				v, ok := v.(string)
+				if !ok {
+					continue
+				}
+				mS[v] = true
+				names = append(names, fmt.Sprintf("%q", v))
+			}
+			m = mS
+			impliedType = "string"
+		}
+		if m != nil {
+			sprintfExpr := TemplateStr("`must be one of (" + strings.Join(names, ", ") + ") but got %v`, {{ .QualifiedName }}")
+			if len(names) == 1 {
+				sprintfExpr = TemplateStr("`must be " + names[0] + " but got %v`, {{ .QualifiedName }}")
+			}
+
+			styles = append(styles, Validator{
+				Name:        "enum",
+				VarExpr:     TemplateStr("{{ .NameSpace }}Enum = " + fmt.Sprintf("%#v", m)),
+				TestExpr:    TemplateStr("!{{ .NameSpace }}Enum[{{ .QualifiedName }}]"),
+				SprintfExpr: sprintfExpr,
+				ImpliedType: impliedType,
+			})
+		}
+	}
 	return
 }
 

@@ -19,6 +19,12 @@ type Bar struct {
 }
 
 var (
+	barIntegerEnum = map[int64]bool{3: true, 6: true, 9: true}
+
+	barNumberEnum = map[float64]bool{3.2: true, 6.4: true, 9.6: true}
+
+	barStringEnum = map[string]bool{"123": true, "456": true}
+
 	barStringPattern = regexp.MustCompile(`^(123|456)$`)
 )
 
@@ -75,6 +81,14 @@ func (m *Bar) Validate() error {
 			message:  fmt.Sprintf("must be greater than 1 but was %v", *m.ExclNumber),
 		}
 	}
+	if m.Integer != nil && !barIntegerEnum[*m.Integer] {
+		return &validationError{
+			errType:  "enum",
+			path:     []interface{}{"Integer"},
+			jsonPath: []interface{}{"integer"},
+			message:  fmt.Sprintf(`must be one of (3, 6, 9) but got %v`, *m.Integer),
+		}
+	}
 	if m.Integer != nil && *m.Integer > 1 {
 		return &validationError{
 			errType:  "maximum",
@@ -99,6 +113,14 @@ func (m *Bar) Validate() error {
 			message:  fmt.Sprintf("must be a multiple of 3 but was %v", *m.Integer),
 		}
 	}
+	if m.Number != nil && !barNumberEnum[*m.Number] {
+		return &validationError{
+			errType:  "enum",
+			path:     []interface{}{"Number"},
+			jsonPath: []interface{}{"number"},
+			message:  fmt.Sprintf(`must be one of (3.2, 6.4, 9.6) but got %v`, *m.Number),
+		}
+	}
 	if m.Number != nil && *m.Number > 1 {
 		return &validationError{
 			errType:  "maximum",
@@ -121,6 +143,14 @@ func (m *Bar) Validate() error {
 			path:     []interface{}{"Number"},
 			jsonPath: []interface{}{"number"},
 			message:  fmt.Sprintf("must be a multiple of 3.2 but was %v", *m.Number),
+		}
+	}
+	if !barStringEnum[*m.String] {
+		return &validationError{
+			errType:  "enum",
+			path:     []interface{}{"String"},
+			jsonPath: []interface{}{"string"},
+			message:  fmt.Sprintf(`must be one of ("123", "456") but got %v`, *m.String),
 		}
 	}
 	if len(*m.String) > 10 {

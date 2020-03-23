@@ -45,8 +45,20 @@ type Left struct {
 	Value     *int64  `json:"value,omitempty"`
 }
 
+var (
+	leftDirectionEnum = map[string]bool{"l": true}
+)
+
 // Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/oneof_object/foo/example.json#/oneOf/0
 func (m *Left) Validate() error {
+	if m.Direction != nil && !leftDirectionEnum[*m.Direction] {
+		return &validationError{
+			errType:  "enum",
+			path:     []interface{}{"Direction"},
+			jsonPath: []interface{}{"direction"},
+			message:  fmt.Sprintf(`must be "l" but got %v`, *m.Direction),
+		}
+	}
 	return nil
 }
 
@@ -56,8 +68,20 @@ type Right struct {
 	Value     *float64 `json:"value,omitempty"`
 }
 
+var (
+	rightDirectionEnum = map[string]bool{"r": true}
+)
+
 // Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/oneof_object/foo/example.json#/oneOf/1
 func (m *Right) Validate() error {
+	if m.Direction != nil && !rightDirectionEnum[*m.Direction] {
+		return &validationError{
+			errType:  "enum",
+			path:     []interface{}{"Direction"},
+			jsonPath: []interface{}{"direction"},
+			message:  fmt.Sprintf(`must be "r" but got %v`, *m.Direction),
+		}
+	}
 	return nil
 }
 
