@@ -1,0 +1,24 @@
+{
+  "description": "Bar gives you some dumb info",
+  "id": "https://example.com/testdata/generate/allOfRequired/foo/bar.json",
+  "allOf": [
+    {
+      "properties": {
+        "bar": {
+          "type": "integer"
+        }
+      }
+    },
+    {
+      "properties": {
+        "foo": {
+          "type": "string"
+        }
+      }
+    }
+  ],
+  "required": [
+    "foo",
+    "bar"
+  ]
+}

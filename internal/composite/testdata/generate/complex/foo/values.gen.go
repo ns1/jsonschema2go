@@ -302,6 +302,14 @@ type Reservation struct {
 
 // Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/reservation.json
 func (m *Reservation) Validate() error {
+	if m.ID == nil {
+		return &validationError{
+			errType:  "required",
+			message:  "field required",
+			path:     []interface{}{"ID"},
+			jsonPath: []interface{}{"id"},
+		}
+	}
 	if err := m.ReservationAllOf0.Validate(); err != nil {
 		return err
 	}
@@ -441,6 +449,38 @@ type ScopeGroupResponse struct {
 
 // Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/complex/foo/scope-group-response.json
 func (m *ScopeGroupResponse) Validate() error {
+	if m.Dhcpv4 == nil {
+		return &validationError{
+			errType:  "required",
+			message:  "field required",
+			path:     []interface{}{"Dhcpv4"},
+			jsonPath: []interface{}{"dhcpv4"},
+		}
+	}
+	if m.Dhcpv6 == nil {
+		return &validationError{
+			errType:  "required",
+			message:  "field required",
+			path:     []interface{}{"Dhcpv6"},
+			jsonPath: []interface{}{"dhcpv6"},
+		}
+	}
+	if m.ID == nil {
+		return &validationError{
+			errType:  "required",
+			message:  "field required",
+			path:     []interface{}{"ID"},
+			jsonPath: []interface{}{"id"},
+		}
+	}
+	if m.Name == nil {
+		return &validationError{
+			errType:  "required",
+			message:  "field required",
+			path:     []interface{}{"Name"},
+			jsonPath: []interface{}{"name"},
+		}
+	}
 	if err := m.ScopeGroupUpdateable.Validate(); err != nil {
 		return err
 	}

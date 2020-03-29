@@ -32,9 +32,10 @@ type StructPlan struct {
 	TypeInfo gen.TypeInfo
 	ID       *url.URL
 
-	Comment string
-	Fields  []StructField
-	Traits  []Trait
+	Comment     string
+	Fields      []StructField
+	SubRequired []StructField
+	Traits      []Trait
 }
 
 // Type returns the calculated type info for this struct
@@ -222,15 +223,31 @@ type enrichedStructField struct {
 	Imports    *gen.Imports
 }
 
-func (s *structPlanContext) Fields() (fields []enrichedStructField) {
-	for _, f := range s.StructPlan.Fields {
-		fields = append(fields, enrichedStructField{
+func (s *structPlanContext) Required() []enrichedStructField {
+	var fields []StructField
+	for _, s := range s.StructPlan.Fields {
+		if s.Required {
+			fields = append(fields, s)
+		}
+	}
+	fields = append(fields, s.SubRequired...)
+
+	return s.enrich(fields)
+}
+
+func (s *structPlanContext) enrich(fields []StructField) (enriched []enrichedStructField) {
+	for _, f := range fields {
+		enriched = append(enriched, enrichedStructField{
 			StructField: f,
 			StructPlan:  s.StructPlan,
 			Imports:     s.Imports,
 		})
 	}
 	return
+}
+
+func (s *structPlanContext) Fields() []enrichedStructField {
+	return s.enrich(s.StructPlan.Fields)
 }
 
 func (f *enrichedStructField) DerefExpr() string {

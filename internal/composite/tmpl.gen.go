@@ -28,8 +28,7 @@ var (
 
 // Validate returns an error if this value is invalid according to rules defined in {{ .ID }}
 func (m *{{ $.Type.Name }}) Validate() error {
-{{ range .Fields -}}
-{{ if .Required -}}
+{{ range .Required -}}
 	if {{ .TestSetExpr false }} {
 		return &validationError{
 			errType: "required",
@@ -38,7 +37,6 @@ func (m *{{ $.Type.Name }}) Validate() error {
 			jsonPath: []interface{}{"{{ .JSONName }}"},
 		}
 	}
-{{ end -}}
 {{ end -}}
 {{ range $Field := .Fields -}}
 {{ if ne .Type.Name "interface{}" -}}
