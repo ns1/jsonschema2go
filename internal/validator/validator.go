@@ -3,12 +3,13 @@ package validator
 import (
 	"bytes"
 	"fmt"
-	"github.com/ns1/jsonschema2go/pkg/gen"
 	"sort"
 	"strconv"
 	"strings"
 	"text/template"
 	"unicode"
+
+	"github.com/ns1/jsonschema2go/pkg/gen"
 )
 
 var SubschemaValidator = Validator{Name: "subschema", ImpliedType: "interface { Validate() error }"}
@@ -112,8 +113,8 @@ func Validators(schema *gen.Schema) (styles []Validator) {
 				"maximum",
 				">",
 				"less than",
-				*schema.Minimum,
-				schema.ExclusiveMinimum != nil && *schema.ExclusiveMinimum,
+				*schema.Maximum,
+				schema.ExclusiveMaximum != nil && *schema.ExclusiveMaximum,
 			)
 		}
 	}
