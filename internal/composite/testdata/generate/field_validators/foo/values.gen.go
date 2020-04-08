@@ -49,12 +49,12 @@ func (m *Bar) Validate() error {
 		}
 		return err
 	}
-	if m.ExclInteger != nil && *m.ExclInteger >= 1 {
+	if m.ExclInteger != nil && *m.ExclInteger >= 10 {
 		return &validationError{
 			errType:  "maximumExclusive",
 			path:     []interface{}{"ExclInteger"},
 			jsonPath: []interface{}{"exclInteger"},
-			message:  fmt.Sprintf("must be less than 1 but was %v", *m.ExclInteger),
+			message:  fmt.Sprintf("must be less than 10 but was %v", *m.ExclInteger),
 		}
 	}
 	if m.ExclInteger != nil && *m.ExclInteger <= 1 {
@@ -65,12 +65,12 @@ func (m *Bar) Validate() error {
 			message:  fmt.Sprintf("must be greater than 1 but was %v", *m.ExclInteger),
 		}
 	}
-	if m.ExclNumber != nil && *m.ExclNumber >= 1 {
+	if m.ExclNumber != nil && *m.ExclNumber >= 10.2 {
 		return &validationError{
 			errType:  "maximumExclusive",
 			path:     []interface{}{"ExclNumber"},
 			jsonPath: []interface{}{"exclNumber"},
-			message:  fmt.Sprintf("must be less than 1 but was %v", *m.ExclNumber),
+			message:  fmt.Sprintf("must be less than 10.2 but was %v", *m.ExclNumber),
 		}
 	}
 	if m.ExclNumber != nil && *m.ExclNumber <= 1 {
@@ -89,12 +89,12 @@ func (m *Bar) Validate() error {
 			message:  fmt.Sprintf(`must be one of (3, 6, 9) but got %v`, *m.Integer),
 		}
 	}
-	if m.Integer != nil && *m.Integer > 1 {
+	if m.Integer != nil && *m.Integer > 10 {
 		return &validationError{
 			errType:  "maximum",
 			path:     []interface{}{"Integer"},
 			jsonPath: []interface{}{"integer"},
-			message:  fmt.Sprintf("must be less than or equal to 1 but was %v", *m.Integer),
+			message:  fmt.Sprintf("must be less than or equal to 10 but was %v", *m.Integer),
 		}
 	}
 	if m.Integer != nil && *m.Integer < 1 {
@@ -121,12 +121,12 @@ func (m *Bar) Validate() error {
 			message:  fmt.Sprintf(`must be one of (3.2, 6.4, 9.6) but got %v`, *m.Number),
 		}
 	}
-	if m.Number != nil && *m.Number > 1 {
+	if m.Number != nil && *m.Number > 10.2 {
 		return &validationError{
 			errType:  "maximum",
 			path:     []interface{}{"Number"},
 			jsonPath: []interface{}{"number"},
-			message:  fmt.Sprintf("must be less than or equal to 1 but was %v", *m.Number),
+			message:  fmt.Sprintf("must be less than or equal to 10.2 but was %v", *m.Number),
 		}
 	}
 	if m.Number != nil && *m.Number < 1 {
