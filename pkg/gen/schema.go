@@ -249,6 +249,7 @@ type Config struct {
 	NoValidate    bool          `json:"noValidate"`
 	PromoteFields bool          `json:"promoteFields"`
 	NoOmitEmpty   bool          `json:"noOmitEmpty"`
+	RawMessage    bool          `json:"rawMessage"`
 }
 
 // Discriminator is jsonschema2go specific info for discriminating between multiple oneOf objects
