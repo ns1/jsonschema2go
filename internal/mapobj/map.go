@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/ns1/jsonschema2go/internal/validator"
-	"github.com/ns1/jsonschema2go/pkg/gen"
 	"net/url"
 	"unicode"
+
+	"github.com/ns1/jsonschema2go/internal/validator"
+	"github.com/ns1/jsonschema2go/pkg/gen"
 )
 
 //go:generate go run ../cmd/embedtmpl/embedtmpl.go mapobj map.tmpl map.gen.go
@@ -94,6 +95,10 @@ func (m *MapPlan) Execute(imports *gen.Imports) (string, error) {
 type mapPlanContext struct {
 	*MapPlan
 	*gen.Imports
+}
+
+func (m *mapPlanContext) Comment() string {
+	return gen.NormalizeComment(m.MapPlan.Comment)
 }
 
 func (m *mapPlanContext) ValidateInitialize() bool {

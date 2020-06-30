@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/ns1/jsonschema2go/internal/validator"
-	"github.com/ns1/jsonschema2go/pkg/gen"
 	"net/url"
 	"unicode"
+
+	"github.com/ns1/jsonschema2go/internal/validator"
+	"github.com/ns1/jsonschema2go/pkg/gen"
 )
 
 type TuplePlan struct {
@@ -139,6 +140,10 @@ type EnrichedTupleItem struct {
 	*TupleItem
 }
 
+func (e *EnrichedTupleItem) Comment() string {
+	return gen.NormalizeComment(e.TupleItem.Comment)
+}
+
 func (e *EnrichedTupleItem) NameSpace() string {
 	name := fmt.Sprintf("%s%d", e.TuplePlan.Type().Name, e.idx)
 	if len(name) > 0 {
@@ -147,6 +152,10 @@ func (e *EnrichedTupleItem) NameSpace() string {
 		name = string(runes)
 	}
 	return name
+}
+
+func (t *TuplePlanContext) Comment() string {
+	return gen.NormalizeComment(t.TuplePlan.Comment)
 }
 
 func (t *TuplePlanContext) Items() (items []*EnrichedTupleItem) {
