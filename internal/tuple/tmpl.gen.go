@@ -11,7 +11,7 @@ var tmpl = template.Must(template.New("").Parse(`{{/* gotype: github.com/ns1/jso
 // {{ .Type.Name }} is generated from {{ .ID }}
 {{ end -}}
 {{ if .Comment -}}
-    // {{ .Comment }}
+{{ .Comment }}
 {{ end -}}
 type {{ .Type.Name }} [{{ .ArrayLength }}]interface{}
 

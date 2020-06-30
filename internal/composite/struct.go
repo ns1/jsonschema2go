@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/ns1/jsonschema2go/internal/validator"
-	"github.com/ns1/jsonschema2go/pkg/gen"
 	"net/url"
 	"sort"
 	"unicode"
+
+	"github.com/ns1/jsonschema2go/internal/validator"
+	"github.com/ns1/jsonschema2go/pkg/gen"
 )
 
 // StructField contains information about how a struct's field should be rendered
@@ -185,11 +186,17 @@ func deriveStructFields(
 		if !fType.BuiltIn() && fJType == gen.JSONObject && !fieldSchema.AdditionalProperties.Present() {
 			fType.Pointer = true
 		}
+
+		fieldName, ok := schema.Config.FieldAliases[name]
+		if !ok {
+			fieldName = helper.JSONPropertyExported(name)
+		}
+
 		fields = append(
 			fields,
 			StructField{
 				Comment:         fieldSchema.Annotations.GetString("description"),
-				Name:            helper.JSONPropertyExported(name),
+				Name:            fieldName,
 				JSONName:        name,
 				Type:            fType,
 				Tag:             tag,
@@ -204,6 +211,10 @@ func deriveStructFields(
 type structPlanContext struct {
 	*StructPlan
 	*gen.Imports
+}
+
+func (s *structPlanContext) Comment() string {
+	return gen.NormalizeComment(s.StructPlan.Comment)
 }
 
 func (s *structPlanContext) ValidateInitialize() bool {
@@ -221,6 +232,10 @@ type enrichedStructField struct {
 	StructField
 	StructPlan *StructPlan
 	Imports    *gen.Imports
+}
+
+func (f *enrichedStructField) Comment() string {
+	return gen.NormalizeComment(f.StructField.Comment)
 }
 
 func (s *structPlanContext) Required() []enrichedStructField {

@@ -1,0 +1,10 @@
+{
+  "id": "https://example.com/testdata/generate/multiline_description/foo/bar.json",
+  "description": "Bar gives you some dumb info\n\nWheee",
+  "type": "object",
+  "properties": {
+    "blah": {
+      "type": "string"
+    }
+  }
+}

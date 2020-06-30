@@ -8,7 +8,7 @@ import (
 var tmpl = template.Must(template.New("").Parse(`{{/* gotype: github.com/ns1/jsonschema2go.structPlanContext */}}
 // {{ .Type.Name }} is generated from {{ .ID }}
 {{ if .Comment -}}
-// {{ .Comment }}
+{{ .Comment }}
 {{ end -}}
 type {{ .Type.Name }} struct {
 {{ range .Fields -}}

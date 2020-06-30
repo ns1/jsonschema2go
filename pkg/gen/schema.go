@@ -243,12 +243,13 @@ type Schema struct {
 
 // Config is a series of jsonschema2go user extensions
 type Config struct {
-	GoPath        string        `json:"gopath"`
-	Exclude       bool          `json:"exclude"`
-	Discriminator Discriminator `json:"Discriminator"`
-	NoValidate    bool          `json:"noValidate"`
-	PromoteFields bool          `json:"promoteFields"`
-	NoOmitEmpty   bool          `json:"noOmitEmpty"`
+	GoPath        string            `json:"gopath"`
+	Exclude       bool              `json:"exclude"`
+	Discriminator Discriminator     `json:"Discriminator"`
+	NoValidate    bool              `json:"noValidate"`
+	PromoteFields bool              `json:"promoteFields"`
+	NoOmitEmpty   bool              `json:"noOmitEmpty"`
+	FieldAliases  map[string]string `json:"fieldAliases"`
 }
 
 // Discriminator is jsonschema2go specific info for discriminating between multiple oneOf objects
@@ -441,4 +442,16 @@ func getJSONFieldNames(val interface{}) (fields []string) {
 		}
 	}
 	return
+}
+
+// NormalizeComment takes a comment string and makes sure it's normalized for Go
+func NormalizeComment(s string) string {
+	if s == "" {
+		return ""
+	}
+	var parts []string
+	for _, p := range strings.Split(s, "\n") {
+		parts = append(parts, "// " + p)
+	}
+	return strings.Join(parts, "\n")
 }

@@ -53,6 +53,10 @@ type enumPlanContext struct {
 	*Plan
 }
 
+func (e *enumPlanContext) Comment() string {
+	return gen.NormalizeComment(e.Plan.Comment)
+}
+
 // Member is an individual member of a enum
 type Member struct {
 	Name  string

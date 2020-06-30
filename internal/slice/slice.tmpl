@@ -2,7 +2,7 @@
 
 // {{ .Type.Name }} is generated from {{ .ID }}
 {{ if .Comment -}}
-    // {{ .Comment }}
+{{ .Comment }}
 {{ end -}}
 type {{ .Type.Name }} []{{ if .ItemType.Pointer }}*{{ end }}{{ $.QualName .ItemType }}
 

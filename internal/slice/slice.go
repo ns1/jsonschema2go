@@ -139,11 +139,15 @@ func (p *Plan) ItemValidateInitialize() bool {
 // Execute renders the current plan as a string
 func (p *Plan) Execute(imp *gen.Imports) (string, error) {
 	var w bytes.Buffer
-	err := tmpl.Execute(&w, slicePlanContext{imp, p})
+	err := tmpl.Execute(&w, &slicePlanContext{imp, p})
 	return w.String(), err
 }
 
 type slicePlanContext struct {
 	*gen.Imports
 	*Plan
+}
+
+func (s *slicePlanContext) Comment() string {
+	return gen.NormalizeComment(s.Plan.Comment)
 }

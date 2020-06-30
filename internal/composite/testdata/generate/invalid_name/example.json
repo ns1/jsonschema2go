@@ -1,0 +1,18 @@
+{
+  "id": "https://example.com/testdata/generate/invalid_name/foo/bar.json",
+  "description": "Bar gives you some dumb info",
+  "type": "object",
+  "x-jsonschema2go": {
+    "fieldAliases": {
+      "2factor": "TwoFactor"
+    }
+  },
+  "properties": {
+    "2factor": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "2factor"
+  ]
+}
