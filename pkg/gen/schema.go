@@ -249,7 +249,14 @@ type Config struct {
 	NoValidate    bool              `json:"noValidate"`
 	PromoteFields bool              `json:"promoteFields"`
 	NoOmitEmpty   bool              `json:"noOmitEmpty"`
-	FieldAliases  map[string]string `json:"fieldAliases"`
+	GoPath        string        `json:"gopath"`
+	Exclude       bool          `json:"exclude"`
+	Discriminator Discriminator `json:"Discriminator"`
+	NoValidate    bool          `json:"noValidate"`
+	PromoteFields bool          `json:"promoteFields"`
+	NoOmitEmpty   bool          `json:"noOmitEmpty"`
+	RawMessage    bool          `json:"rawMessage"`
+  FieldAliases  map[string]string `json:"fieldAliases"`
 }
 
 // Discriminator is jsonschema2go specific info for discriminating between multiple oneOf objects

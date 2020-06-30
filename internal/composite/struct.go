@@ -117,6 +117,23 @@ func deriveStructFields(
 		if err != nil {
 			return nil, err
 		}
+
+		if fieldSchema.Config.RawMessage {
+			fields = append(
+				fields,
+				StructField{
+					Comment:         fieldSchema.Annotations.GetString("description"),
+					Name:            helper.JSONPropertyExported(name),
+					JSONName:        name,
+					Type:            gen.TypeInfo{GoPath: "encoding/json", Name: "RawMessage"},
+					Tag:             fmt.Sprintf("`"+`json:"%s"`+"`", name),
+					Required:        required[name],
+					FieldValidators: validator.Validators(fieldSchema),
+				},
+			)
+			continue
+		}
+
 		fType, _ := helper.TypeInfo(fieldSchema)
 		if fType.Unknown() && len(fieldSchema.OneOf) == 2 {
 			oneOfA, err := fieldSchema.OneOf[0].Resolve(ctx, fieldSchema, helper)

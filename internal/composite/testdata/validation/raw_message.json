@@ -1,0 +1,23 @@
+[
+    {
+        "description": "raw message validation",
+        "schema": {"type": "object", "properties": {"value": {"x-jsonschema2go": {"rawMessage": true}}},"required": ["value"]},
+        "tests": [
+            {
+                "description": "parameter with null",
+                "data": {"value":  null},
+                "valid": true
+            },
+            {
+                "description": "parameter holding data",
+                "data": {"value":  "abc"},
+                "valid": true
+            },
+            {
+                "description": "parameter is absent",
+                "data": {},
+                "valid": false
+            }
+        ]
+    }
+]
