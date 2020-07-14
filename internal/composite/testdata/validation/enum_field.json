@@ -1,0 +1,38 @@
+[
+    {
+        "description": "slice of enum",
+        "schema": {
+            "type": "object",
+            "properties": {
+                "bar": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "A",
+                            "B",
+                            "C"
+                        ]
+                    }
+                }
+            }
+        },
+        "tests": [
+            {
+                "description": "match",
+                "data": {"bar": ["A", "B"]},
+                "valid": true
+            },
+            {
+                "description": "no enum match",
+                "data": {"bar":  ["A", "D"]},
+                "valid": false
+            },
+            {
+                "description": "no type match",
+                "data": {"bar": [1]},
+                "valid": false
+            }
+        ]
+    }
+]

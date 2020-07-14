@@ -1,9 +1,0 @@
-{
-  "id": "https://example.com/testdata/generate/string_enum/foo/letter.json",
-  "type": "string",
-  "enum": [
-    "a",
-    "b",
-    "c"
-  ]
-}

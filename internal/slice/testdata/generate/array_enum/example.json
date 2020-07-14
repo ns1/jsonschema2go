@@ -1,0 +1,13 @@
+{
+  "id": "https://example.com/testdata/generate/array_enum/foo/bar.json",
+  "description": "Bar gives you some dumb info",
+  "type": "array",
+  "items": {
+    "type": "string",
+    "enum": [
+      "A",
+      "B",
+      "C"
+    ]
+  }
+}
