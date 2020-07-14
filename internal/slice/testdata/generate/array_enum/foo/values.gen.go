@@ -5,29 +5,27 @@ import (
 	"fmt"
 )
 
-// Letter is generated from https://example.com/testdata/generate/string_enum/foo/letter.json
-type Letter string
+// Bar is generated from https://example.com/testdata/generate/array_enum/foo/bar.json
+// Bar gives you some dumb info
+type Bar []string
 
-const (
-	LetterA Letter = "a"
-	LetterB Letter = "b"
-	LetterC Letter = "c"
+var (
+	barItemsEnum = map[string]bool{"A": true, "B": true, "C": true}
 )
 
-// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/string_enum/foo/letter.json
-func (m Letter) Validate() error {
-	switch m {
-	case LetterA:
-		return nil
-	case LetterB:
-		return nil
-	case LetterC:
-		return nil
+// Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/array_enum/foo/bar.json
+func (m Bar) Validate() error {
+	for i := range m {
+		if !barItemsEnum[m[i]] {
+			return &validationError{
+				errType:  "enum",
+				message:  fmt.Sprintf(`must be one of ("A", "B", "C") but got %v`, m[i]),
+				path:     []interface{}{i},
+				jsonPath: []interface{}{i},
+			}
+		}
 	}
-	return &validationError{
-		errType: "unknown_member",
-		message: fmt.Sprintf("unknown value provided for Letter: %v", m),
-	}
+	return nil
 }
 
 type valErr interface {

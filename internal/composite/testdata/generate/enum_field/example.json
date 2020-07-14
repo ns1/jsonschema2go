@@ -1,0 +1,18 @@
+{
+  "id": "https://example.com/testdata/generate/enum_field/foo/bar.json",
+  "description": "Bar gives you some dumb info",
+  "type": "object",
+  "properties": {
+    "bar": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "A",
+          "B",
+          "C"
+        ]
+      }
+    }
+  }
+}

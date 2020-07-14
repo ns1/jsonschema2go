@@ -1,12 +1,12 @@
 package print
 
 import (
+	"sort"
+
 	"github.com/ns1/jsonschema2go/internal/composite"
-	"github.com/ns1/jsonschema2go/internal/enum"
 	"github.com/ns1/jsonschema2go/internal/slice"
 	"github.com/ns1/jsonschema2go/internal/tuple"
 	"github.com/ns1/jsonschema2go/pkg/gen"
-	"sort"
 )
 
 func defaultSort(plans []gen.Plan) []gen.Plan {
@@ -38,8 +38,6 @@ func key(plan gen.Plan) []string {
 		return []string{"b", name}
 	case *tuple.TuplePlan:
 		return []string{"c", name}
-	case *enum.Plan:
-		return []string{"d", name}
 	default:
 		return []string{"z", name}
 	}

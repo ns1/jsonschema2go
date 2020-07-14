@@ -4,18 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/ns1/jsonschema2go/internal/composite"
-	"github.com/ns1/jsonschema2go/internal/enum"
-	"github.com/ns1/jsonschema2go/internal/mapobj"
-	"github.com/ns1/jsonschema2go/internal/slice"
-	"github.com/ns1/jsonschema2go/internal/tuple"
-	"github.com/ns1/jsonschema2go/pkg/gen"
 	"log"
 	"net/url"
 	"sort"
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/ns1/jsonschema2go/internal/composite"
+	"github.com/ns1/jsonschema2go/internal/mapobj"
+	"github.com/ns1/jsonschema2go/internal/slice"
+	"github.com/ns1/jsonschema2go/internal/tuple"
+	"github.com/ns1/jsonschema2go/pkg/gen"
 )
 
 var (
@@ -25,7 +25,6 @@ var (
 		plannerFunc("object", composite.PlanObject),
 		plannerFunc("tuple", tuple.PlanTuple),
 		plannerFunc("slice", slice.Build),
-		plannerFunc("enum", enum.Build),
 		plannerFunc("discriminatedOneOf", composite.PlanDiscriminatedOneOfObject),
 		plannerFunc("oneOfDiffTypes", composite.PlanOneOfDiffTypes),
 	}
@@ -203,7 +202,7 @@ func (d Typer) TypeInfo(s *gen.Schema) (gen.TypeInfo, error) {
 }
 
 func (d Typer) TypeInfoHinted(s *gen.Schema, t gen.JSONType) gen.TypeInfo {
-	if t == gen.JSONUnknown || t == gen.JSONArray || t == gen.JSONObject || len(s.Enum) > 0 {
+	if t == gen.JSONUnknown || t == gen.JSONArray || t == gen.JSONObject {
 		if f := d.TypeFunc(s); f.Name != "" {
 			f.Name = d.Namer.JSONPropertyExported(f.Name)
 			return f

@@ -4,15 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/ns1/jsonschema2go/internal/composite"
-	"github.com/ns1/jsonschema2go/internal/enum"
-	"github.com/ns1/jsonschema2go/internal/planning"
-	"github.com/ns1/jsonschema2go/internal/validator"
-	"github.com/ns1/jsonschema2go/pkg/gen"
-	"github.com/stretchr/testify/require"
 	"net/url"
 	"sort"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/ns1/jsonschema2go/internal/composite"
+	"github.com/ns1/jsonschema2go/internal/planning"
+	"github.com/ns1/jsonschema2go/internal/validator"
+	"github.com/ns1/jsonschema2go/pkg/gen"
 )
 
 func tag(s string) string {
@@ -211,36 +212,6 @@ func TestSchemaToPlan(t *testing.T) {
 							},
 							FieldValidators: []validator.Validator{validator.SubschemaValidator},
 						},
-					},
-				},
-			},
-		},
-		{
-			name: "enum",
-			schema: &gen.Schema{
-				ID: u,
-				Config: gen.Config{
-					GoPath: "github.com/ns1/jsonschema2go/example#Letter",
-				},
-				Type: &gen.TypeField{gen.JSONString},
-				Enum: []interface{}{
-					"a",
-					"b",
-					"c",
-				},
-			},
-			want: []gen.Plan{
-				&enum.Plan{
-					ID: u,
-					TypeInfo: gen.TypeInfo{
-						GoPath: "github.com/ns1/jsonschema2go/example",
-						Name:   "Letter",
-					},
-					BaseType: gen.TypeInfo{Name: "string"},
-					Members: []enum.Member{
-						{"A", "a"},
-						{"B", "b"},
-						{"C", "c"},
 					},
 				},
 			},
