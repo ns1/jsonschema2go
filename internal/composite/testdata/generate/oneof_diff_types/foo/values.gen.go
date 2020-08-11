@@ -11,7 +11,7 @@ import (
 // Bar is generated from https://example.com/testdata/generate/oneof_diff_types/foo/bar.json
 // Bar gives you some dumb info
 type Bar struct {
-	_     [0]byte
+	_     []byte
 	Value interface{}
 }
 
@@ -102,7 +102,7 @@ func (m *Bar) MarshalJSON() ([]byte, error) {
 
 // Baz is generated from https://example.com/testdata/generate/oneof_diff_types/foo/bar.json#/oneOf/0
 type Baz struct {
-	_   [0]byte
+	_   []byte
 	Baz *string `json:"baz,omitempty"`
 }
 

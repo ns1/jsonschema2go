@@ -7,7 +7,7 @@ import (
 
 // Bar is generated from https://example.com/testdata/generate/expanded/foo/bar.json
 type Bar struct {
-	_ [0]byte
+	_ []byte
 	Foo
 	BarAllOf1
 }
@@ -25,7 +25,7 @@ func (m *Bar) Validate() error {
 
 // BarAllOf1 is generated from https://example.com/testdata/generate/expanded/foo/bar.json#/allOf/1
 type BarAllOf1 struct {
-	_      [0]byte
+	_      []byte
 	Parent *Foo `json:"parent,omitempty"`
 }
 
@@ -49,7 +49,7 @@ func (m *BarAllOf1) Validate() error {
 
 // Foo is generated from https://example.com/testdata/generate/expanded/foo/foo.json
 type Foo struct {
-	_ [0]byte
+	_ []byte
 	Bar
 }
 

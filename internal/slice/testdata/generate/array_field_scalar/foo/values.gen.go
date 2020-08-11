@@ -7,7 +7,7 @@ import (
 
 // Example is generated from https://example.com/testdata/generate/array_field_scalar/foo/example.json
 type Example struct {
-	_       [0]byte
+	_       []byte
 	Options ExampleOptions `json:"options"`
 }
 

@@ -10,7 +10,7 @@ import (
 //
 // Wheee
 type Bar struct {
-	_    [0]byte
+	_    []byte
 	Blah *string `json:"blah,omitempty"`
 }
 

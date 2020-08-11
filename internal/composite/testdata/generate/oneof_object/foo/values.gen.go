@@ -9,7 +9,7 @@ import (
 // Bar is generated from https://example.com/testdata/generate/oneof_object/foo/example.json
 // Bar gives you some dumb info
 type Bar struct {
-	_         [0]byte
+	_         []byte
 	Direction interface{}
 }
 
@@ -42,7 +42,7 @@ func (m *Bar) MarshalJSON() ([]byte, error) {
 
 // Left is generated from https://example.com/testdata/generate/oneof_object/foo/example.json#/oneOf/0
 type Left struct {
-	_         [0]byte
+	_         []byte
 	Direction *string `json:"direction,omitempty"`
 	Value     *int64  `json:"value,omitempty"`
 }
@@ -66,7 +66,7 @@ func (m *Left) Validate() error {
 
 // Right is generated from https://example.com/testdata/generate/oneof_object/foo/example.json#/oneOf/1
 type Right struct {
-	_         [0]byte
+	_         []byte
 	Direction *string  `json:"direction,omitempty"`
 	Value     *float64 `json:"value,omitempty"`
 }

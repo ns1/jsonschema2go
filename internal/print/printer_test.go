@@ -165,7 +165,7 @@ import (
 // Bob is generated from <nil>
 // Bob does lots of cool things
 type Bob struct {
-	_ [0]byte
+	_ []byte
 	Count int ` + "`" + `json:"count,omitempty"` + "`" + `
 }
 
@@ -209,7 +209,7 @@ import (
 // Bob is generated from <nil>
 // Bob does lots of cool things
 type Bob struct {
-	_ [0]byte
+	_ []byte
 	Count int 				` + "`" + `json:"count,omitempty"` + "`" + `
 	Other blah.OtherType 	` + "`" + `json:"other,omitempty"` + "`" + `
 }
@@ -265,7 +265,7 @@ import (
 // Bob is generated from <nil>
 // Bob does lots of cool things
 type Bob struct {
-	_ [0]byte
+	_ []byte
 	Count 		int 				` + "`" + `json:"count,omitempty"` + "`" + `
 	Other 		*blah.OtherType 	` + "`" + `json:"other,omitempty"` + "`" + `
 	OtherOther 	blah2.AnotherType 	` + "`" + `json:"another,omitempty"` + "`" + `
@@ -309,7 +309,7 @@ import (
 // Bob is generated from <nil>
 // Bob does lots of cool things
 type Bob struct {
-	_ [0]byte
+	_ []byte
 	blah.OtherType
 }
 
@@ -359,7 +359,7 @@ import (
 // Bob is generated from <nil>
 // Bob does lots of cool things
 type Bob struct {
-	_ [0]byte
+	_ []byte
 	OtherType
 }
 
@@ -371,7 +371,7 @@ func (m *Bob) Validate() error {
 // OtherType is generated from <nil>
 // OtherType does lots of cool things
 type OtherType struct {
-	_ [0]byte
+	_ []byte
 	Count int ` + "`" + `json:"count,omitempty"` + "`" + `
 }
 
@@ -418,7 +418,7 @@ import (
 // OtherType is generated from <nil>
 // OtherType does lots of cool things
 type OtherType struct {
-	_ [0]byte
+	_ []byte
 	Count int ` + "`" + `json:"count,omitempty"` + "`" + `
 }
 

@@ -7,7 +7,7 @@ import (
 
 // A is generated from https://example.com/testdata/generate/simple_nested/foo/a.json
 type A struct {
-	_ [0]byte
+	_ []byte
 	B *AB `json:"b,omitempty"`
 }
 
@@ -37,7 +37,7 @@ func (m *A) Validate() error {
 
 // AB is generated from https://example.com/testdata/generate/simple_nested/foo/a.json#/properties/b
 type AB struct {
-	_ [0]byte
+	_ []byte
 }
 
 // Validate returns an error if this value is invalid according to rules defined in https://example.com/testdata/generate/simple_nested/foo/a.json#/properties/b

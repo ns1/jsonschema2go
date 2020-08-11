@@ -8,7 +8,7 @@ import (
 // Bar is generated from https://example.com/testdata/generate/double_nested/foo/bar.json
 // Bar gives you some dumb info
 type Bar struct {
-	_   [0]byte
+	_   []byte
 	Foo *Foo `json:"foo,omitempty"`
 }
 
@@ -32,7 +32,7 @@ func (m *Bar) Validate() error {
 
 // Baz is generated from https://example.com/testdata/generate/double_nested/foo/baz.json
 type Baz struct {
-	_    [0]byte
+	_    []byte
 	Name *string `json:"name,omitempty"`
 }
 
@@ -43,7 +43,7 @@ func (m *Baz) Validate() error {
 
 // Foo is generated from https://example.com/testdata/generate/double_nested/foo/bar.json#/properties/foo
 type Foo struct {
-	_   [0]byte
+	_   []byte
 	Baz *Baz `json:"baz,omitempty"`
 }
 

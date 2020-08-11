@@ -4,7 +4,7 @@
 {{ .Comment }}
 {{ end -}}
 type {{ .Type.Name }} struct {
-	_ [0]byte
+	_ []byte
 {{ range .Fields -}}
 	{{ .FieldDecl }}
 {{ end }}

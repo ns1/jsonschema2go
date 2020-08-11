@@ -8,7 +8,7 @@ import (
 // Bar is generated from https://example.com/testdata/generate/exclude/foo/bar.json
 // Bar gives you some dumb info
 type Bar struct {
-	_     [0]byte
+	_     []byte
 	Inner *Excluded `json:"inner,omitempty"`
 	Name  *string   `json:"name,omitempty"`
 }

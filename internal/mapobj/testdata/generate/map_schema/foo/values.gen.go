@@ -9,7 +9,7 @@ import (
 // Bar is generated from https://example.com/testdata/generate/map_schema/foo/bar.json
 // Bar contains some info
 type Bar struct {
-	_   [0]byte
+	_   []byte
 	Baz BarBaz `json:"baz,omitempty"`
 	Biz BarBiz `json:"biz,omitempty"`
 }
@@ -21,7 +21,7 @@ func (m *Bar) Validate() error {
 
 // BarBizAdditionalProperties is generated from https://example.com/testdata/generate/map_schema/foo/bar.json#/properties/biz/additionalProperties
 type BarBizAdditionalProperties struct {
-	_  [0]byte
+	_  []byte
 	ID *int64 `json:"id,omitempty"`
 }
 

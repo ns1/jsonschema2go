@@ -9,7 +9,7 @@ import (
 // Bar is generated from https://example.com/testdata/generate/exclude_external_pkg/foo/example.json
 // Bar gives you some dumb info
 type Bar struct {
-	_     [0]byte
+	_     []byte
 	Inner *other.Excluded `json:"inner,omitempty"`
 	Name  *string         `json:"name,omitempty"`
 }
