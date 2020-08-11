@@ -8,6 +8,7 @@ import (
 // Bar is generated from https://example.com/testdata/generate/composite_validation/foo/bar.json
 // Bar gives you some dumb info
 type Bar struct {
+	_ [0]byte
 	Blob
 	Baz
 }
@@ -25,6 +26,7 @@ func (m *Bar) Validate() error {
 
 // Baz is generated from https://example.com/testdata/generate/composite_validation/foo/baz.json
 type Baz struct {
+	_    [0]byte
 	Name *string `json:"name,omitempty"`
 }
 
@@ -43,6 +45,7 @@ func (m *Baz) Validate() error {
 
 // Blob is generated from https://example.com/testdata/generate/composite_validation/foo/blob.json
 type Blob struct {
+	_     [0]byte
 	Count *int64 `json:"count,omitempty"`
 }
 

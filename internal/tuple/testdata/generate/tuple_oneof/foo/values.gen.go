@@ -10,6 +10,7 @@ import (
 
 // Baz is generated from https://example.com/testdata/generate/tuple_oneof/foo/bar.json#/items/2
 type Baz struct {
+	_     [0]byte
 	Value interface{}
 }
 

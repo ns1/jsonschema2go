@@ -8,6 +8,7 @@ import (
 // Bar is generated from https://example.com/testdata/generate/composite/foo/bar.json
 // Bar gives you some dumb info
 type Bar struct {
+	_    [0]byte
 	Name *string `json:"name,omitempty"`
 	ExplicitNameStruct
 }
@@ -22,6 +23,7 @@ func (m *Bar) Validate() error {
 
 // ExplicitNameStruct is generated from https://example.com/testdata/generate/composite/foo/other.json
 type ExplicitNameStruct struct {
+	_     [0]byte
 	Count *int64 `json:"count,omitempty"`
 }
 

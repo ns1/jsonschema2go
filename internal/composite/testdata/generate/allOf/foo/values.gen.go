@@ -8,6 +8,7 @@ import (
 // Bar is generated from https://example.com/testdata/generate/allOf/foo/bar.json
 // Bar gives you some dumb info
 type Bar struct {
+	_   [0]byte
 	Bar *int64  `json:"bar,omitempty"`
 	Foo *string `json:"foo,omitempty"`
 }

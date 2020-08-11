@@ -7,6 +7,7 @@ import (
 
 // Example is generated from https://example.com/testdata/generate/array_field/foo/example.json
 type Example struct {
+	_       [0]byte
 	Options ExampleOptions `json:"options"`
 }
 
@@ -28,6 +29,7 @@ func (m *Example) Validate() error {
 
 // Inner is generated from https://example.com/testdata/generate/array_field/foo/inner.json
 type Inner struct {
+	_     [0]byte
 	Name  *string     `json:"name,omitempty"`
 	Value interface{} `json:"value,omitempty"`
 }

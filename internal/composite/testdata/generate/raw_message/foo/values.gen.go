@@ -9,6 +9,7 @@ import (
 // Bar is generated from https://example.com/testdata/generate/raw_message/foo/bar.json
 // Bar gives you null value
 type Bar struct {
+	_     [0]byte
 	Value json.RawMessage `json:"value"`
 }
 

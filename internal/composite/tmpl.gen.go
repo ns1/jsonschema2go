@@ -11,6 +11,7 @@ var tmpl = template.Must(template.New("").Parse(`{{/* gotype: github.com/ns1/jso
 {{ .Comment }}
 {{ end -}}
 type {{ .Type.Name }} struct {
+	_ [0]byte
 {{ range .Fields -}}
 	{{ .FieldDecl }}
 {{ end }}

@@ -8,6 +8,7 @@ import (
 // Bar is generated from https://example.com/testdata/generate/array_all_of/foo/bar.json
 // Bar gives you some dumb info
 type Bar struct {
+	_ [0]byte
 	BarAllOf0
 	BarAllOf1
 }
@@ -25,6 +26,7 @@ func (m *Bar) Validate() error {
 
 // BarAllOf0 is generated from https://example.com/testdata/generate/array_all_of/foo/bar.json#/allOf/0
 type BarAllOf0 struct {
+	_  [0]byte
 	ID *int64 `json:"id,omitempty"`
 }
 
@@ -35,6 +37,7 @@ func (m *BarAllOf0) Validate() error {
 
 // BarAllOf1 is generated from https://example.com/testdata/generate/array_all_of/foo/bar.json#/allOf/1
 type BarAllOf1 struct {
+	_    [0]byte
 	Name *string `json:"name,omitempty"`
 }
 

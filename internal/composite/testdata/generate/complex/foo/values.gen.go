@@ -8,6 +8,7 @@ import (
 
 // AddressDetails is generated from https://example.com/testdata/generate/complex/foo/address-details.json
 type AddressDetails struct {
+	_      [0]byte
 	Name   *string `json:"name,omitempty"`
 	Prefix *string `json:"prefix,omitempty"`
 }
@@ -19,6 +20,7 @@ func (m *AddressDetails) Validate() error {
 
 // DhcpOption is generated from https://example.com/testdata/generate/complex/foo/dhcp-option.json
 type DhcpOption struct {
+	_          [0]byte
 	AlwaysSend *bool       `json:"always_send,omitempty"`
 	Name       *string     `json:"name,omitempty"`
 	Value      interface{} `json:"value,omitempty"`
@@ -47,6 +49,7 @@ func (m *DhcpOption) Validate() error {
 
 // DhcpScopeGroupSettingsCommon is generated from https://example.com/testdata/generate/complex/foo/dhcp-scope-group-settings-common.json
 type DhcpScopeGroupSettingsCommon struct {
+	_                 [0]byte
 	Enabled           *bool                               `json:"enabled,omitempty"`
 	Options           DhcpScopeGroupSettingsCommonOptions `json:"options"`
 	RebindTimerSecs   *int64                              `json:"rebind_timer_secs,omitempty"`
@@ -72,6 +75,7 @@ func (m *DhcpScopeGroupSettingsCommon) Validate() error {
 
 // DhcpScopeGroupSettingsSynthesizeDnsRecords is generated from https://example.com/testdata/generate/complex/foo/dhcp-scope-group-settings-synthesize-dns-records.json
 type DhcpScopeGroupSettingsSynthesizeDnsRecords struct {
+	_                [0]byte
 	Enabled          *bool   `json:"enabled,omitempty"`
 	GeneratedPrefix  *string `json:"generated_prefix,omitempty"`
 	QualifyingSuffix *string `json:"qualifying_suffix,omitempty"`
@@ -84,6 +88,7 @@ func (m *DhcpScopeGroupSettingsSynthesizeDnsRecords) Validate() error {
 
 // DhcpScopeGroupSettingsV4 is generated from https://example.com/testdata/generate/complex/foo/dhcp-scope-group-settings-v4.json
 type DhcpScopeGroupSettingsV4 struct {
+	_ [0]byte
 	DhcpScopeGroupSettingsCommon
 	DhcpScopeGroupSettingsV4AllOf1
 }
@@ -101,6 +106,7 @@ func (m *DhcpScopeGroupSettingsV4) Validate() error {
 
 // DhcpScopeGroupSettingsV4AllOf1 is generated from https://example.com/testdata/generate/complex/foo/dhcp-scope-group-settings-v4.json#/allOf/1
 type DhcpScopeGroupSettingsV4AllOf1 struct {
+	_                    [0]byte
 	EchoClientID         *bool                                       `json:"echo_client_id,omitempty"`
 	SynthesizeDnsRecords *DhcpScopeGroupSettingsSynthesizeDnsRecords `json:"synthesize_dns_records,omitempty"`
 }
@@ -125,6 +131,7 @@ func (m *DhcpScopeGroupSettingsV4AllOf1) Validate() error {
 
 // DhcpScopeGroupSettingsV6 is generated from https://example.com/testdata/generate/complex/foo/dhcp-scope-group-settings-v6.json
 type DhcpScopeGroupSettingsV6 struct {
+	_ [0]byte
 	DhcpScopeGroupSettingsCommon
 	DhcpScopeGroupSettingsV6AllOf1
 }
@@ -142,6 +149,7 @@ func (m *DhcpScopeGroupSettingsV6) Validate() error {
 
 // DhcpScopeGroupSettingsV6AllOf1 is generated from https://example.com/testdata/generate/complex/foo/dhcp-scope-group-settings-v6.json#/allOf/1
 type DhcpScopeGroupSettingsV6AllOf1 struct {
+	_                     [0]byte
 	PreferredLifetimeSecs *int64                                      `json:"preferred_lifetime_secs,omitempty"`
 	SynthesizeDnsRecords  *DhcpScopeGroupSettingsSynthesizeDnsRecords `json:"synthesize_dns_records,omitempty"`
 }
@@ -166,6 +174,7 @@ func (m *DhcpScopeGroupSettingsV6AllOf1) Validate() error {
 
 // ExpandedReservation is generated from https://example.com/testdata/generate/complex/foo/expanded-reservation.json
 type ExpandedReservation struct {
+	_ [0]byte
 	Reservation
 	ExpandedReservationAllOf1
 }
@@ -183,6 +192,7 @@ func (m *ExpandedReservation) Validate() error {
 
 // ExpandedReservationAllOf1 is generated from https://example.com/testdata/generate/complex/foo/expanded-reservation.json#/allOf/1
 type ExpandedReservationAllOf1 struct {
+	_              [0]byte
 	AddressDetails *AddressDetails `json:"address_details,omitempty"`
 }
 
@@ -206,6 +216,7 @@ func (m *ExpandedReservationAllOf1) Validate() error {
 
 // ExpandedScope is generated from https://example.com/testdata/generate/complex/foo/expanded-scope.json
 type ExpandedScope struct {
+	_ [0]byte
 	Scope
 	ExpandedScopeAllOf1
 }
@@ -223,6 +234,7 @@ func (m *ExpandedScope) Validate() error {
 
 // ExpandedScopeAllOf1 is generated from https://example.com/testdata/generate/complex/foo/expanded-scope.json#/allOf/1
 type ExpandedScopeAllOf1 struct {
+	_              [0]byte
 	AddressDetails *AddressDetails `json:"address_details,omitempty"`
 }
 
@@ -246,6 +258,7 @@ func (m *ExpandedScopeAllOf1) Validate() error {
 
 // ExpandedScopeGroupResponse is generated from https://example.com/testdata/generate/complex/foo/expanded-scope-group-response.json
 type ExpandedScopeGroupResponse struct {
+	_ [0]byte
 	ScopeGroupResponse
 	ExpandedScopeGroupResponseAllOf1
 }
@@ -263,6 +276,7 @@ func (m *ExpandedScopeGroupResponse) Validate() error {
 
 // ExpandedScopeGroupResponseAllOf1 is generated from https://example.com/testdata/generate/complex/foo/expanded-scope-group-response.json#/allOf/1
 type ExpandedScopeGroupResponseAllOf1 struct {
+	_            [0]byte
 	Reservations ExpandedScopeGroupResponseAllOf1Reservations `json:"reservations"`
 	Scopes       ExpandedScopeGroupResponseAllOf1Scopes       `json:"scopes"`
 }
@@ -296,6 +310,7 @@ func (m *ExpandedScopeGroupResponseAllOf1) Validate() error {
 
 // Reservation is generated from https://example.com/testdata/generate/complex/foo/reservation.json
 type Reservation struct {
+	_ [0]byte
 	ReservationAllOf0
 	ReservationFields
 }
@@ -321,6 +336,7 @@ func (m *Reservation) Validate() error {
 
 // ReservationAllOf0 is generated from https://example.com/testdata/generate/complex/foo/reservation.json#/allOf/0
 type ReservationAllOf0 struct {
+	_  [0]byte
 	ID *int64 `json:"id,omitempty"`
 }
 
@@ -331,6 +347,7 @@ func (m *ReservationAllOf0) Validate() error {
 
 // ReservationFields is generated from https://example.com/testdata/generate/complex/foo/reservation-fields.json
 type ReservationFields struct {
+	_            [0]byte
 	AddressID    *int64                   `json:"address_id,omitempty"`
 	Dhcpv6       *bool                    `json:"dhcpv6,omitempty"`
 	Mac          *string                  `json:"mac,omitempty"`
@@ -376,6 +393,7 @@ func (m *ReservationFields) Validate() error {
 
 // Scope is generated from https://example.com/testdata/generate/complex/foo/scope.json
 type Scope struct {
+	_ [0]byte
 	ScopeAllOf0
 	ScopeFields
 }
@@ -393,6 +411,7 @@ func (m *Scope) Validate() error {
 
 // ScopeAllOf0 is generated from https://example.com/testdata/generate/complex/foo/scope.json#/allOf/0
 type ScopeAllOf0 struct {
+	_  [0]byte
 	ID *int64 `json:"id,omitempty"`
 }
 
@@ -403,6 +422,7 @@ func (m *ScopeAllOf0) Validate() error {
 
 // ScopeFields is generated from https://example.com/testdata/generate/complex/foo/scope-fields.json
 type ScopeFields struct {
+	_                 [0]byte
 	AddressID         *int64             `json:"address_id,omitempty"`
 	Options           ScopeFieldsOptions `json:"options"`
 	ScopeGroupID      *int64             `json:"scope_group_id,omitempty"`
@@ -443,6 +463,7 @@ func (m *ScopeFields) Validate() error {
 
 // ScopeGroupResponse is generated from https://example.com/testdata/generate/complex/foo/scope-group-response.json
 type ScopeGroupResponse struct {
+	_ [0]byte
 	ScopeGroupUpdateable
 	ScopeGroupResponseAllOf1
 }
@@ -492,6 +513,7 @@ func (m *ScopeGroupResponse) Validate() error {
 
 // ScopeGroupResponseAllOf1 is generated from https://example.com/testdata/generate/complex/foo/scope-group-response.json#/allOf/1
 type ScopeGroupResponseAllOf1 struct {
+	_         [0]byte
 	ID        *int64 `json:"id,omitempty"`
 	NetworkID *int64 `json:"network_id,omitempty"`
 }
@@ -503,6 +525,7 @@ func (m *ScopeGroupResponseAllOf1) Validate() error {
 
 // ScopeGroupUpdateable is generated from https://example.com/testdata/generate/complex/foo/scope-group-updateable.json
 type ScopeGroupUpdateable struct {
+	_             [0]byte
 	DhcpServiceID *int64                    `json:"dhcp_service_id,omitempty"`
 	Dhcpv4        *DhcpScopeGroupSettingsV4 `json:"dhcpv4,omitempty"`
 	Dhcpv6        *DhcpScopeGroupSettingsV6 `json:"dhcpv6,omitempty"`

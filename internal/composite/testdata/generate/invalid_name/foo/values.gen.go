@@ -8,6 +8,7 @@ import (
 // Bar is generated from https://example.com/testdata/generate/invalid_name/foo/bar.json
 // Bar gives you some dumb info
 type Bar struct {
+	_         [0]byte
 	TwoFactor *string `json:"2factor,omitempty"`
 }
 

@@ -10,6 +10,7 @@ import (
 // Bar is generated from https://example.com/testdata/generate/field_validators/foo/bar.json
 // Bar gives you some dumb info
 type Bar struct {
+	_           [0]byte
 	Array       BarArray `json:"array"`
 	ExclInteger *int64   `json:"exclInteger,omitempty"`
 	ExclNumber  *float64 `json:"exclNumber,omitempty"`

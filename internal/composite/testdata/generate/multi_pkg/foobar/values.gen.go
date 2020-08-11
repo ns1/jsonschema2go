@@ -7,6 +7,7 @@ import (
 
 // Blob is generated from https://example.com/testdata/generate/multi_pkg/foobar/blob.json
 type Blob struct {
+	_     [0]byte
 	Count *int64 `json:"count,omitempty"`
 }
 

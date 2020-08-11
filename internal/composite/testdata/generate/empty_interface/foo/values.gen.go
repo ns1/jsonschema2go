@@ -8,6 +8,7 @@ import (
 // Bar is generated from https://example.com/testdata/generate/empty_interface/foo/bar.json
 // Bar gives you some dumb info
 type Bar struct {
+	_     [0]byte
 	Name  *string     `json:"name,omitempty"`
 	Value interface{} `json:"value,omitempty"`
 }
