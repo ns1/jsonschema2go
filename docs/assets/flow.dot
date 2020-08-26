@@ -1,0 +1,10 @@
+
+digraph {
+    rankdir="LR";
+
+    node [shape="box"];
+
+    input -> crawling;
+    crawling -> planning;
+    planning -> printing;
+}
