@@ -122,11 +122,17 @@ func deriveStructFields(
 			fields = append(
 				fields,
 				StructField{
-					Comment:         fieldSchema.Annotations.GetString("description"),
-					Name:            helper.JSONPropertyExported(name),
-					JSONName:        name,
-					Type:            gen.TypeInfo{GoPath: "encoding/json", Name: "RawMessage"},
-					Tag:             fmt.Sprintf("`"+`json:"%s"`+"`", name),
+					Comment:  fieldSchema.Annotations.GetString("description"),
+					Name:     helper.JSONPropertyExported(name),
+					JSONName: name,
+					Type:     gen.TypeInfo{GoPath: "encoding/json", Name: "RawMessage"},
+					Tag: func() string {
+						omitEmpty := ""
+						if !fieldSchema.Config.NoOmitEmpty {
+							omitEmpty = ",omitempty"
+						}
+						return fmt.Sprintf("`"+`json:"%s%s"`+"`", name, omitEmpty)
+					}(),
 					Required:        required[name],
 					FieldValidators: validator.Validators(fieldSchema),
 				},

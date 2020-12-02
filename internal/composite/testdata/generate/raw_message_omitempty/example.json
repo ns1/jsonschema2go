@@ -1,17 +1,13 @@
 {
-  "id": "https://example.com/testdata/generate/raw_message/foo/bar.json",
+  "id": "https://example.com/testdata/generate/raw_message_omitempty/foo/bar.json",
   "description": "Bar gives you null value",
   "type": "object",
   "properties": {
     "value": {
       "x-jsonschema2go": {
-        "rawMessage": true,
-        "noOmitEmpty": true
+        "rawMessage": true
       },
       "description": "literally nothing interesting"
     }
-  },
-  "required": [
-    "value"
-  ]
+  }
 }
