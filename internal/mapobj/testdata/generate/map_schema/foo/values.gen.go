@@ -53,8 +53,7 @@ func (m BarBaz) Validate() error {
 	for k := range m {
 		keys = append(keys, k)
 	}
-	strings.Sort(keys)
-	for k := range keys {
+	for _, k := range keys {
 		v := m[k]
 
 		if !barBazPattern.MatchString(v) {
@@ -78,8 +77,7 @@ func (m BarBiz) Validate() error {
 	for k := range m {
 		keys = append(keys, k)
 	}
-	strings.Sort(keys)
-	for k := range keys {
+	for _, k := range keys {
 		v := m[k]
 
 		if err := v.Validate(); err != nil {

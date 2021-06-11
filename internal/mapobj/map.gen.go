@@ -44,8 +44,7 @@ func (m {{ .Type.Name }}) Validate() error {
     for k := range m {
     	keys = append(keys, k)
     }
-    strings.Sort(keys)
-    for k := range keys {
+    for _, k := range keys {
     	v := m[k]
     	{{ range .MapPlan.Validators }}
         {{ if eq .Name "subschema" -}}
