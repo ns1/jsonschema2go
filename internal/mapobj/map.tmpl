@@ -37,7 +37,6 @@ func (m {{ .Type.Name }}) Validate() error {
     for k := range m {
     	keys = append(keys, k)
     }
-    sort.Strings(keys)
     for _, k := range keys {
     	v := m[k]
     	{{ range .MapPlan.Validators }}

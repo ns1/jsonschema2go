@@ -53,7 +53,6 @@ func (m BarBaz) Validate() error {
 	for k := range m {
 		keys = append(keys, k)
 	}
-	sort.Strings(keys)
 	for _, k := range keys {
 		v := m[k]
 
@@ -78,7 +77,6 @@ func (m BarBiz) Validate() error {
 	for k := range m {
 		keys = append(keys, k)
 	}
-	sort.Strings(keys)
 	for _, k := range keys {
 		v := m[k]
 
