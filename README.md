@@ -101,3 +101,7 @@ You can also provide an explicit Go path (and name) by setting `x-jsonschema2go.
 ### Nested schemas
 
 For nested schemas mapping to types which require names, if not explicitly set via ID or `x-jsonschema2go.gopath`, the name will be derived from the name of the containing top level spec and the path to the element. For example, if the type `Bar` has a field `Baz`, the field's type might be `BarBaz`.
+
+## Internals
+
+For a deeper dive into the internals, read [docs/internals.md](docs/internals.md).
