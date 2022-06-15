@@ -193,7 +193,7 @@ func deriveStructFields(
 		var tag string
 		switch {
 		case name == "": // embedded fields don't get tags
-		case fJType == gen.JSONArray || fieldSchema.Config.NoOmitEmpty:
+		case fieldSchema.Config.NoOmitEmpty:
 			tag = fmt.Sprintf("`"+`json:"%s"`+"`", name)
 		default:
 			tag = fmt.Sprintf("`"+`json:"%s,omitempty"`+"`", name)
