@@ -1,0 +1,14 @@
+{
+  "id": "https://example.com/testdata/generate/omitempty_array/foo/bar.json",
+  "description": "Bar gives you null value",
+  "type": "object",
+  "properties": {
+    "slice": {
+      "type": "array",
+      "x-jsonschema2go": {
+        "omitEmptyArray": true
+      },
+      "description": "literally nothing interesting"
+    }
+  }
+}
