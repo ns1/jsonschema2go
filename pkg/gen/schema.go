@@ -243,14 +243,15 @@ type Schema struct {
 
 // Config is a series of jsonschema2go user extensions
 type Config struct {
-	GoPath        string            `json:"gopath"`
-	Exclude       bool              `json:"exclude"`
-	Discriminator Discriminator     `json:"Discriminator"`
-	NoValidate    bool              `json:"noValidate"`
-	PromoteFields bool              `json:"promoteFields"`
-	NoOmitEmpty   bool              `json:"noOmitEmpty"`
-	RawMessage    bool              `json:"rawMessage"`
-	FieldAliases  map[string]string `json:"fieldAliases"`
+	GoPath         string            `json:"gopath"`
+	Exclude        bool              `json:"exclude"`
+	Discriminator  Discriminator     `json:"Discriminator"`
+	NoValidate     bool              `json:"noValidate"`
+	PromoteFields  bool              `json:"promoteFields"`
+	NoOmitEmpty    bool              `json:"noOmitEmpty"`
+	OmitEmptyArray bool              `json:"omitEmptyArray"`
+	RawMessage     bool              `json:"rawMessage"`
+	FieldAliases   map[string]string `json:"fieldAliases"`
 }
 
 // Discriminator is jsonschema2go specific info for discriminating between multiple oneOf objects
