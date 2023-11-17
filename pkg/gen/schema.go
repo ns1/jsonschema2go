@@ -222,6 +222,7 @@ type Schema struct {
 	Properties           map[string]*RefOrSchema `json:"properties,omitempty"`
 	PatternProperties    map[string]*RefOrSchema `json:"patternProperties,omitempty"`
 	Dependencies         map[string]*RefOrSchema `json:"dependencies,omitempty"`
+	Nullable             bool                    `json:"nullable,omitempty"`
 
 	// extra special
 	Enum   []interface{} `json:"enum,omitempty"`

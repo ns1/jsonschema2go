@@ -1,0 +1,38 @@
+{
+  "id": "https://example.com/testdata/generate/oneof_diff_types_3_0/foo/bar.json",
+  "description": "Bar gives you some dumb info",
+  "oneOf": [
+    {
+      "x-jsonschema2go": {
+        "gopath": "github.com/ns1/jsonschema2go/internal/composite/testdata/generate/oneof_diff_types_3_0/foo#Baz"
+      },
+      "type": "object",
+      "properties": {
+        "baz": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "x-jsonschema2go": {
+        "gopath": "github.com/ns1/jsonschema2go/internal/composite/testdata/generate/oneof_diff_types_3_0/foo#Bazes"
+      },
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    {
+      "type": "string",
+      "pattern": "^[0-9]{22}$"
+    },
+    {
+      "type": "number",
+      "minimum": 3.7
+    },
+    {
+      "type": "boolean",
+      "nullable": true
+    }
+  ]
+}

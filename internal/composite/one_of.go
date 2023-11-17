@@ -3,9 +3,10 @@ package composite
 import (
 	"context"
 	"fmt"
+	"sort"
+
 	"github.com/ns1/jsonschema2go/internal/validator"
 	"github.com/ns1/jsonschema2go/pkg/gen"
-	"sort"
 )
 
 // PlanOneOfDiffTypes attempts to generate a plan for a schema which is a `oneOf` with multiple schemas of different
@@ -62,6 +63,12 @@ func PlanOneOfDiffTypes(ctx context.Context, helper gen.Helper, schema *gen.Sche
 		if err != nil {
 			return nil, fmt.Errorf("unable to choose simple type for %v: %w", subSchema, err)
 		}
+
+		// if any one of the subschema are nullable, then the entire one-of block is "nullable"
+		if subSchema.Nullable {
+			trait.Nil = true
+		}
+
 		switch jType {
 		case gen.JSONObject:
 			trait.Object = info
