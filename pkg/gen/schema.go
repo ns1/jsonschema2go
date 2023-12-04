@@ -195,11 +195,11 @@ type Schema struct {
 	Schema string   `json:"$schema,omitempty"`
 
 	// number qualifiers
-	MultipleOf       *float64 `json:"multipleOf,omitempty"`
-	Maximum          *float64 `json:"maximum,omitempty"`
-	ExclusiveMaximum *bool    `json:"exclusiveMaximum,omitempty"`
-	Minimum          *float64 `json:"minimum,omitempty"`
-	ExclusiveMinimum *bool    `json:"exclusiveMinimum,omitempty"`
+	MultipleOf       *float64         `json:"multipleOf,omitempty"`
+	Maximum          *float64         `json:"maximum,omitempty"`
+	ExclusiveMaximum *json.RawMessage `json:"exclusiveMaximum,omitempty"`
+	Minimum          *float64         `json:"minimum,omitempty"`
+	ExclusiveMinimum *json.RawMessage `json:"exclusiveMinimum,omitempty"`
 
 	// string qualifiers
 	MaxLength *uint64 `json:"maxLength,omitempty"`

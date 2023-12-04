@@ -2,8 +2,9 @@ package gen
 
 import (
 	"encoding/json"
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func Test_getJSONFieldNames(t *testing.T) {
@@ -135,6 +136,11 @@ func TestSchema_UnmarshalJSON(t *testing.T) {
 			name: "simple",
 			data: `{"type": "string"}`,
 			want: Schema{Type: &TypeField{JSONString}},
+		},
+		{
+			name: "simple_nullable",
+			data: `{"type": "string", "nullable": true}`,
+			want: Schema{Type: &TypeField{JSONString}, Nullable: true},
 		},
 		{
 			name: "simple",
