@@ -97,8 +97,6 @@ func Generate(ctx context.Context, uris []string, options ...Option) error {
 // Option controls the behavior of jsonschema2go, specifying an alternative to the default configuration
 type Option func(s *settings)
 
-// func WithOASVersion(version string) Option {}
-
 // PrefixMap specifies where package prefixes should be mapped to.
 func PrefixMap(pairs ...string) Option {
 	prefixes := prefixPairs(pairs)
