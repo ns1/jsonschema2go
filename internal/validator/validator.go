@@ -2,6 +2,7 @@ package validator
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
@@ -99,22 +100,63 @@ func Validators(schema *gen.Schema) (styles []Validator) {
 				ImpliedType: impliedType,
 			})
 		}
-		if schema.Minimum != nil {
+
+		var exclusiveMin, exclusiveMax bool
+		var min, max *float64
+
+		min = schema.Minimum
+		if schema.ExclusiveMinimum != nil {
+			var result interface{}
+			if err := json.Unmarshal(*schema.ExclusiveMinimum, &result); err != nil {
+				panic(err)
+			}
+
+			switch v := result.(type) {
+			case float64:
+				exclusiveMin = true
+				min = &v
+			case bool:
+				exclusiveMin = v
+			default:
+				fmt.Println("Unknown type for ExclusiveMinimum")
+			}
+		}
+
+		if min != nil {
 			numValidator(
 				"minimum",
 				"<",
 				"greater than",
-				*schema.Minimum,
-				schema.ExclusiveMinimum != nil && *schema.ExclusiveMinimum,
+				*min,
+				exclusiveMin,
 			)
 		}
-		if schema.Maximum != nil {
+
+		max = schema.Maximum
+		if schema.ExclusiveMaximum != nil {
+			var result interface{}
+			if err := json.Unmarshal(*schema.ExclusiveMaximum, &result); err != nil {
+				panic(err)
+			}
+
+			switch v := result.(type) {
+			case float64:
+				exclusiveMax = true
+				max = &v
+			case bool:
+				exclusiveMax = v
+			default:
+				fmt.Println("Unknown type for ExclusiveMaximum")
+			}
+		}
+
+		if max != nil {
 			numValidator(
 				"maximum",
 				">",
 				"less than",
-				*schema.Maximum,
-				schema.ExclusiveMaximum != nil && *schema.ExclusiveMaximum,
+				*max,
+				exclusiveMax,
 			)
 		}
 	}

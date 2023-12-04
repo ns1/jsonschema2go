@@ -1,0 +1,22 @@
+{
+  "id": "https://example.com/testdata/generate/exclusive_limits/foo/bar.json",
+  "description": "Bar gives you some dumb info",
+  "type": "object",
+  "required": [
+    "string"
+  ],
+  "properties": {
+    "exclInteger_3_0": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10,
+      "exclusiveMinimum": true,
+      "exclusiveMaximum": true
+    },
+    "exclInteger_3_1": {
+      "type": "integer",
+      "exclusiveMinimum": 1,
+      "exclusiveMaximum": 10
+    }
+  }
+}

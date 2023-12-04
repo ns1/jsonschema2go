@@ -4,15 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
+	"path/filepath"
+	"sort"
+	"text/template"
+
 	"github.com/ns1/jsonschema2go/internal/cachingloader"
 	"github.com/ns1/jsonschema2go/internal/crawl"
 	"github.com/ns1/jsonschema2go/internal/planning"
 	"github.com/ns1/jsonschema2go/internal/print"
 	"github.com/ns1/jsonschema2go/pkg/gen"
-	"net/url"
-	"path/filepath"
-	"sort"
-	"text/template"
 )
 
 func ExtractName(ctx context.Context, uri string, options ...Option) (string, string, error) {
@@ -95,6 +96,8 @@ func Generate(ctx context.Context, uris []string, options ...Option) error {
 
 // Option controls the behavior of jsonschema2go, specifying an alternative to the default configuration
 type Option func(s *settings)
+
+// func WithOASVersion(version string) Option {}
 
 // PrefixMap specifies where package prefixes should be mapped to.
 func PrefixMap(pairs ...string) Option {

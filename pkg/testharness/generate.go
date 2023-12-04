@@ -3,10 +3,8 @@ package testharness
 import (
 	"bufio"
 	"context"
-	"github.com/ns1/jsonschema2go"
-	"github.com/stretchr/testify/require"
 	"io"
-	"io/ioutil"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -14,6 +12,9 @@ import (
 	"strings"
 	"testing"
 	"unicode"
+
+	"github.com/ns1/jsonschema2go"
+	"github.com/stretchr/testify/require"
 )
 
 // RunGenerateTests runs tests which verify the appearance of generated code.
@@ -25,9 +26,19 @@ func RunGenerateTests(t *testing.T, testDataDir, root, goPath string) {
 	if root, err = filepath.Abs(root); err != nil {
 		t.Fatal(err)
 	}
-	ents, err := ioutil.ReadDir(root)
+
+	entries, err := os.ReadDir(root)
 	if err != nil {
 		t.Fatalf("unable to list dir: %v", err)
+	}
+
+	ents := make([]fs.FileInfo, 0, len(entries))
+	for _, entry := range entries {
+		info, err := entry.Info()
+		if err != nil {
+			t.Fatalf("error getting directory listing info: %v", err)
+		}
+		ents = append(ents, info)
 	}
 
 	filter := func(name string) bool {
@@ -70,7 +81,7 @@ func RunGenerateTests(t *testing.T, testDataDir, root, goPath string) {
 				paths = append(paths, "file:"+path.Join(testDir, a))
 			}
 
-			dirName, err := ioutil.TempDir("", e.Name())
+			dirName, err := os.MkdirTemp("", e.Name())
 			r.NoError(err)
 			defer os.RemoveAll(dirName)
 
@@ -156,7 +167,7 @@ func sortedKeys(m map[string]string) (keys []string) {
 }
 
 func readString(fname string) (string, error) {
-	byts, err := ioutil.ReadFile(fname)
+	byts, err := os.ReadFile(fname)
 	if err != nil {
 		return "", err
 	}
