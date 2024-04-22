@@ -5,11 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/ns1/jsonschema2go/internal/validator"
-	"github.com/ns1/jsonschema2go/pkg/gen"
 	"net/url"
 	"sort"
 	"strconv"
+
+	"github.com/ns1/jsonschema2go/internal/validator"
+	"github.com/ns1/jsonschema2go/pkg/gen"
 )
 
 //go:generate go run ../cmd/embedtmpl/embedtmpl.go slice slice.tmpl tmpl.gen.go
@@ -73,7 +74,7 @@ func Build(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Plan
 			Name:     "maxItems",
 			TestExpr: validator.TemplateStr(`len({{ .QualifiedName }}) > ` + maxItemsS),
 			SprintfExpr: validator.TemplateStr(
-				`"must have length greater than ` + maxItemsS + ` but was %d", len({{ .QualifiedName }})`,
+				`"must have length less than ` + maxItemsS + ` but was %d", len({{ .QualifiedName }})`,
 			),
 		})
 	}
