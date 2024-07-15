@@ -41,17 +41,29 @@ func Validators(schema *gen.Schema) (styles []Validator) {
 			})
 		}
 		if schema.MinLength != 0 {
-			lenStr := strconv.FormatUint(schema.MinLength, 10)
-			styles = append(styles, Validator{
-				Name:     "minLength",
-				TestExpr: TemplateStr(`len({{ .QualifiedName }}) < ` + lenStr),
-				SprintfExpr: TemplateStr(
-					`"must have length greater than ` + lenStr + ` but was %d", len({{ .QualifiedName }})`,
-				),
-				ImpliedType: "string",
-			})
+			if schema.MaxLength != nil && schema.MinLength == *schema.MaxLength {
+				lenStr := strconv.FormatUint(schema.MinLength, 10)
+				styles = append(styles, Validator{
+					Name:     "length",
+					TestExpr: TemplateStr(`len({{.QualifiedName}}) != ` + lenStr),
+					SprintfExpr: TemplateStr(
+						`"must have length exactly equal to ` + lenStr + ` but was %d", len({{ .QualifiedName }})`,
+					),
+					ImpliedType: "string",
+				})
+			} else {
+				lenStr := strconv.FormatUint(schema.MinLength, 10)
+				styles = append(styles, Validator{
+					Name:     "minLength",
+					TestExpr: TemplateStr(`len({{ .QualifiedName }}) < ` + lenStr),
+					SprintfExpr: TemplateStr(
+						`"must have length greater than ` + lenStr + ` but was %d", len({{ .QualifiedName }})`,
+					),
+					ImpliedType: "string",
+				})
+			}
 		}
-		if schema.MaxLength != nil {
+		if schema.MaxLength != nil && *schema.MaxLength != schema.MinLength {
 			lenStr := strconv.FormatUint(*schema.MaxLength, 10)
 			styles = append(styles, Validator{
 				Name:     "maxLength",
