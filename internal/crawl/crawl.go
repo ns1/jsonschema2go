@@ -161,10 +161,20 @@ func (h *SimpleHelper) DetectSimpleType(ctx context.Context, schema *gen.Schema)
 			}
 			// For OneOf, check if all schemas have the same type
 			// If they do, we can use that type; otherwise return unknown
+			var multipleSchemas []*gen.RefOrSchema
+			if len(s.AllOf) > 0 {
+				multipleSchemas = s.AllOf
+			}
 			if len(s.OneOf) > 0 {
-				var oneOfType gen.JSONType
+				multipleSchemas = s.OneOf
+			}
+			if len(s.AnyOf) > 0 {
+				multipleSchemas = s.AnyOf
+			}
+			if len(multipleSchemas) > 0 {
+				var prevType gen.JSONType
 				allSameType := true
-				for _, sub := range s.OneOf {
+				for _, sub := range multipleSchemas {
 					c, err := sub.Resolve(ctx, s, h)
 					if err != nil {
 						return gen.JSONUnknown, err
@@ -174,16 +184,16 @@ func (h *SimpleHelper) DetectSimpleType(ctx context.Context, schema *gen.Schema)
 						allSameType = false
 						break
 					}
-					if oneOfType == gen.JSONUnknown {
-						oneOfType = subType
-					} else if oneOfType != subType {
+					if prevType == gen.JSONUnknown {
+						prevType = subType
+					} else if prevType != subType {
 						// Different types in oneOf - can't determine a single type
 						// Return unknown type error so it falls back to interface{}
 						return gen.JSONUnknown, fmt.Errorf("%v: %w", schema, errTypeUnknown)
 					}
 				}
-				if allSameType && oneOfType != gen.JSONUnknown {
-					return oneOfType, nil
+				if allSameType && prevType != gen.JSONUnknown {
+					return prevType, nil
 				}
 			}
 		}
