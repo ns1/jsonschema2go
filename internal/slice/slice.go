@@ -27,10 +27,16 @@ func Build(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Plan
 
 	// we've matched
 	var itemSchema *gen.Schema
-	if schema.Items != nil && schema.Items.Items != nil {
-		var err error
-		if itemSchema, err = schema.Items.Items.Resolve(ctx, schema, helper); err != nil {
-			return nil, err
+	if schema.Items != nil {
+		if schema.Items.Items != nil {
+			var err error
+			if itemSchema, err = schema.Items.Items.Resolve(ctx, schema, helper); err != nil {
+				return nil, err
+			}
+		} else if len(schema.Items.TupleFields) > 0 {
+			// For tuple-style arrays, we can't determine a single item type
+			// Use interface{} to handle heterogeneous arrays
+			itemSchema = nil
 		}
 	}
 	a := Plan{TypeInfo: tInfo, ID: schema.ID}
@@ -38,17 +44,26 @@ func Build(ctx context.Context, helper gen.Helper, schema *gen.Schema) (gen.Plan
 	if itemSchema != nil {
 		typ, err := helper.DetectSimpleType(ctx, itemSchema)
 		if err != nil {
-			return nil, err
-		}
-		if a.ItemType = helper.TypeInfoHinted(itemSchema, typ); a.ItemType.Unknown() {
-			a.ItemType = gen.TypeInfo{Name: "interface{}"}
-		}
-		gTyp, err := helper.DetectGoBaseType(ctx, itemSchema)
-		if err != nil {
-			return nil, err
-		}
-		if gTyp == gen.GoStruct {
-			a.ItemType.Pointer = true
+			// If type is unknown (e.g., oneOf with different types), use interface{}
+			if helper.ErrSimpleTypeUnknown(err) {
+				a.ItemType = gen.TypeInfo{Name: "interface{}"}
+			} else {
+				return nil, err
+			}
+		} else {
+			if a.ItemType = helper.TypeInfoHinted(itemSchema, typ); a.ItemType.Unknown() {
+				a.ItemType = gen.TypeInfo{Name: "interface{}"}
+			}
+			// Only check for struct type if we have a concrete type
+			if a.ItemType.Name != "interface{}" {
+				gTyp, err := helper.DetectGoBaseType(ctx, itemSchema)
+				if err != nil {
+					return nil, err
+				}
+				if gTyp == gen.GoStruct {
+					a.ItemType.Pointer = true
+				}
+			}
 		}
 	} else {
 		a.ItemType = gen.TypeInfo{Name: "interface{}"}
