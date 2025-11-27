@@ -159,7 +159,7 @@ func (h *SimpleHelper) DetectSimpleType(ctx context.Context, schema *gen.Schema)
 				}
 				candidates = append(candidates, c)
 			}
-			// For OneOf, check if all schemas have the same type
+			// For allOf/oneOf/anyOf, check if all schemas have the same type
 			// If they do, we can use that type; otherwise return unknown
 			var multipleSchemas []*gen.RefOrSchema
 			if len(s.AllOf) > 0 {
