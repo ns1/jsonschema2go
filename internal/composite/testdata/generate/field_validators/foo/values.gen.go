@@ -137,7 +137,7 @@ func (m *Bar) Validate() error {
 			message:  fmt.Sprintf("must be greater than or equal to 1 but was %v", *m.Number),
 		}
 	}
-	if m.Number != nil && math.Mod(*m.Number, 3.2) != 0 {
+	if m.Number != nil && 3.2*math.Floor(*m.Number/3.2)-*m.Number != 0 {
 		return &validationError{
 			errType:  "multipleOf",
 			path:     []interface{}{"Number"},
@@ -188,7 +188,7 @@ func (m BarArray) Validate() error {
 	if len(m) > 10 {
 		return &validationError{
 			errType: "maxItems",
-			message: fmt.Sprintf("must have length greater than 10 but was %d", len(m)),
+			message: fmt.Sprintf("must have length less than 10 but was %d", len(m)),
 		}
 	}
 	if len(m) < 1 {
