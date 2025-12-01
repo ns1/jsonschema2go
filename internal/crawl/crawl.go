@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
+
 	"github.com/ns1/jsonschema2go/internal/planning"
 	gen "github.com/ns1/jsonschema2go/pkg/gen"
-	"net/url"
 )
 
 func Crawl(
@@ -97,7 +98,6 @@ func (h *SimpleHelper) Dep(ctx context.Context, schemas ...*gen.Schema) error {
 	return nil
 }
 
-
 func (h *SimpleHelper) DetectGoBaseType(ctx context.Context, schema *gen.Schema) (gen.GoBaseType, error) {
 	if len(schema.AllOf) > 0 || len(schema.OneOf) > 0 || len(schema.AnyOf) > 0 {
 		return gen.GoStruct, nil
@@ -158,6 +158,43 @@ func (h *SimpleHelper) DetectSimpleType(ctx context.Context, schema *gen.Schema)
 					return gen.JSONUnknown, err
 				}
 				candidates = append(candidates, c)
+			}
+			// For allOf/oneOf/anyOf, check if all schemas have the same type
+			// If they do, we can use that type; otherwise return unknown
+			var multipleSchemas []*gen.RefOrSchema
+			if len(s.AllOf) > 0 {
+				multipleSchemas = s.AllOf
+			}
+			if len(s.OneOf) > 0 {
+				multipleSchemas = s.OneOf
+			}
+			if len(s.AnyOf) > 0 {
+				multipleSchemas = s.AnyOf
+			}
+			if len(multipleSchemas) > 0 {
+				var prevType gen.JSONType
+				allSameType := true
+				for _, sub := range multipleSchemas {
+					c, err := sub.Resolve(ctx, s, h)
+					if err != nil {
+						return gen.JSONUnknown, err
+					}
+					subType := c.ChooseType()
+					if subType == gen.JSONUnknown {
+						allSameType = false
+						break
+					}
+					if prevType == gen.JSONUnknown {
+						prevType = subType
+					} else if prevType != subType {
+						// Different types in oneOf - can't determine a single type
+						// Return unknown type error so it falls back to interface{}
+						return gen.JSONUnknown, fmt.Errorf("%v: %w", schema, errTypeUnknown)
+					}
+				}
+				if allSameType && prevType != gen.JSONUnknown {
+					return prevType, nil
+				}
 			}
 		}
 
