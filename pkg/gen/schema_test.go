@@ -86,6 +86,7 @@ func Test_getJSONFieldNames(t *testing.T) {
 				"properties",
 				"patternProperties",
 				"dependencies",
+				"nullable",
 				"enum",
 				"type",
 				"format",

@@ -86,7 +86,7 @@ func Validators(schema *gen.Schema) (styles []Validator) {
 			expr := TemplateStr(`{{ .QualifiedName }}%` + multipleOf + ` != 0`)
 			if schema.ChooseType() == gen.JSONNumber {
 				deps = []gen.TypeInfo{{GoPath: "math", Name: "Mod"}}
-				expr = TemplateStr(`math.Mod({{ .QualifiedName }}, ` + multipleOf + `) != 0`)
+				expr = TemplateStr(multipleOf + `*math.Floor({{ .QualifiedName }}/` + multipleOf + `)-{{ .QualifiedName }} != 0`)
 			}
 
 			styles = append(styles, Validator{
@@ -274,7 +274,7 @@ func tmplString(tmpl *template.Template, v interface{}) (string, error) {
 	}
 	var buf bytes.Buffer
 	err := tmpl.Execute(&buf, v)
-	return string(buf.Bytes()), err
+	return buf.String(), err
 }
 
 func TemplateStr(str string) *template.Template {
